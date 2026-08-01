@@ -1,0 +1,178 @@
+.how-it-works-section {
+  padding: 85px 0;
+  background-color: #FFFFFF;
+  position: relative;
+}
+
+.section-tag-sparkles {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #059669;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+  margin-bottom: 50px;
+}
+
+.sparkle-diamond {
+  color: #10B981;
+  font-size: 18px;
+}
+
+.timeline-serpentine-wrapper {
+  position: relative;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.timeline-row {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+}
+
+.row-top {
+  margin-bottom: 90px;
+}
+
+.row-bottom {
+  justify-content: flex-end;
+  gap: 110px;
+  padding-right: 140px;
+}
+
+.timeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 190px;
+  position: relative;
+  z-index: 2;
+}
+
+.node-icon-container {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.step-num-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  background: #059669;
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 800;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(5, 150, 105, 0.3);
+  z-index: 3;
+}
+
+.node-circle-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0F172A;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s ease;
+}
+
+.timeline-node:hover .node-circle-icon {
+  border-color: #10B981;
+  color: #10B981;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
+}
+
+.node-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0A192F;
+  margin-bottom: 6px;
+}
+
+.node-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748B;
+  font-weight: 500;
+}
+
+/* Connector Lines */
+.connector-arrow-line {
+  position: absolute;
+  top: 31px;
+  left: calc(100% - 15px);
+  width: calc(100% - 160px);
+  display: flex;
+  align-items: center;
+}
+
+.dashed-line {
+  flex: 1;
+  height: 1.5px;
+  border-top: 2px dashed #A7F3D0;
+}
+
+.arrow-head-right {
+  color: #10B981;
+  font-size: 14px;
+  margin-left: -2px;
+  line-height: 0;
+}
+
+.arrow-line-left {
+  left: auto;
+  right: calc(100% - 15px);
+  flex-direction: row-reverse;
+}
+
+.arrow-head-left {
+  color: #10B981;
+  font-size: 14px;
+  margin-right: -2px;
+  line-height: 0;
+}
+
+/* Right Side Winding Curve */
+.loop-curve-right {
+  position: absolute;
+  right: -30px;
+  top: 31px;
+  width: 100px;
+  height: 190px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.curve-svg {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 992px) {
+  .timeline-row {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 40px;
+  }
+  .row-bottom {
+    padding-right: 0;
+    justify-content: center;
+  }
+  .loop-curve-right, .connector-arrow-line {
+    display: none;
+  }
+}

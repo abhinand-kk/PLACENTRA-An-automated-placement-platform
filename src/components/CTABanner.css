@@ -1,0 +1,99 @@
+.cta-section {
+  padding: 40px 0 80px 0;
+  background-color: #FFFFFF;
+}
+
+.cta-box {
+  background: linear-gradient(135deg, #063D31 0%, #082F26 100%);
+  border-radius: 20px;
+  padding: 40px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(6, 61, 49, 0.25);
+}
+
+.cta-content-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 650px;
+  position: relative;
+  z-index: 2;
+}
+
+.cta-rocket-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #34D399;
+  flex-shrink: 0;
+}
+
+.cta-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.cta-desc {
+  font-size: 14px;
+  color: #A7F3D0;
+  line-height: 1.45;
+}
+
+.cta-buttons-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.cta-btn-start {
+  color: #063D31;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 30px;
+}
+
+.cta-btn-contact {
+  padding: 12px 24px;
+  border-radius: 30px;
+}
+
+/* Decorative Dot Matrix Pattern */
+.dot-matrix-pattern {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 140px;
+  height: 90px;
+  background-image: radial-gradient(rgba(52, 211, 153, 0.3) 2px, transparent 2px);
+  background-size: 14px 14px;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@media (max-width: 992px) {
+  .cta-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 30px;
+    padding: 32px 28px;
+  }
+  .cta-content-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

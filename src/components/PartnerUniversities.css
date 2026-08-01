@@ -1,0 +1,116 @@
+.partners-section {
+  padding: 70px 0;
+  background-color: #F8FAFC;
+}
+
+.partners-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.partner-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 115px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s ease;
+}
+
+.partner-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-color: #CBD5E1;
+}
+
+.uni-logo-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.uni-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.uni-brand-red {
+  color: #B91C1C;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.uni-brand-green {
+  color: #047857;
+  font-weight: 800;
+  font-size: 15px;
+  font-family: Georgia, serif;
+}
+
+.uni-brand-orange {
+  color: #DC2626;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.uni-brand-blue {
+  color: #1E40AF;
+  font-weight: 800;
+  font-size: 15px;
+  font-family: Georgia, serif;
+}
+
+.cet-logo-text {
+  font-size: 26px;
+  font-weight: 900;
+  color: #1E3A8A;
+  letter-spacing: 1px;
+}
+
+.uni-sub-text {
+  font-size: 8.5px;
+  color: #64748B;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.cet-sub {
+  font-size: 7.5px;
+}
+
+.card-more {
+  background: #FFFFFF;
+  cursor: pointer;
+}
+
+.more-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.3;
+}
+
+@media (max-width: 1024px) {
+  .partners-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .partners-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

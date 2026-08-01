@@ -1,0 +1,128 @@
+.journey-section {
+  padding: 80px 0;
+  background-color: #FFFFFF;
+}
+
+.journey-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0A192F;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.journey-flow-wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+}
+
+.journey-step-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  max-width: 200px;
+}
+
+.journey-icon-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.journey-step-card:hover .journey-icon-circle {
+  transform: translateY(-4px);
+}
+
+/* Color variations matching the design */
+.bg-teal {
+  background: #E6FFFA;
+  border: 1px solid #B2F5EA;
+}
+.icon-teal { color: #319795; }
+
+.bg-green {
+  background: #E6F4EA;
+  border: 1px solid #C6F6D5;
+}
+.icon-green { color: #10B981; }
+
+.bg-purple {
+  background: #F3E8FF;
+  border: 1px solid #E9D5FF;
+}
+.icon-purple { color: #9333EA; }
+
+.bg-blue {
+  background: #EBF8FF;
+  border: 1px solid #BEE3F8;
+}
+.icon-blue { color: #3182CE; }
+
+.bg-orange {
+  background: #FEFCBF;
+  background-color: #FFFAF0;
+  border: 1px solid #FEEBC8;
+}
+.icon-orange { color: #DD6B20; }
+
+.journey-step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0A192F;
+  margin-bottom: 8px;
+}
+
+.journey-step-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748B;
+  font-weight: 500;
+}
+
+/* Connector Line */
+.journey-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 50px;
+  margin-top: 30px;
+  position: relative;
+}
+
+.connector-line {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #A7F3D0 0%, #6EE7B7 100%);
+  position: relative;
+}
+
+.connector-arrow {
+  position: absolute;
+  right: -4px;
+  color: #10B981;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 0;
+  top: -1px;
+}
+
+@media (max-width: 900px) {
+  .journey-flow-wrapper {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+  }
+  .journey-connector {
+    display: none;
+  }
+}
