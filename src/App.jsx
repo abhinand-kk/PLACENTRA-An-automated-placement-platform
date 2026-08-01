@@ -10,14 +10,23 @@ import RecruitingCompanies from './components/RecruitingCompanies';
 import Testimonials from './components/Testimonials';
 import CTABanner from './components/CTABanner';
 import Footer from './components/Footer';
+import RegistrationWizard from './components/wizard/RegistrationWizard';
 
 export default function App() {
-  // Default to 'officer' as requested, with instant toggle support for student & recruiter
   const [role, setRole] = useState('officer');
+  const [viewMode, setViewMode] = useState('landing'); // 'landing' | 'wizard'
+
+  if (viewMode === 'wizard') {
+    return <RegistrationWizard onExitWizard={() => setViewMode('landing')} />;
+  }
 
   return (
     <div className="placentra-app">
-      <Navbar activeRole={role} onRoleChange={setRole} />
+      <Navbar 
+        activeRole={role} 
+        onRoleChange={setRole} 
+        onOpenWizard={() => setViewMode('wizard')} 
+      />
       <main>
         <Hero role={role} />
         <PlacementJourney role={role} />

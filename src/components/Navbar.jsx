@@ -2,7 +2,7 @@ import React from 'react';
 import { User, LogIn, UserPlus, Shield } from 'lucide-react';
 import './Navbar.css';
 
-export default function Navbar({ activeRole = 'officer', onRoleChange }) {
+export default function Navbar({ activeRole = 'officer', onRoleChange, onOpenWizard }) {
   return (
     <header className="navbar-header">
       <div className="container navbar-container">
@@ -41,8 +41,8 @@ export default function Navbar({ activeRole = 'officer', onRoleChange }) {
 
         {/* Action Buttons */}
         <div className="navbar-actions">
-          <button className="btn btn-outline-green btn-signup">
-            <span>Sign Up</span>
+          <button className="btn btn-outline-green btn-signup" onClick={onOpenWizard}>
+            <span>Student Registration Wizard</span>
             <UserPlus size={16} />
           </button>
           <button className="btn btn-dark btn-login">
