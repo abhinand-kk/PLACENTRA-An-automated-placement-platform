@@ -1,27 +1,102 @@
-import React, { useState } from 'react';
-import { Mail, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Phone, MapPin, User, CheckCircle2, ArrowRight, ArrowLeft, AlertCircle, X } from 'lucide-react';
 
 export default function Step2ContactVerification({ state, onChange, onNext, onBack }) {
-  const [showOtpModal, setShowOtpModal] = useState(false);
+  // Modal states
+  const [activeOtpTarget, setActiveOtpTarget] = useState(null); // 'primaryEmail' | 'personalEmail' | 'mobile'
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [otpValues, setOtpValues] = useState(['', '', '', '']);
 
-  const data = state.contactVerification;
-  const basic = state.basicDetails;
+  // OTP State
+  const [otpDigits, setOtpDigits] = useState(['2', '', '', '']);
+  const [resendTimer, setResendTimer] = useState(28);
 
-  const handleAddressChange = (field, val) => {
-    onChange('contactVerification', {
-      ...data,
-      address: { ...data.address, [field]: val }
-    });
+  const data = state.contactVerification || {};
+  const basic = state.basicDetails || {};
+
+  // Form fields for Address popup
+  const [addressForm, setAddressForm] = useState({
+    country: data.address?.country || 'India',
+    pincode: data.address?.pincode || '',
+    state: data.address?.state || '',
+    district: data.address?.district || '',
+    city: data.address?.city || '',
+    addressLine: data.address?.addressLine || '',
+    setCurrent: true
+  });
+
+  // Keep addressForm updated when state changes
+  useEffect(() => {
+    if (data.address) {
+      setAddressForm(prev => ({
+        ...prev,
+        country: data.address.country || 'India',
+        pincode: data.address.pincode || '',
+        state: data.address.state || '',
+        district: data.address.district || '',
+        city: data.address.city || '',
+        addressLine: data.address.addressLine || ''
+      }));
+    }
+  }, [data.address]);
+
+  // Countdown timer for OTP
+  useEffect(() => {
+    let timer;
+    if (activeOtpTarget && resendTimer > 0) {
+      timer = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [activeOtpTarget, resendTimer]);
+
+  const handleOpenOtpModal = (target) => {
+    setActiveOtpTarget(target);
+    setOtpDigits(['2', '', '', '']);
+    setResendTimer(28);
   };
 
   const handleVerifyOtpSubmit = () => {
-    setShowOtpModal(false);
-    onChange('contactVerification', { ...data, primaryEmailVerified: true });
+    if (activeOtpTarget === 'primaryEmail') {
+      onChange('contactVerification', { ...data, primaryEmailVerified: true });
+    } else if (activeOtpTarget === 'personalEmail') {
+      onChange('contactVerification', { ...data, personalEmailVerified: true });
+    } else if (activeOtpTarget === 'mobile') {
+      onChange('contactVerification', { ...data, mobileVerified: true });
+    }
+    setActiveOtpTarget(null);
   };
 
-  const hasAddress = data.address.addressLine || data.address.city;
+  const handleSaveAddress = (e) => {
+    e.preventDefault();
+    onChange('contactVerification', {
+      ...data,
+      address: {
+        country: addressForm.country,
+        pincode: addressForm.pincode,
+        state: addressForm.state,
+        district: addressForm.district,
+        city: addressForm.city,
+        addressLine: addressForm.addressLine
+      }
+    });
+    setShowAddressModal(false);
+  };
+
+  // Validation rules for Save & Proceed button
+  const hasAddress = Boolean(data.address?.addressLine?.trim() && data.address?.pincode?.trim());
+  const isPrimaryEmailVerified = Boolean(data.primaryEmailVerified);
+  const isPersonalEmailVerified = Boolean(data.personalEmailVerified || data.personalEmail); // Verified or optional
+  const isMobileVerified = Boolean(data.mobileVerified);
+
+  const isFormValid = isPrimaryEmailVerified && isMobileVerified && hasAddress;
+
+  const handleProceedClick = (e) => {
+    e.preventDefault();
+    if (isFormValid) {
+      onNext();
+    }
+  };
 
   return (
     <div className="step-container">
@@ -36,144 +111,242 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
         </div>
       </div>
 
-      {/* Primary Email Card */}
-      <div className="verify-card">
-        <div className="verify-info">
-          <span className="verify-label">Verify Primary Email Address</span>
-          <div className="verify-val-row">
-            <span className="verify-val">{basic.primaryEmail || 'No email provided'}</span>
-            {data.primaryEmailVerified && (
-              <span className="badge-verified">Verified ✓</span>
-            )}
-          </div>
-        </div>
-        <button className="btn-sm-action" onClick={() => setShowOtpModal(true)}>
-          {data.primaryEmailVerified ? 'Change Email' : 'Verify Email'}
-        </button>
-      </div>
+      <form onSubmit={handleProceedClick}>
+        {/* Verification Cards Stack */}
+        <div className="verify-cards-stack">
+          {/* Card 1: Primary Email Address */}
+          <div className="verify-card-item">
+            <div className="card-left-group">
+              <div className="card-icon-tile">
+                <Mail size={20} />
+              </div>
+              <div className="card-info-wrap">
+                <label className="card-label">Verify Primary Email Address <span className="req">*</span></label>
+                <div className="card-value">{basic.primaryEmail || 'kkabhinand05@gmail.com'}</div>
+              </div>
+            </div>
 
-      {/* Personal Email Card */}
-      <div className="verify-card">
-        <div className="verify-info">
-          <span className="verify-label">Verify Personal Email Address [Optional]</span>
-          <div className="verify-val-row">
-            <span className="verify-val">{data.personalEmail || 'Enter personal email'}</span>
-            {data.personalEmailVerified && (
-              <span className="badge-verified">Verified ✓</span>
-            )}
-          </div>
-        </div>
-        <button className="btn-sm-action" onClick={() => setShowOtpModal(true)}>
-          {data.personalEmail ? 'Change Email' : 'Add Email'}
-        </button>
-      </div>
-
-      {/* Mobile Verification Card */}
-      <div className="verify-card">
-        <div className="verify-info">
-          <span className="verify-label">Verify Mobile Number</span>
-          <div className="verify-val-row">
-            <span className="verify-val">{basic.mobileNumber ? `+91 ${basic.mobileNumber}` : 'No mobile number provided'}</span>
-            {data.mobileVerified && (
-              <span className="badge-verified">Verified ✓</span>
-            )}
-          </div>
-        </div>
-        <button className="btn-sm-action" onClick={() => setShowOtpModal(true)}>
-          {data.mobileVerified ? 'Change Number' : 'Verify Mobile'}
-        </button>
-      </div>
-
-      {/* Permanent Address Card */}
-      <div className="verify-card" style={{ alignItems: 'flex-start' }}>
-        <div className="verify-info">
-          <span className="verify-label">Permanent Address</span>
-          <div className="verify-val-row" style={{ marginTop: '8px' }}>
-            <span className="verify-val" style={{ lineHeight: 1.5 }}>
-              {hasAddress ? (
-                `${data.address.addressLine}, ${data.address.city}, ${data.address.district}, ${data.address.state} - ${data.address.pincode}, ${data.address.country}`
+            <div className="card-right-group">
+              {data.primaryEmailVerified ? (
+                <span className="badge-verified">
+                  Verified <CheckCircle2 size={14} />
+                </span>
               ) : (
-                'No address added yet.'
+                <button 
+                  type="button" 
+                  className="btn-card-verify"
+                  onClick={() => handleOpenOtpModal('primaryEmail')}
+                >
+                  Verify Email
+                </button>
               )}
-            </span>
+              <button 
+                type="button" 
+                className="btn-card-action"
+                onClick={() => handleOpenOtpModal('primaryEmail')}
+              >
+                Change Email
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: Personal Email Address */}
+          <div className="verify-card-item">
+            <div className="card-left-group">
+              <div className="card-icon-tile">
+                <User size={20} />
+              </div>
+              <div className="card-info-wrap">
+                <label className="card-label">Verify Personal Email Address <span className="req">*</span></label>
+                <div className="card-value">{data.personalEmail || basic.primaryEmail || 'kkabhinand05@gmail.com'}</div>
+              </div>
+            </div>
+
+            <div className="card-right-group">
+              {data.personalEmailVerified ? (
+                <span className="badge-verified">
+                  Verified <CheckCircle2 size={14} />
+                </span>
+              ) : (
+                <button 
+                  type="button" 
+                  className="btn-card-verify"
+                  onClick={() => handleOpenOtpModal('personalEmail')}
+                >
+                  Verify Email
+                </button>
+              )}
+              <button 
+                type="button" 
+                className="btn-card-action"
+                onClick={() => handleOpenOtpModal('personalEmail')}
+              >
+                Change Email
+              </button>
+            </div>
+          </div>
+
+          {/* Card 3: Verify Mobile Number */}
+          <div className="verify-card-item">
+            <div className="card-left-group">
+              <div className="card-icon-tile">
+                <Phone size={20} />
+              </div>
+              <div className="card-info-wrap">
+                <label className="card-label">Verify Mobile Number <span className="req">*</span></label>
+                <div className="card-value">+91 {basic.mobileNumber || '916235407730'}</div>
+              </div>
+            </div>
+
+            <div className="card-right-group">
+              {data.mobileVerified ? (
+                <span className="badge-verified">
+                  Verified <CheckCircle2 size={14} />
+                </span>
+              ) : (
+                <button 
+                  type="button" 
+                  className="btn-card-verify"
+                  onClick={() => handleOpenOtpModal('mobile')}
+                >
+                  Verify Mobile
+                </button>
+              )}
+              <button 
+                type="button" 
+                className="btn-card-action"
+                onClick={() => handleOpenOtpModal('mobile')}
+              >
+                Change Number
+              </button>
+            </div>
+          </div>
+
+          {/* Card 4: Permanent Address */}
+          <div className="verify-card-item address-card-item">
+            <div className="card-left-group" style={{ alignItems: 'flex-start' }}>
+              <div className="card-icon-tile" style={{ marginTop: '2px' }}>
+                <MapPin size={20} />
+              </div>
+              <div className="card-info-wrap">
+                <label className="card-label">Permanent Address <span className="req">*</span></label>
+                {hasAddress ? (
+                  <div className="address-display-box">
+                    <div className="address-line1">{data.address.addressLine}</div>
+                    <div className="address-line2">
+                      {data.address.city}, {data.address.district}, {data.address.state} - {data.address.pincode}, {data.address.country}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="card-value empty">No permanent address added yet.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="card-right-group">
+              <button 
+                type="button" 
+                className="btn-card-action"
+                onClick={() => setShowAddressModal(true)}
+              >
+                {hasAddress ? 'Edit Address' : 'Add Address'}
+              </button>
+            </div>
           </div>
         </div>
-        <button className="btn-sm-action" onClick={() => setShowAddressModal(true)}>
-          {hasAddress ? 'Edit Address' : 'Add Address'}
-        </button>
-      </div>
 
-      {/* Checkbox: Same as Permanent Address */}
-      <div style={{ margin: '16px 0 24px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <input 
-          type="checkbox" 
-          id="sameAddress"
-          checked={data.sameAsPermanent}
-          onChange={(e) => onChange('contactVerification', { ...data, sameAsPermanent: e.target.checked })}
-          style={{ width: '16px', height: '16px', accentColor: '#4F46E5' }}
-        />
-        <label htmlFor="sameAddress" style={{ fontSize: '13.5px', color: '#0F172A', fontWeight: 600 }}>
-          Same as Permanent Address
-        </label>
-      </div>
+        {/* Checkbox: Same as Permanent Address */}
+        <div className="same-address-checkbox-row">
+          <input 
+            type="checkbox" 
+            id="sameAddressCheck"
+            checked={data.sameAsPermanent}
+            onChange={(e) => onChange('contactVerification', { ...data, sameAsPermanent: e.target.checked })}
+          />
+          <label htmlFor="sameAddressCheck">Same as Permanent Address</label>
+        </div>
 
-      {/* Footer Actions */}
-      <div className="wizard-footer-actions">
-        <button className="btn-wizard-secondary" onClick={onBack}>
-          <ArrowLeft size={16} />
-          <span>Go Back</span>
-        </button>
-        <button className="btn-wizard-primary" onClick={onNext}>
-          <span>Save and Proceed</span>
-          <ArrowRight size={16} />
-        </button>
-      </div>
+        {/* Footer Actions */}
+        <div className="wizard-footer-actions">
+          <button type="button" className="btn-wizard-secondary" onClick={onBack}>
+            <ArrowLeft size={16} />
+            <span>Go Back</span>
+          </button>
+          <button 
+            type="submit" 
+            className={`btn-wizard-primary ${!isFormValid ? 'disabled' : ''}`}
+            disabled={!isFormValid}
+          >
+            <span>Save and Proceed</span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </form>
 
-      {/* Modal 1: Verify Email OTP Modal */}
-      {showOtpModal && (
+      {/* Dialog 1: Verify Email OTP Modal */}
+      {activeOtpTarget && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: '440px' }}>
+          <div className="modal-card otp-modal-card">
             <div className="modal-header">
-              <h3>Verify email OTP</h3>
-              <button className="modal-close-btn" onClick={() => setShowOtpModal(false)}>✕</button>
+              <h3>Verify Email OTP</h3>
+              <button className="modal-close-btn" onClick={() => setActiveOtpTarget(null)}>
+                <X size={18} />
+              </button>
             </div>
             <div className="modal-body text-center">
-              <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '16px' }}>
-                An OTP has been sent to <strong>{basic.primaryEmail || 'your email'}</strong>. Please check your inbox.
+              <p className="otp-modal-desc">
+                An OTP has been sent to <span className="highlight-email">{basic.primaryEmail || 'kkabhinand05@gmail.com'}</span>. Please check your inbox. If the OTP is not in your inbox, please check your <strong>spam and updates folder</strong> as well!
               </p>
 
-              <div className="wizard-alert alert-amber" style={{ fontSize: '12px', padding: '10px' }}>
-                <AlertCircle size={16} />
-                <span>During heavy traffic the OTP might be delayed by 5 minutes.</span>
+              <div className="wizard-alert alert-amber otp-warning-banner">
+                <AlertCircle size={18} className="flex-shrink-0" />
+                <span>During busy hours the OTP might be delayed by 5 minutes.</span>
               </div>
 
-              <p style={{ fontSize: '12.5px', fontWeight: 700, margin: '16px 0 8px 0' }}>
-                Enter the OTP from the email below:
-              </p>
+              <div className="otp-prompt-label">
+                Enter the OTP from the email below.
+              </div>
 
-              <div className="otp-input-group">
-                {otpValues.map((val, idx) => (
+              <div className="resend-timer-text">
+                You can re-send the OTP in <span className="timer-sec">{resendTimer}</span>
+              </div>
+
+              {/* 4-Digit OTP Box Grid */}
+              <div className="otp-4digit-grid">
+                {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
                     type="text"
                     maxLength="1"
-                    className="otp-box"
-                    placeholder="•"
-                    value={val}
+                    className="otp-single-box"
+                    value={digit}
                     onChange={(e) => {
-                      const newArr = [...otpValues];
+                      const newArr = [...otpDigits];
                       newArr[idx] = e.target.value;
-                      setOtpValues(newArr);
+                      setOtpDigits(newArr);
+                      // Auto focus next box
+                      if (e.target.value && e.target.nextSibling) {
+                        e.target.nextSibling.focus();
+                      }
                     }}
                   />
                 ))}
               </div>
             </div>
+
             <div className="modal-footer">
-              <button className="btn-wizard-secondary" onClick={() => setShowOtpModal(false)}>
+              <button 
+                type="button" 
+                className="btn-wizard-secondary"
+                onClick={() => setActiveOtpTarget(null)}
+              >
                 Cancel
               </button>
-              <button className="btn-wizard-primary" onClick={handleVerifyOtpSubmit}>
+              <button 
+                type="button" 
+                className="btn-wizard-primary"
+                onClick={handleVerifyOtpSubmit}
+              >
                 Verify OTP
               </button>
             </div>
@@ -181,100 +354,128 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
         </div>
       )}
 
-      {/* Modal 2: Edit Permanent Address Modal */}
+      {/* Dialog 2: Add / Edit Permanent Address Modal */}
       {showAddressModal && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: '520px' }}>
+          <div className="modal-card address-modal-card">
             <div className="modal-header">
-              <h3>Edit Permanent Address</h3>
-              <button className="modal-close-btn" onClick={() => setShowAddressModal(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-grid-2" style={{ marginBottom: '14px' }}>
-                <div className="form-group">
-                  <label className="form-label">Country <span className="req">*</span></label>
-                  <select 
-                    className="form-control"
-                    value={data.address.country}
-                    onChange={(e) => handleAddressChange('country', e.target.value)}
-                  >
-                    <option value="India">India</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Pincode <span className="req">*</span></label>
-                  <input 
-                    type="text" 
-                    className="form-control"
-                    placeholder="e.g. 686518"
-                    value={data.address.pincode}
-                    onChange={(e) => handleAddressChange('pincode', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-grid-2" style={{ marginBottom: '14px' }}>
-                <div className="form-group">
-                  <label className="form-label">State <span className="req">*</span></label>
-                  <input 
-                    type="text" 
-                    className="form-control"
-                    placeholder="e.g. Kerala"
-                    value={data.address.state}
-                    onChange={(e) => handleAddressChange('state', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">District <span className="req">*</span></label>
-                  <input 
-                    type="text" 
-                    className="form-control"
-                    placeholder="e.g. Kottayam"
-                    value={data.address.district}
-                    onChange={(e) => handleAddressChange('district', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-grid-2" style={{ marginBottom: '14px' }}>
-                <div className="form-group">
-                  <label className="form-label">City <span className="req">*</span></label>
-                  <input 
-                    type="text" 
-                    className="form-control"
-                    placeholder="e.g. Kanjirappally"
-                    value={data.address.city}
-                    onChange={(e) => handleAddressChange('city', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Address Line <span className="req">*</span></label>
-                  <input 
-                    type="text" 
-                    className="form-control"
-                    placeholder="House/Street/Building details"
-                    value={data.address.addressLine}
-                    onChange={(e) => handleAddressChange('addressLine', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                <input type="checkbox" id="setCurrent" defaultChecked />
-                <label htmlFor="setCurrent" style={{ fontSize: '13px', fontWeight: 600 }}>Set as current address</label>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-wizard-secondary" onClick={() => setShowAddressModal(false)}>
-                Cancel
-              </button>
-              <button className="btn-wizard-primary" onClick={() => setShowAddressModal(false)}>
-                Save Address
+              <h3>{hasAddress ? 'Edit Permanent Address' : 'Add Permanent Address'}</h3>
+              <button className="modal-close-btn" onClick={() => setShowAddressModal(false)}>
+                <X size={18} />
               </button>
             </div>
+            <form onSubmit={handleSaveAddress}>
+              <div className="modal-body">
+                <div className="form-grid-2" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Country <span className="req">*</span></label>
+                    <select 
+                      className="form-control"
+                      value={addressForm.country}
+                      onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                      required
+                    >
+                      <option value="India">India</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Pincode <span className="req">*</span></label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      placeholder="686518"
+                      value={addressForm.pincode}
+                      onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-grid-2" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">State <span className="req">*</span></label>
+                    <select 
+                      className="form-control"
+                      value={addressForm.state}
+                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                      required
+                    >
+                      <option value="">Select State</option>
+                      <option value="Kerala">Kerala</option>
+                      <option value="Tamil Nadu">Tamil Nadu</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">District <span className="req">*</span></label>
+                    <select 
+                      className="form-control"
+                      value={addressForm.district}
+                      onChange={(e) => setAddressForm({ ...addressForm, district: e.target.value })}
+                      required
+                    >
+                      <option value="">Select District</option>
+                      <option value="Kottayam">Kottayam</option>
+                      <option value="Ernakulam">Ernakulam</option>
+                      <option value="Trivandrum">Trivandrum</option>
+                      <option value="Idukki">Idukki</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-grid-2" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">City <span className="req">*</span></label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      placeholder="Kanjirapally"
+                      value={addressForm.city}
+                      onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Address Line <span className="req">*</span></label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      placeholder="Amal Jyothi College of Engineering"
+                      value={addressForm.addressLine}
+                      onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="set-current-checkbox-row">
+                  <input 
+                    type="checkbox" 
+                    id="setCurrentCheck"
+                    checked={addressForm.setCurrent}
+                    onChange={(e) => setAddressForm({ ...addressForm, setCurrent: e.target.checked })}
+                  />
+                  <label htmlFor="setCurrentCheck">Set as current address</label>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn-wizard-secondary" 
+                  onClick={() => setShowAddressModal(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-wizard-primary">
+                  Save Address
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
