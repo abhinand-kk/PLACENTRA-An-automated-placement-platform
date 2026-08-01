@@ -1,13 +1,13 @@
 import React from 'react';
-import { Shield, User, Mail, GraduationCap, School, Briefcase, FileText, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Shield, User, Mail, GraduationCap, Code2, Briefcase, FileText, CheckCircle2, Headphones } from 'lucide-react';
 
 export default function WizardSidebar({ activeStep, onSelectStep, maxReachedStep }) {
   const steps = [
     { id: 1, title: 'Basic Details', desc: 'Tell us about yourself', icon: <User size={14} /> },
     { id: 2, title: 'Contact Verification', desc: 'Verify your email & mobile', icon: <Mail size={14} /> },
-    { id: 3, title: 'Current / Most Recent Education', desc: 'Provide details about your degree', icon: <GraduationCap size={14} /> },
-    { id: 4, title: 'Previous Education', desc: 'Class XII / Diploma details', icon: <School size={14} /> },
-    { id: 5, title: 'Internships & Work Experience', desc: 'Add your experiences', icon: <Briefcase size={14} /> },
+    { id: 3, title: 'Academic Details', desc: 'Your education information', icon: <GraduationCap size={14} /> },
+    { id: 4, title: 'Skills & Projects', desc: 'Your skills and projects', icon: <Code2 size={14} /> },
+    { id: 5, title: 'Internships & Certifications', desc: 'Experience & achievements', icon: <Briefcase size={14} /> },
     { id: 6, title: 'Documents', desc: 'Upload your documents', icon: <FileText size={14} /> },
     { id: 7, title: 'Review & Submit', desc: 'Review and finish', icon: <CheckCircle2 size={14} /> }
   ];
@@ -20,7 +20,10 @@ export default function WizardSidebar({ activeStep, onSelectStep, maxReachedStep
           <div className="sidebar-logo-icon">
             <Shield size={18} />
           </div>
-          <span className="sidebar-logo-text">PLACENTRA</span>
+          <div>
+            <span className="sidebar-logo-text">PLACENTRA</span>
+            <div style={{ fontSize: '10px', color: '#94A3B8', fontWeight: 500 }}>Connecting Talent. Creating Futures.</div>
+          </div>
         </div>
 
         {/* Title */}
@@ -56,9 +59,9 @@ export default function WizardSidebar({ activeStep, onSelectStep, maxReachedStep
 
       {/* Support Card at Bottom */}
       <div className="sidebar-help-card">
-        <HelpCircle size={20} className="help-icon" />
+        <Headphones size={22} className="help-icon" />
         <div className="help-title">Need Help?</div>
-        <div className="help-desc">We're here to assist you during registration</div>
+        <div className="help-desc">We're here to assist you</div>
         <button className="btn-contact-support">Contact Support</button>
       </div>
     </aside>
