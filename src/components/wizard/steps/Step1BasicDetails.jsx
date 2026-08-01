@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, ArrowRight, CheckCircle2, AlertCircle, Edit3, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, ArrowRight, CheckCircle2, AlertCircle, Calendar, ChevronDown, Edit3, X } from 'lucide-react';
 
 export default function Step1BasicDetails({ state, onChange, onNext }) {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -7,7 +7,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
   const [collegeSearch, setCollegeSearch] = useState('');
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
 
-  const data = state.basicDetails || {};
+  const data = state.basicDetails;
 
   const collegeOptions = [
     'Amal Jyothi College of Engineering, Kottayam',
@@ -20,7 +20,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
   ];
 
   const filteredColleges = collegeOptions.filter(c => 
-    c.toLowerCase().includes((collegeSearch || data.college || '').toLowerCase())
+    c.toLowerCase().includes(collegeSearch.toLowerCase())
   );
 
   const handleChange = (field, value) => {
@@ -105,7 +105,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 type="text" 
                 className={`form-control ${touched.firstName && !isFirstNameValid ? 'invalid' : ''}`} 
                 placeholder="Abhinand"
-                value={data.firstName || ''}
+                value={data.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
                 onBlur={() => handleBlur('firstName')}
                 required
@@ -121,7 +121,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 type="text" 
                 className="form-control" 
                 placeholder="K K"
-                value={data.middleName || ''}
+                value={data.middleName}
                 onChange={(e) => handleChange('middleName', e.target.value)}
               />
               <span className="sub-caption">Middle Name</span>
@@ -132,7 +132,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 type="text" 
                 className={`form-control ${touched.lastName && !isLastNameValid ? 'invalid' : ''}`} 
                 placeholder="K K"
-                value={data.lastName || ''}
+                value={data.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
                 onBlur={() => handleBlur('lastName')}
                 required
@@ -154,7 +154,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
               <input 
                 type="date" 
                 className={`form-control ${touched.dob && !isDobValid ? 'invalid' : ''}`} 
-                value={data.dob || ''}
+                value={data.dob}
                 onChange={(e) => handleChange('dob', e.target.value)}
                 onBlur={() => handleBlur('dob')}
                 required
@@ -190,7 +190,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             <label className="form-label">Blood Group</label>
             <select 
               className="form-control" 
-              value={data.bloodGroup || ''}
+              value={data.bloodGroup}
               onChange={(e) => handleChange('bloodGroup', e.target.value)}
             >
               <option value="">Select Blood Group</option>
@@ -210,7 +210,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
               <input 
                 type="text" 
                 className={`form-control ${touched.college && !isCollegeValid ? 'invalid' : ''}`}
-                placeholder="Amal Jyothi College of Engineering, Kottayam"
+                placeholder="Search or select College / University"
                 value={data.college || collegeSearch}
                 onChange={(e) => {
                   setCollegeSearch(e.target.value);
@@ -263,7 +263,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             <label className="form-label">Course / Program <span className="req">*</span></label>
             <select 
               className={`form-control ${touched.course && !isCourseValid ? 'invalid' : ''}`} 
-              value={data.course || ''}
+              value={data.course}
               onChange={(e) => handleChange('course', e.target.value)}
               onBlur={() => handleBlur('course')}
               required
@@ -287,7 +287,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             <label className="form-label">Branch / Specialization <span className="req">*</span></label>
             <select 
               className={`form-control ${touched.branch && !isBranchValid ? 'invalid' : ''}`}
-              value={data.branch || ''}
+              value={data.branch}
               onChange={(e) => handleChange('branch', e.target.value)}
               onBlur={() => handleBlur('branch')}
               required
@@ -307,7 +307,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
               type="text" 
               className={`form-control ${touched.rollNumber && !isRollNoValid ? 'invalid' : ''}`} 
               placeholder="AJC25MCA2002"
-              value={data.rollNumber || ''}
+              value={data.rollNumber}
               onChange={(e) => handleChange('rollNumber', e.target.value)}
               onBlur={() => handleBlur('rollNumber')}
               required
@@ -324,14 +324,14 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             <label className="form-label">Current Semester <span className="req">*</span></label>
             <select 
               className={`form-control ${touched.currentSemester && !isSemesterValid ? 'invalid' : ''}`} 
-              value={data.currentSemester || ''}
+              value={data.currentSemester}
               onChange={(e) => handleChange('currentSemester', e.target.value)}
               onBlur={() => handleBlur('currentSemester')}
               required
             >
               <option value="">Select Semester</option>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
-                <option key={s} value={String(s)}>{s}</option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
@@ -340,7 +340,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             <label className="form-label">Admission Year <span className="req">*</span></label>
             <select 
               className={`form-control ${touched.admissionYear && !isAdmissionYearValid ? 'invalid' : ''}`} 
-              value={data.admissionYear || ''}
+              value={data.admissionYear}
               onChange={(e) => handleChange('admissionYear', e.target.value)}
               onBlur={() => handleBlur('admissionYear')}
               required
@@ -363,7 +363,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 type="email" 
                 className={`form-control ${touched.primaryEmail && !isEmailValid ? 'invalid' : ''}`} 
                 placeholder="kkabhinand05@gmail.com"
-                value={data.primaryEmail || ''}
+                value={data.primaryEmail}
                 onChange={(e) => handleChange('primaryEmail', e.target.value)}
                 onBlur={() => handleBlur('primaryEmail')}
                 required
@@ -391,7 +391,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                   type="text" 
                   className={`form-control ${touched.mobileNumber && !isMobileValid ? 'invalid' : ''}`} 
                   placeholder="916235407730"
-                  value={data.mobileNumber || ''}
+                  value={data.mobileNumber}
                   onChange={(e) => handleChange('mobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
                   onBlur={() => handleBlur('mobileNumber')}
                   required
