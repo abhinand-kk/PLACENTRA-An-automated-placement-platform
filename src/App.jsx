@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PlacementJourney from './components/PlacementJourney';
@@ -11,8 +12,12 @@ import Testimonials from './components/Testimonials';
 import CTABanner from './components/CTABanner';
 import Footer from './components/Footer';
 import RegistrationWizard from './components/wizard/RegistrationWizard';
+import RecruiterRegistrationWizard from './components/recruiter/RecruiterRegistrationWizard';
+import RecruiterDashboard from './components/recruiter/RecruiterDashboard';
+import PlacementOfficerRegistrationWizard from './components/officer/PlacementOfficerRegistrationWizard';
+import OfficerDashboard from './components/officer/OfficerDashboard';
 
-export default function App() {
+function MainLandingApp() {
   const [role, setRole] = useState('officer');
   const [viewMode, setViewMode] = useState('landing'); // 'landing' | 'wizard'
 
@@ -28,7 +33,7 @@ export default function App() {
         onOpenWizard={() => setViewMode('wizard')} 
       />
       <main>
-        <Hero role={role} />
+        <Hero role={role} onOpenWizard={() => setViewMode('wizard')} />
         <PlacementJourney role={role} />
         <HowItWorks role={role} />
         <AIFeatures role={role} />
@@ -36,9 +41,22 @@ export default function App() {
         <PartnerUniversities />
         <RecruitingCompanies />
         <Testimonials role={role} />
-        <CTABanner role={role} />
+        <CTABanner role={role} onOpenWizard={() => setViewMode('wizard')} />
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<MainLandingApp />} />
+      <Route path="/recruiter/register" element={<RecruiterRegistrationWizard />} />
+      <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
+      <Route path="/placement-officer/register" element={<PlacementOfficerRegistrationWizard />} />
+      <Route path="/placement-officer/dashboard" element={<OfficerDashboard />} />
+      <Route path="*" element={<MainLandingApp />} />
+    </Routes>
   );
 }

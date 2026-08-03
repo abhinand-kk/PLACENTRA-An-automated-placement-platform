@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, User, CheckCircle2, ArrowRight, ArrowLeft, AlertCircle, X } from 'lucide-react';
 
 export default function Step2ContactVerification({ state, onChange, onNext, onBack }) {
@@ -6,9 +6,15 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
   const [activeOtpTarget, setActiveOtpTarget] = useState(null); // 'primaryEmail' | 'personalEmail' | 'mobile'
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  // OTP State
-  const [otpDigits, setOtpDigits] = useState(['2', '', '', '']);
+  // OTP State & Refs
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '']);
   const [resendTimer, setResendTimer] = useState(28);
+
+  const otpBoxRef0 = useRef(null);
+  const otpBoxRef1 = useRef(null);
+  const otpBoxRef2 = useRef(null);
+  const otpBoxRef3 = useRef(null);
+  const otpRefs = [otpBoxRef0, otpBoxRef1, otpBoxRef2, otpBoxRef3];
 
   const data = state.contactVerification || {};
   const basic = state.basicDetails || {};
@@ -52,8 +58,67 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
 
   const handleOpenOtpModal = (target) => {
     setActiveOtpTarget(target);
-    setOtpDigits(['2', '', '', '']);
+    setOtpDigits(['', '', '', '']);
     setResendTimer(28);
+    setTimeout(() => {
+      if (otpRefs[0].current) {
+        otpRefs[0].current.focus();
+      }
+    }, 100);
+  };
+
+  const handleOtpChange = (index, value) => {
+    const numericVal = value.replace(/\D/g, '');
+    if (!numericVal && value !== '') return;
+
+    const newDigits = [...otpDigits];
+
+    if (numericVal.length > 1) {
+      // Pasted or entered multiple digits
+      const pasted = numericVal.slice(0, 4).split('');
+      for (let i = 0; i < 4; i++) {
+        newDigits[i] = pasted[i] || '';
+      }
+      setOtpDigits(newDigits);
+      const focusIndex = Math.min(pasted.length, 3);
+      if (otpRefs[focusIndex].current) {
+        otpRefs[focusIndex].current.focus();
+      }
+      return;
+    }
+
+    newDigits[index] = numericVal;
+    setOtpDigits(newDigits);
+
+    // Auto focus next input
+    if (numericVal && index < 3 && otpRefs[index + 1].current) {
+      otpRefs[index + 1].current.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (!otpDigits[index] && index > 0 && otpRefs[index - 1].current) {
+        otpRefs[index - 1].current.focus();
+      }
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    if (!pastedData) return;
+
+    const newDigits = ['', '', '', ''];
+    pastedData.split('').forEach((char, idx) => {
+      newDigits[idx] = char;
+    });
+    setOtpDigits(newDigits);
+
+    const nextFocus = Math.min(pastedData.length, 3);
+    if (otpRefs[nextFocus].current) {
+      otpRefs[nextFocus].current.focus();
+    }
   };
 
   const handleVerifyOtpSubmit = () => {
@@ -86,7 +151,7 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
   // Validation rules for Save & Proceed button
   const hasAddress = Boolean(data.address?.addressLine?.trim() && data.address?.pincode?.trim());
   const isPrimaryEmailVerified = Boolean(data.primaryEmailVerified);
-  const isPersonalEmailVerified = Boolean(data.personalEmailVerified || data.personalEmail); // Verified or optional
+  const isPersonalEmailVerified = Boolean(data.personalEmailVerified || data.personalEmail);
   const isMobileVerified = Boolean(data.mobileVerified);
 
   const isFormValid = isPrimaryEmailVerified && isMobileVerified && hasAddress;
@@ -232,8 +297,8 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
                 <label className="card-label">Permanent Address <span className="req">*</span></label>
                 {hasAddress ? (
                   <div className="address-display-box">
-                    <div className="address-line1">{data.address.addressLine}</div>
-                    <div className="address-line2">
+                    <div className="address-line1" style={{ fontWeight: 700, color: '#0F172A' }}>{data.address.addressLine}</div>
+                    <div className="address-line2" style={{ fontSize: '13px', color: '#64748B' }}>
                       {data.address.city}, {data.address.district}, {data.address.state} - {data.address.pincode}, {data.address.country}
                     </div>
                   </div>
@@ -312,23 +377,18 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
               </div>
 
               {/* 4-Digit OTP Box Grid */}
-              <div className="otp-4digit-grid">
+              <div className="otp-4digit-grid" onPaste={handleOtpPaste}>
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
+                    ref={otpRefs[idx]}
                     type="text"
+                    inputMode="numeric"
                     maxLength="1"
                     className="otp-single-box"
                     value={digit}
-                    onChange={(e) => {
-                      const newArr = [...otpDigits];
-                      newArr[idx] = e.target.value;
-                      setOtpDigits(newArr);
-                      // Auto focus next box
-                      if (e.target.value && e.target.nextSibling) {
-                        e.target.nextSibling.focus();
-                      }
-                    }}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                   />
                 ))}
               </div>
@@ -364,7 +424,7 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
                 <X size={18} />
               </button>
             </div>
-            <form onSubmit={handleSaveAddress}>
+            <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
               <div className="modal-body">
                 <div className="form-grid-2" style={{ marginBottom: '16px' }}>
                   <div className="form-group">

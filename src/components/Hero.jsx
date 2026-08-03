@@ -1,8 +1,10 @@
 import React from 'react';
-import { ArrowRight, Play, Sparkles, Users, Building2, GraduationCap, TrendingUp, Shield, BarChart3 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Play, Sparkles, Users, Building2, GraduationCap, TrendingUp, Shield } from 'lucide-react';
 import './Hero.css';
 
-export default function Hero({ role = 'officer' }) {
+export default function Hero({ role = 'officer', onOpenWizard }) {
+  const navigate = useNavigate();
   const isRecruiter = role === 'recruiter';
   const isOfficer = role === 'officer';
 
@@ -16,6 +18,16 @@ export default function Hero({ role = 'officer' }) {
     if (isOfficer) return 'AI-Driven Placement Management Platform';
     if (isRecruiter) return 'AI-Powered Recruitment Platform';
     return 'AI-Powered Campus Placement Platform';
+  };
+
+  const handleMainAction = () => {
+    if (isOfficer) {
+      navigate('/placement-officer/register');
+    } else if (isRecruiter) {
+      navigate('/recruiter/register');
+    } else if (onOpenWizard) {
+      onOpenWizard();
+    }
   };
 
   return (
@@ -68,7 +80,7 @@ export default function Hero({ role = 'officer' }) {
 
           {/* Action Buttons */}
           <div className="hero-buttons">
-            <button className="btn btn-primary hero-btn-main">
+            <button className="btn btn-primary hero-btn-main" onClick={handleMainAction}>
               <span>{isOfficer ? 'Manage Placements' : isRecruiter ? 'Start Hiring' : 'Get Started'}</span>
               <ArrowRight size={18} />
             </button>

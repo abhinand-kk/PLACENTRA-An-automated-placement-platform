@@ -1,10 +1,22 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Rocket, ArrowRight, User, Building2 } from 'lucide-react';
 import './CTABanner.css';
 
-export default function CTABanner({ role = 'officer' }) {
+export default function CTABanner({ role = 'officer', onOpenWizard }) {
+  const navigate = useNavigate();
   const isRecruiter = role === 'recruiter';
   const isOfficer = role === 'officer';
+
+  const handleCtaAction = () => {
+    if (isOfficer) {
+      navigate('/placement-officer/register');
+    } else if (isRecruiter) {
+      navigate('/recruiter/register');
+    } else if (onOpenWizard) {
+      onOpenWizard();
+    }
+  };
 
   return (
     <section className="cta-section">
@@ -43,7 +55,7 @@ export default function CTABanner({ role = 'officer' }) {
           </div>
 
           <div className="cta-buttons-right">
-            <button className="btn btn-white cta-btn-start">
+            <button className="btn btn-white cta-btn-start" onClick={handleCtaAction}>
               <span>{isOfficer ? 'Manage Placements' : isRecruiter ? 'Start Hiring Now' : 'Get Started Now'}</span>
               <ArrowRight size={16} />
             </button>
