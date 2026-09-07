@@ -17,8 +17,8 @@ export default function WizardSidebar({ activeStep, onSelectStep, maxReachedStep
       <div>
         {/* Brand Header */}
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">
-            <Shield size={18} />
+          <div className="sidebar-logo-icon" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
           </div>
           <div>
             <span className="sidebar-logo-text">PLACENTRA</span>

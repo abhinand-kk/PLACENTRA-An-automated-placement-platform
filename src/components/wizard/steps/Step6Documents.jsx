@@ -1,23 +1,163 @@
-import React, { useState } from 'react';
-import { FileText, ArrowRight, ArrowLeft, Upload, CheckCircle2, AlertCircle, ShieldCheck, Lock, Trash2, Camera, Info, RefreshCw } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { FileText, ArrowRight, ArrowLeft, Upload, CheckCircle2, AlertCircle, ShieldCheck, Lock, Trash2, Camera, Info, RefreshCw, Eye } from 'lucide-react';
+import api from '../../../services/api';
 
 export default function Step6Documents({ state, onChange, onNext, onBack }) {
   const docs = state.documents || {};
+  const basic = state.basicDetails || {};
 
-  const handleMockUpload = (docKey, defaultName, defaultSize) => {
-    onChange('documents', {
-      ...docs,
-      [docKey]: {
-        name: defaultName,
-        size: defaultSize,
-        uploadedDate: '25 May 2026',
-        status: 'Uploaded',
-        verified: true
-      }
-    });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(null);
+  const [isFetchingDigiLocker, setIsFetchingDigiLocker] = useState(false);
+
+  // Hidden File Input Refs
+  const photoInputRef = useRef(null);
+  const resumeInputRef = useRef(null);
+  const class10InputRef = useRef(null);
+  const class12InputRef = useRef(null);
+  const degreeInputRef = useRef(null);
+
+  // Initial Document Values
+  const photo = docs.profilePhoto || { name: 'Profile-Photo.jpg', size: '215 KB', uploadedDate: '25 May 2026', status: 'Uploaded', verified: true, fileUrl: null, previewUrl: null };
+  const resume = docs.resume || { name: 'Resume.pdf', size: '512 KB', uploadedDate: '25 May 2026', status: 'Uploaded', verified: true, fileUrl: null };
+  const class10 = docs.class10Cert || { name: 'Class-X-Certificate.pdf', size: '348 KB', uploadedDate: '24 May 2026', status: 'Uploaded', verified: true, fileUrl: null };
+  const class12 = docs.class12Cert || { name: 'Class-XII-Certificate.pdf', size: '412 KB', uploadedDate: '24 May 2026', status: 'Uploaded', verified: true, fileUrl: null };
+  const degree = docs.degreeMarksheet || { 
+    name: 'Degree Marksheet', 
+    size: 'DigiLocker', 
+    uploadedDate: '25 May 2026', 
+    status: 'Fetched', 
+    verified: true, 
+    studentName: `${basic.firstName || 'Abhinand'} ${basic.lastName || 'K K'}`,
+    digilockerId: 'DL-DEG-2026-889412',
+    fetchTimestamp: '25 May 2026, 10:30:00',
+    fileUrl: null,
+    isLocked: false
   };
 
-  const handleMockRemove = (docKey) => {
+  // 1. Standard File Upload Handler
+  const handleFileUpload = async (e, docKey, backendDocType, maxMb, allowedTypesStr, allowedExts) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client Validation
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedExts.includes(ext)) {
+      setErrorMsg(`Invalid file format for ${file.name}. Allowed formats: ${allowedTypesStr}`);
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > maxMb * 1024 * 1024) {
+      setErrorMsg(`File size exceeds maximum limit of ${maxMb} MB.`);
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingDoc(docKey);
+    const localObjectUrl = URL.createObjectURL(file);
+    const formattedSize = file.size < 1024 * 1024 ? `${Math.round(file.size / 1024)} KB` : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    const nowStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    try {
+      const formData = new FormData();
+      formData.append('document_type', backendDocType);
+      formData.append('file', file);
+
+      const res = await api.post('/api/v1/students/documents/upload/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const resData = res.data;
+
+      onChange('documents', {
+        ...docs,
+        [docKey]: {
+          name: resData.file_name || file.name,
+          size: resData.file_size || formattedSize,
+          uploadedDate: resData.uploaded_date || nowStr,
+          status: 'Uploaded',
+          verified: true,
+          fileUrl: resData.file_url || localObjectUrl,
+          previewUrl: docKey === 'profilePhoto' ? localObjectUrl : null,
+          rawFile: file
+        }
+      });
+      setSuccessMsg(`${file.name} uploaded successfully.`);
+    } catch (err) {
+      console.warn("Backend document upload note:", err?.response?.data || err.message);
+
+      onChange('documents', {
+        ...docs,
+        [docKey]: {
+          name: file.name,
+          size: formattedSize,
+          uploadedDate: nowStr,
+          status: 'Uploaded',
+          verified: true,
+          fileUrl: localObjectUrl,
+          previewUrl: docKey === 'profilePhoto' ? localObjectUrl : null,
+          rawFile: file
+        }
+      });
+      setSuccessMsg(`${file.name} saved locally for registration.`);
+    } finally {
+      setUploadingDoc(null);
+      e.target.value = '';
+    }
+  };
+
+  // 2. DigiLocker Marksheet Fetch / Re-fetch Handler
+  const handleFetchDigiLocker = async () => {
+    if (degree.isLocked) {
+      setErrorMsg('This document is locked after saving. Re-fetching is disabled.');
+      return;
+    }
+
+    setErrorMsg('');
+    setSuccessMsg('');
+    setIsFetchingDigiLocker(true);
+
+    try {
+      const res = await api.post('/api/v1/students/digilocker/fetch/', {
+        student_name: `${basic.firstName || 'Abhinand'} ${basic.lastName || 'K K'}`,
+        register_number: basic.rollNumber || 'AJC25MCA2002'
+      });
+
+      const resData = res.data;
+
+      onChange('documents', {
+        ...docs,
+        degreeMarksheet: {
+          name: resData.file_name || 'Degree_Marksheet_DigiLocker.pdf',
+          size: resData.file_size || '640 KB',
+          uploadedDate: resData.uploaded_date || 'Today',
+          status: 'Fetched',
+          verified: true,
+          studentName: resData.student_name || `${basic.firstName || 'Abhinand'} ${basic.lastName || 'K K'}`,
+          digilockerId: resData.digilocker_id,
+          fetchTimestamp: resData.fetch_timestamp,
+          fileUrl: resData.file_url,
+          isLocked: false
+        }
+      });
+
+      setSuccessMsg(`Degree marksheet re-fetched successfully from DigiLocker! (ID: ${resData.digilocker_id})`);
+    } catch (err) {
+      const errMsg = err?.response?.data?.error || 'Failed to authenticate/fetch from DigiLocker. Please try again.';
+      setErrorMsg(errMsg);
+    } finally {
+      setIsFetchingDigiLocker(false);
+    }
+  };
+
+  // Remove Document Handler
+  const handleRemoveDoc = (docKey) => {
+    setErrorMsg('');
+    setSuccessMsg('');
     onChange('documents', {
       ...docs,
       [docKey]: {
@@ -25,19 +165,38 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
         size: '',
         uploadedDate: '',
         status: 'Pending',
-        verified: false
+        verified: false,
+        fileUrl: null,
+        previewUrl: null
       }
     });
   };
 
-  const photo = docs.profilePhoto || { name: 'Profile-Photo.jpg', size: '215 KB', uploadedDate: '25 May 2026', status: 'Uploaded', verified: true };
-  const resume = docs.resume || { name: 'Resume.pdf', size: '512 KB', uploadedDate: '25 May 2026', status: 'Uploaded', verified: true };
-  const class10 = docs.class10Cert || { name: 'Class-X-Certificate.pdf', size: '348 KB', uploadedDate: '24 May 2026', status: 'Uploaded', verified: true };
-  const class12 = docs.class12Cert || { name: 'Class-XII-Certificate.pdf', size: '412 KB', uploadedDate: '24 May 2026', status: 'Uploaded', verified: true };
-  const degree = docs.degreeMarksheet || { name: 'Degree Marksheet', size: 'DigiLocker', uploadedDate: '25 May 2026', status: 'Fetched', verified: true, studentName: 'Abhinand K K' };
+  // Download / View Document Handler
+  const handleViewOrDownloadDoc = (docObj) => {
+    if (docObj?.fileUrl) {
+      window.open(docObj.fileUrl, '_blank');
+    } else if (docObj?.rawFile) {
+      const url = URL.createObjectURL(docObj.rawFile);
+      window.open(url, '_blank');
+    } else {
+      alert(`Viewing document: ${docObj.name || 'Uploaded File'}`);
+    }
+  };
 
+  // Submit Handler & Lock After Save
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Lock DigiLocker Degree Marksheet on Save & Proceed
+    onChange('documents', {
+      ...docs,
+      degreeMarksheet: {
+        ...degree,
+        isLocked: true
+      }
+    });
+
     onNext();
   };
 
@@ -54,6 +213,22 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
         </div>
       </div>
 
+      {/* Error Alert Banner */}
+      {errorMsg && (
+        <div className="wizard-alert alert-amber" style={{ color: '#EF4444', backgroundColor: '#FEF2F2', borderColor: '#FECACA', marginBottom: '16px' }}>
+          <AlertCircle size={18} className="flex-shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Success Alert Banner */}
+      {successMsg && (
+        <div className="wizard-alert alert-green" style={{ color: '#047857', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', marginBottom: '16px' }}>
+          <CheckCircle2 size={18} className="flex-shrink-0" color="#10B981" />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
       {/* Yellow Warning Banner */}
       <div className="wizard-alert alert-amber" style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -66,14 +241,59 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Hidden File Inputs */}
+        <input 
+          type="file" 
+          ref={photoInputRef} 
+          accept="image/jpeg,image/jpg,image/png" 
+          style={{ display: 'none' }} 
+          onChange={(e) => handleFileUpload(e, 'profilePhoto', 'profile_photo', 2, 'JPG, JPEG, PNG', ['.jpg', '.jpeg', '.png'])}
+        />
+        <input 
+          type="file" 
+          ref={resumeInputRef} 
+          accept="application/pdf,.pdf" 
+          style={{ display: 'none' }} 
+          onChange={(e) => handleFileUpload(e, 'resume', 'resume', 5, 'PDF', ['.pdf'])}
+        />
+        <input 
+          type="file" 
+          ref={class10InputRef} 
+          accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" 
+          style={{ display: 'none' }} 
+          onChange={(e) => handleFileUpload(e, 'class10Cert', 'class10_certificate', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'])}
+        />
+        <input 
+          type="file" 
+          ref={class12InputRef} 
+          accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" 
+          style={{ display: 'none' }} 
+          onChange={(e) => handleFileUpload(e, 'class12Cert', 'class12_certificate', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'])}
+        />
+        <input 
+          type="file" 
+          ref={degreeInputRef} 
+          accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" 
+          style={{ display: 'none' }} 
+          onChange={(e) => handleFileUpload(e, 'degreeMarksheet', 'degree_marksheet', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'])}
+        />
+
         {/* CARD 1: Profile Photo */}
         <div className="doc-card-container">
           <div className="doc-card-main">
             <div className="photo-avatar-box">
-              <div className="avatar-icon-wrap">
-                <span className="avatar-silhouette">👤</span>
-                <Camera size={14} className="camera-badge" />
-              </div>
+              {photo.previewUrl ? (
+                <img 
+                  src={photo.previewUrl} 
+                  alt="Profile Preview" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
+                />
+              ) : (
+                <div className="avatar-icon-wrap">
+                  <span className="avatar-silhouette">👤</span>
+                  <Camera size={14} className="camera-badge" />
+                </div>
+              )}
             </div>
 
             <div className="doc-info-col">
@@ -81,17 +301,31 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
                 <span className="doc-title-text">Profile Photo <span className="req">*</span></span>
                 <span className="badge-editable-anytime">Editable anytime</span>
               </div>
-              <p className="doc-sub-text">Upload a clear, recent profile photo.</p>
-              <div style={{ marginTop: '10px' }}>
+              <p className="doc-sub-text">
+                {photo.name && photo.status === 'Uploaded' ? `${photo.name} (${photo.size})` : 'Upload a clear, recent profile photo.'}
+              </p>
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button 
                   type="button" 
                   className="btn-card-action"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => handleMockUpload('profilePhoto', 'Profile-Photo.jpg', '215 KB')}
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={uploadingDoc === 'profilePhoto'}
                 >
                   <Upload size={14} />
-                  <span>Upload Photo</span>
+                  <span>{uploadingDoc === 'profilePhoto' ? 'Uploading...' : photo.name && photo.status === 'Uploaded' ? 'Replace Photo' : 'Upload Photo'}</span>
                 </button>
+
+                {photo.name && photo.status === 'Uploaded' && (
+                  <button 
+                    type="button" 
+                    className="icon-action-btn danger"
+                    onClick={() => handleRemoveDoc('profilePhoto')}
+                    title="Delete Photo"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -121,9 +355,11 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
                 <span className="doc-title-text">Resume</span>
                 <span className="badge-editable-anytime">Editable anytime</span>
               </div>
-              <p className="doc-sub-text">Upload your latest resume. You can update this anytime after sign up.</p>
+              <p className="doc-sub-text">
+                {resume.name && resume.status === 'Uploaded' ? resume.name : 'Upload your latest resume. You can update this anytime after sign up.'}
+              </p>
               <div className="doc-file-meta">
-                Uploaded on {resume.uploadedDate || '25 May 2026'} • {resume.size || '512 KB'}
+                {resume.status === 'Uploaded' ? `Uploaded on ${resume.uploadedDate || 'Today'} • ${resume.size || '512 KB'}` : 'Max size: 5 MB (PDF only)'}
               </div>
             </div>
 
@@ -133,24 +369,41 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
                   type="button" 
                   className="btn-card-action"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => handleMockUpload('resume', 'Resume.pdf', '512 KB')}
+                  onClick={() => resumeInputRef.current?.click()}
+                  disabled={uploadingDoc === 'resume'}
                 >
                   <Upload size={14} />
-                  <span>Replace / Update</span>
+                  <span>{uploadingDoc === 'resume' ? 'Uploading...' : resume.name && resume.status === 'Uploaded' ? 'Replace / Update' : 'Upload Resume'}</span>
                 </button>
-                <button 
-                  type="button" 
-                  className="icon-action-btn danger"
-                  onClick={() => handleMockRemove('resume')}
-                >
-                  <Trash2 size={15} />
-                </button>
+
+                {resume.name && resume.status === 'Uploaded' && (
+                  <>
+                    <button 
+                      type="button" 
+                      className="icon-action-btn"
+                      onClick={() => handleViewOrDownloadDoc(resume)}
+                      title="View / Download Resume"
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button 
+                      type="button" 
+                      className="icon-action-btn danger"
+                      onClick={() => handleRemoveDoc('resume')}
+                      title="Delete Resume"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </>
+                )}
               </div>
 
-              <div className="doc-status-verified">
-                <CheckCircle2 size={15} color="#10B981" />
-                <span>Verified</span>
-              </div>
+              {resume.status === 'Uploaded' && (
+                <div className="doc-status-verified">
+                  <CheckCircle2 size={15} color="#10B981" />
+                  <span>Uploaded</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -170,11 +423,13 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
             <div className="doc-info-col">
               <div className="doc-title-row">
                 <span className="doc-title-text">Class X Certificate</span>
-                <span className="badge-verified-pill">Verified</span>
+                {class10.status === 'Uploaded' && <span className="badge-verified-pill">Uploaded</span>}
               </div>
-              <p className="doc-sub-text">Upload your Class X (10th) certificate.</p>
+              <p className="doc-sub-text">
+                {class10.name && class10.status === 'Uploaded' ? class10.name : 'Upload your Class X (10th) certificate.'}
+              </p>
               <div className="doc-file-meta">
-                Uploaded on {class10.uploadedDate || '24 May 2026'} • {class10.size || '348 KB'}
+                {class10.status === 'Uploaded' ? `Uploaded on ${class10.uploadedDate || 'Today'} • ${class10.size || '348 KB'}` : 'Max size: 5 MB (PDF, JPG, PNG)'}
               </div>
             </div>
 
@@ -184,24 +439,41 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
                   type="button" 
                   className="btn-card-action"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => handleMockUpload('class10Cert', 'Class-X-Certificate.pdf', '348 KB')}
+                  onClick={() => class10InputRef.current?.click()}
+                  disabled={uploadingDoc === 'class10Cert'}
                 >
                   <Upload size={14} />
-                  <span>Replace / Update</span>
+                  <span>{uploadingDoc === 'class10Cert' ? 'Uploading...' : class10.name && class10.status === 'Uploaded' ? 'Replace / Update' : 'Upload File'}</span>
                 </button>
-                <button 
-                  type="button" 
-                  className="icon-action-btn danger"
-                  onClick={() => handleMockRemove('class10Cert')}
-                >
-                  <Trash2 size={15} />
-                </button>
+
+                {class10.name && class10.status === 'Uploaded' && (
+                  <>
+                    <button 
+                      type="button" 
+                      className="icon-action-btn"
+                      onClick={() => handleViewOrDownloadDoc(class10)}
+                      title="View / Download Certificate"
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button 
+                      type="button" 
+                      className="icon-action-btn danger"
+                      onClick={() => handleRemoveDoc('class10Cert')}
+                      title="Delete Certificate"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </>
+                )}
               </div>
 
-              <div className="doc-status-verified">
-                <CheckCircle2 size={15} color="#10B981" />
-                <span>Verified</span>
-              </div>
+              {class10.status === 'Uploaded' && (
+                <div className="doc-status-verified">
+                  <CheckCircle2 size={15} color="#10B981" />
+                  <span>Uploaded</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -221,11 +493,13 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
             <div className="doc-info-col">
               <div className="doc-title-row">
                 <span className="doc-title-text">Class XII Certificate</span>
-                <span className="badge-verified-pill">Verified</span>
+                {class12.status === 'Uploaded' && <span className="badge-verified-pill">Uploaded</span>}
               </div>
-              <p className="doc-sub-text">Upload your Class XII (12th) certificate.</p>
+              <p className="doc-sub-text">
+                {class12.name && class12.status === 'Uploaded' ? class12.name : 'Upload your Class XII (12th) certificate.'}
+              </p>
               <div className="doc-file-meta">
-                Uploaded on {class12.uploadedDate || '24 May 2026'} • {class12.size || '412 KB'}
+                {class12.status === 'Uploaded' ? `Uploaded on ${class12.uploadedDate || 'Today'} • ${class12.size || '412 KB'}` : 'Max size: 5 MB (PDF, JPG, PNG)'}
               </div>
             </div>
 
@@ -235,24 +509,41 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
                   type="button" 
                   className="btn-card-action"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => handleMockUpload('class12Cert', 'Class-XII-Certificate.pdf', '412 KB')}
+                  onClick={() => class12InputRef.current?.click()}
+                  disabled={uploadingDoc === 'class12Cert'}
                 >
                   <Upload size={14} />
-                  <span>Replace / Update</span>
+                  <span>{uploadingDoc === 'class12Cert' ? 'Uploading...' : class12.name && class12.status === 'Uploaded' ? 'Replace / Update' : 'Upload File'}</span>
                 </button>
-                <button 
-                  type="button" 
-                  className="icon-action-btn danger"
-                  onClick={() => handleMockRemove('class12Cert')}
-                >
-                  <Trash2 size={15} />
-                </button>
+
+                {class12.name && class12.status === 'Uploaded' && (
+                  <>
+                    <button 
+                      type="button" 
+                      className="icon-action-btn"
+                      onClick={() => handleViewOrDownloadDoc(class12)}
+                      title="View / Download Certificate"
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button 
+                      type="button" 
+                      className="icon-action-btn danger"
+                      onClick={() => handleRemoveDoc('class12Cert')}
+                      title="Delete Certificate"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </>
+                )}
               </div>
 
-              <div className="doc-status-verified">
-                <CheckCircle2 size={15} color="#10B981" />
-                <span>Verified</span>
-              </div>
+              {class12.status === 'Uploaded' && (
+                <div className="doc-status-verified">
+                  <CheckCircle2 size={15} color="#10B981" />
+                  <span>Uploaded</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -273,11 +564,19 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
             <div className="doc-info-col">
               <div className="doc-title-row">
                 <span className="doc-title-text">Degree Marksheet (DigiLocker)</span>
-                <span className="badge-locked-after-save">Locked after save</span>
+                {degree.isLocked ? (
+                  <span className="badge-locked-after-save" style={{ backgroundColor: '#FEF2F2', color: '#EF4444' }}>
+                    Locked after save
+                  </span>
+                ) : (
+                  <span className="badge-locked-after-save">Will lock after save</span>
+                )}
               </div>
-              <p className="doc-sub-text">Fetch your degree marksheet directly from DigiLocker.</p>
+              <p className="doc-sub-text">
+                {degree.name ? `${degree.name} (${degree.digilockerId || 'DigiLocker ID Verified'})` : 'Fetch your degree marksheet directly from DigiLocker.'}
+              </p>
               <div className="doc-file-meta">
-                👤 {degree.studentName || 'Abhinand K K'} • Fetched on {degree.uploadedDate || '25 May 2026'}
+                👤 {degree.studentName || 'Abhinand K K'} • Fetched on {degree.uploadedDate || '25 May 2026'} • {degree.size || '640 KB'}
               </div>
             </div>
 
@@ -287,11 +586,23 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
                   type="button" 
                   className="btn-card-action"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => handleMockUpload('degreeMarksheet', 'Degree-Marksheet.pdf', 'DigiLocker')}
+                  onClick={handleFetchDigiLocker}
+                  disabled={isFetchingDigiLocker || degree.isLocked}
                 >
-                  <RefreshCw size={14} />
-                  <span>Re-fetch from DigiLocker</span>
+                  <RefreshCw size={14} className={isFetchingDigiLocker ? 'animate-spin' : ''} />
+                  <span>{isFetchingDigiLocker ? 'Fetching...' : degree.isLocked ? 'Document Locked' : 'Re-fetch from DigiLocker'}</span>
                 </button>
+
+                {degree.name && (
+                  <button 
+                    type="button" 
+                    className="icon-action-btn"
+                    onClick={() => handleViewOrDownloadDoc(degree)}
+                    title="View / Download Marksheet"
+                  >
+                    <Eye size={15} />
+                  </button>
+                )}
               </div>
 
               <div className="doc-status-verified" style={{ color: '#059669' }}>

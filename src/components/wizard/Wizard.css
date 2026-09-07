@@ -1576,23 +1576,107 @@
   margin-top: 2px;
 }
 
-.form-control {
+.form-control,
+input.form-control,
+select.form-control,
+textarea.form-control {
   font-family: inherit;
   font-size: 14px;
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid var(--wizard-border);
-  background-color: #FFFFFF;
-  color: var(--wizard-text-main);
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  -webkit-text-fill-color: #0F172A !important;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
   box-sizing: border-box;
+  opacity: 1 !important;
+}
+
+.form-control::placeholder,
+input.form-control::placeholder,
+textarea.form-control::placeholder {
+  color: #64748B !important;
+  -webkit-text-fill-color: #64748B !important;
+  opacity: 1 !important;
+}
+
+select.form-control {
+  color: #0F172A !important;
+  background-color: #FFFFFF !important;
+  cursor: pointer;
+}
+
+select.form-control option {
+  color: #0F172A !important;
+  background-color: #FFFFFF !important;
+}
+
+select.form-control option[value=""],
+select.form-control option:disabled {
+  color: #64748B !important;
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+  background-color: #F8FAFC !important;
+  color: #475569 !important;
+  -webkit-text-fill-color: #475569 !important;
+  opacity: 0.85 !important;
+  cursor: not-allowed;
+}
+
+/* High-Contrast Date Input Visibility Fix */
+input[type="date"].form-control,
+input[type="month"].form-control,
+.form-control[type="date"],
+.form-control[type="month"] {
+  color: #0F172A !important;
+  background-color: #FFFFFF !important;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  -webkit-text-fill-color: #0F172A !important;
+  opacity: 1 !important;
+  min-height: 42px;
+}
+
+input[type="date"].form-control::-webkit-datetime-edit,
+input[type="date"].form-control::-webkit-datetime-edit-fields-wrapper,
+input[type="date"].form-control::-webkit-datetime-edit-text,
+input[type="date"].form-control::-webkit-datetime-edit-month-field,
+input[type="date"].form-control::-webkit-datetime-edit-day-field,
+input[type="date"].form-control::-webkit-datetime-edit-year-field,
+.form-control[type="date"]::-webkit-datetime-edit,
+.form-control[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.form-control[type="date"]::-webkit-datetime-edit-text,
+.form-control[type="date"]::-webkit-datetime-edit-month-field,
+.form-control[type="date"]::-webkit-datetime-edit-day-field,
+.form-control[type="date"]::-webkit-datetime-edit-year-field {
+  color: #0F172A !important;
+  -webkit-text-fill-color: #0F172A !important;
+  font-weight: 600;
+}
+
+input[type="date"].form-control::-webkit-calendar-picker-indicator,
+.form-control[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+input[type="date"].form-control::-webkit-calendar-picker-indicator:hover,
+.form-control[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .form-control.invalid {
-  border-color: var(--wizard-red);
-  background-color: #FEF2F2;
+  border-color: var(--wizard-red) !important;
+  background-color: #FEF2F2 !important;
+  color: #991B1B !important;
+  -webkit-text-fill-color: #991B1B !important;
 }
 
 .form-control:focus {

@@ -196,7 +196,7 @@ export default function Hero({ role = 'officer', onOpenWizard }) {
           <div className="hero-banner-visual">
             <div className="hanging-banner">
               <div className="banner-logo-wrap">
-                <Shield size={28} className="banner-logo-icon" />
+                <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
                 <div className="banner-logo-title">PLACENTRA</div>
               </div>
               <div className="banner-motto">

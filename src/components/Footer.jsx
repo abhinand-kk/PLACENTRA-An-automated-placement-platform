@@ -35,8 +35,8 @@ export default function Footer() {
           {/* Col 1: Brand & Tagline */}
           <div className="footer-col brand-col">
             <div className="footer-logo">
-              <div className="logo-icon-wrap">
-                <Shield className="logo-shield" />
+              <div className="logo-icon-wrap" style={{ background: 'transparent', boxShadow: 'none' }}>
+                <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
               </div>
               <span className="logo-text">PLACENTRA</span>
             </div>

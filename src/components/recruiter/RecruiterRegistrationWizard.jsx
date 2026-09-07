@@ -5,6 +5,7 @@ import RecruiterSidebar from './RecruiterSidebar';
 import Step1BasicCompanyDetails from './steps/Step1BasicCompanyDetails';
 import Step2HiringPreferences from './steps/Step2HiringPreferences';
 import Step3RecruiterReviewSubmit from './steps/Step3RecruiterReviewSubmit';
+import StepSavedToast from '../common/StepSavedToast';
 import { ArrowLeft } from 'lucide-react';
 import '../wizard/Wizard.css';
 
@@ -14,6 +15,9 @@ export default function RecruiterRegistrationWizard() {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [recruiterState, setRecruiterState] = useState(initialRecruiterRegistrationState);
 
+  // Toast state
+  const [toastInfo, setToastInfo] = useState({ show: false, summary: '' });
+
   const handleStateChange = (section, sectionData) => {
     setRecruiterState(prev => ({
       ...prev,
@@ -21,12 +25,31 @@ export default function RecruiterRegistrationWizard() {
     }));
   };
 
+  const getStepSummary = (stepNum) => {
+    const c = recruiterState.companyDetails;
+    const h = recruiterState.hiringPreferences;
+
+    switch (stepNum) {
+      case 1:
+        return c?.companyName ? `${c.companyName} • ${c.recruiterName || 'Recruiter'} (${c.officialEmail || ''})` : 'Basic company details saved.';
+      case 2:
+        return h?.packageOffered ? `Package: ${h.packageOffered} LPA • Month: ${h.expectedHiringMonth || 'TBD'}` : 'Hiring preferences & package details saved.';
+      default:
+        return 'Recruiter step details saved successfully.';
+    }
+  };
+
   const handleNextStep = () => {
+    const summaryText = getStepSummary(currentStep);
+
     if (!completedSteps.includes(currentStep)) {
       setCompletedSteps(prev => [...prev, currentStep]);
     }
     setCurrentStep(prev => Math.min(3, prev + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Trigger floating toast
+    setToastInfo({ show: true, summary: summaryText });
   };
 
   const handlePrevStep = () => {
@@ -99,6 +122,15 @@ export default function RecruiterRegistrationWizard() {
           )}
         </main>
       </div>
+
+      {/* Step Saved Toast */}
+      {toastInfo.show && (
+        <StepSavedToast 
+          title="Saved Successfully"
+          summary={toastInfo.summary}
+          onClose={() => setToastInfo({ show: false, summary: '' })}
+        />
+      )}
     </div>
   );
 }

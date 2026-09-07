@@ -8,6 +8,7 @@ import Step4PreviousEducation from './steps/Step4PreviousEducation';
 import Step5Experience from './steps/Step5Experience';
 import Step6Documents from './steps/Step6Documents';
 import Step7ReviewSubmit from './steps/Step7ReviewSubmit';
+import StepSavedToast from '../common/StepSavedToast';
 import { ArrowLeft } from 'lucide-react';
 import './Wizard.css';
 
@@ -17,6 +18,9 @@ export default function RegistrationWizard({ onExitWizard }) {
   const [activeStep, setActiveStep] = useState(1);
   const [maxReachedStep, setMaxReachedStep] = useState(1);
 
+  // Toast state
+  const [toastInfo, setToastInfo] = useState({ show: false, summary: '' });
+
   const handleStateChange = (sectionKey, updatedSectionData) => {
     setWizardState(prev => ({
       ...prev,
@@ -24,13 +28,42 @@ export default function RegistrationWizard({ onExitWizard }) {
     }));
   };
 
+  const getStepSummary = (stepNum) => {
+    const b = wizardState.basicDetails;
+    const c = wizardState.contactVerification;
+    const edu = wizardState.currentEducation;
+
+    switch (stepNum) {
+      case 1:
+        return b?.firstName ? `${b.firstName} ${b.lastName} • Reg: ${b.registerNumber || 'Student'}` : 'Basic details saved.';
+      case 2:
+        return c?.officialEmail ? `Email: ${c.officialEmail} • Mobile: ${c.mobileNumber || 'Verified'}` : 'Contact information saved.';
+      case 3:
+        return edu?.institutionName ? `${edu.institutionName} • ${edu.degreeCourse || 'Degree'}` : 'Current education saved.';
+      case 4:
+        return 'Previous academic scores & records saved.';
+      case 5:
+        return 'Skills, internships & project details saved.';
+      case 6:
+        return 'Resume and documents uploaded successfully.';
+      default:
+        return 'Step data saved successfully.';
+    }
+  };
+
   const handleNextStep = () => {
+    // Generate summary for the step being completed
+    const summaryText = getStepSummary(activeStep);
+
     const next = Math.min(activeStep + 1, 7);
     setActiveStep(next);
     if (next > maxReachedStep) {
       setMaxReachedStep(next);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Show step saved toast
+    setToastInfo({ show: true, summary: summaryText });
   };
 
   const handlePrevStep = () => {
@@ -96,6 +129,15 @@ export default function RegistrationWizard({ onExitWizard }) {
           {renderActiveStepComponent()}
         </main>
       </div>
+
+      {/* Toast Component */}
+      {toastInfo.show && (
+        <StepSavedToast 
+          title="Saved Successfully"
+          summary={toastInfo.summary}
+          onClose={() => setToastInfo({ show: false, summary: '' })}
+        />
+      )}
     </div>
   );
 }

@@ -1,16 +1,22 @@
-import React from 'react';
-import { User, LogIn, UserPlus, Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { User, LogIn, UserPlus, Shield, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import LoginModal from './LoginModal';
 import './Navbar.css';
 
 export default function Navbar({ activeRole = 'officer', onRoleChange, onOpenWizard }) {
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const { token, user, logout } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <header className="navbar-header">
       <div className="container navbar-container">
         {/* Brand Logo */}
-        <div className="navbar-logo" onClick={() => onRoleChange && onRoleChange('student')}>
-          <div className="logo-icon-wrap">
-            <Shield className="logo-shield" />
-            <span className="logo-dot"></span>
+        <div className="navbar-logo" onClick={() => navigate('/')}>
+          <div className="logo-icon-wrap" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '34px', width: 'auto', objectFit: 'contain' }} />
           </div>
           <span className="logo-text">PLACENTRA</span>
         </div>
@@ -45,12 +51,21 @@ export default function Navbar({ activeRole = 'officer', onRoleChange, onOpenWiz
             <span>Student Registration Wizard</span>
             <UserPlus size={16} />
           </button>
-          <button className="btn btn-dark btn-login">
-            <span>Login</span>
-            <LogIn size={16} />
-          </button>
+          {token ? (
+            <button className="btn btn-dark btn-login" onClick={logout}>
+              <span>Logout ({user?.username || 'User'})</span>
+              <LogOut size={16} />
+            </button>
+          ) : (
+            <button className="btn btn-dark btn-login" onClick={() => navigate('/login')}>
+              <span>Login</span>
+              <LogIn size={16} />
+            </button>
+          )}
         </div>
       </div>
+
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </header>
   );
 }

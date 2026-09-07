@@ -13,8 +13,8 @@ export default function OfficerSidebar({ currentStep = 1, completedSteps = [] })
       <div>
         {/* Logo Banner */}
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">
-            <Shield size={20} />
+          <div className="sidebar-logo-icon" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
           </div>
           <span className="sidebar-logo-text">PLACENTRA</span>
         </div>

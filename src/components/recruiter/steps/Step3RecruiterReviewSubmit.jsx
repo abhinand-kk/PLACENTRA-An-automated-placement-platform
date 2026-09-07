@@ -1,17 +1,98 @@
 import React, { useState } from 'react';
 import { CheckCircle2, ArrowLeft, ArrowRight, Edit3, Building2, Sliders, AlertCircle } from 'lucide-react';
 import RecruiterProcessingScreen from '../RecruiterProcessingScreen';
+import AccountPasswordCard from '../../common/AccountPasswordCard';
+import api from '../../../services/api';
 
 export default function Step3RecruiterReviewSubmit({ state, onJumpToStep, onBack, onCompleteDashboard }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Password States
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const { basicCompanyDetails, hiringPreferences } = state;
 
   const company = basicCompanyDetails || {};
   const pref = hiringPreferences || {};
 
-  const handleFinalSubmit = () => {
-    setIsSubmitting(true);
+  const validatePassword = () => {
+    if (!password) {
+      setErrorMessage('Account Password is required.');
+      return false;
+    }
+    if (!confirmPassword) {
+      setErrorMessage('Confirm Password is required.');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match. Please verify your passwords.');
+      return false;
+    }
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+      setErrorMessage('Password does not meet all complexity requirements.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleFinalSubmit = async () => {
+    setErrorMessage('');
+    if (!validatePassword()) {
+      return;
+    }
+
+    try {
+      const email = (company.workEmail || 'recruiter@company.com').trim().toLowerCase();
+      const username = (email.split('@')[0] || 'recruiter').toLowerCase();
+
+      const payload = {
+        username: username,
+        email: email,
+        password: password,
+        company_name: company.companyName || 'Acme Corporation Pvt Ltd',
+        recruiter_name: company.recruiterFullName || 'Recruiter User',
+        designation: company.designation || 'Hiring Manager',
+        official_email: email,
+        mobile_number: company.mobileNumber || '9876543210',
+        hiring_volume: company.hiringVolume || '1-10'
+      };
+
+      const res = await api.post('/api/v1/auth/recruiter/register/', payload);
+      if (res.data && res.data.tokens) {
+        localStorage.setItem('access_token', res.data.tokens.access);
+        localStorage.setItem('refresh_token', res.data.tokens.refresh);
+        localStorage.setItem('user_role', 'recruiter');
+        localStorage.setItem('user', JSON.stringify(res.data.user || {}));
+      }
+      setIsSubmitting(true);
+    } catch (err) {
+      console.error("API recruiter registration error:", err?.response?.data || err.message);
+      const backendError = err?.response?.data;
+      let errorStr = 'Registration failed. Please try again.';
+      if (backendError) {
+        if (typeof backendError === 'string') {
+          errorStr = backendError;
+        } else if (backendError.email) {
+          errorStr = Array.isArray(backendError.email) ? backendError.email[0] : backendError.email;
+        } else if (backendError.error) {
+          errorStr = backendError.error;
+        } else if (backendError.detail) {
+          errorStr = backendError.detail;
+        } else if (backendError.non_field_errors) {
+          errorStr = Array.isArray(backendError.non_field_errors) ? backendError.non_field_errors[0] : backendError.non_field_errors;
+        }
+      }
+      setErrorMessage(errorStr);
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitting) {
@@ -40,6 +121,13 @@ export default function Step3RecruiterReviewSubmit({ state, onJumpToStep, onBack
           <p>Please review all your company details carefully before final submission.</p>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="wizard-alert alert-amber" style={{ marginBottom: '16px', color: '#EF4444', backgroundColor: '#FEF2F2', borderColor: '#FECACA' }}>
+          <AlertCircle size={18} className="flex-shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {/* Yellow Warning Banner */}
       <div className="wizard-alert alert-amber" style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -179,12 +267,22 @@ export default function Step3RecruiterReviewSubmit({ state, onJumpToStep, onBack
         </div>
       </div>
 
+      {/* Account Password Creation Card */}
+      <AccountPasswordCard 
+        password={password}
+        setPassword={setPassword}
+        confirmPassword={confirmPassword}
+        setConfirmPassword={setConfirmPassword}
+        error={errorMessage}
+        setError={setErrorMessage}
+      />
+
       {/* Green Success Box */}
       <div className="wizard-alert alert-green" style={{ margin: '20px 0 0 0' }}>
         <CheckCircle2 size={20} className="flex-shrink-0" color="#10B981" />
         <div>
           <strong style={{ fontSize: '14px', display: 'block', marginBottom: '2px' }}>Everything looks good!</strong>
-          <span style={{ fontSize: '13px', color: '#047857' }}>Please review your company information before submitting.</span>
+          <span style={{ fontSize: '13px', color: '#047857' }}>Set your account password above and submit your registration.</span>
         </div>
       </div>
 

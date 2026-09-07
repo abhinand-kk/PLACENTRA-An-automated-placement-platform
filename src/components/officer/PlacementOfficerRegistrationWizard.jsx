@@ -5,6 +5,7 @@ import OfficerSidebar from './OfficerSidebar';
 import Step1OfficerBasicDetails from './steps/Step1OfficerBasicDetails';
 import Step2OfficerInstitutionDetails from './steps/Step2OfficerInstitutionDetails';
 import Step3OfficerReviewSubmit from './steps/Step3OfficerReviewSubmit';
+import StepSavedToast from '../common/StepSavedToast';
 import { ArrowLeft } from 'lucide-react';
 import '../wizard/Wizard.css';
 
@@ -14,6 +15,9 @@ export default function PlacementOfficerRegistrationWizard() {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [officerState, setOfficerState] = useState(initialPlacementOfficerRegistrationState);
 
+  // Toast state
+  const [toastInfo, setToastInfo] = useState({ show: false, summary: '' });
+
   const handleStateChange = (section, sectionData) => {
     setOfficerState(prev => ({
       ...prev,
@@ -21,12 +25,31 @@ export default function PlacementOfficerRegistrationWizard() {
     }));
   };
 
+  const getStepSummary = (stepNum) => {
+    const o = officerState.officerDetails;
+    const inst = officerState.institutionDetails;
+
+    switch (stepNum) {
+      case 1:
+        return o?.fullName ? `${o.fullName} • ${o.designation || 'Officer'} (${o.officialEmail || ''})` : 'Officer contact details saved.';
+      case 2:
+        return inst?.institutionName ? `${inst.institutionName} • Strength: ${inst.studentStrength || '0'} Students` : 'Institution details saved.';
+      default:
+        return 'Placement officer step details saved successfully.';
+    }
+  };
+
   const handleNextStep = () => {
+    const summaryText = getStepSummary(currentStep);
+
     if (!completedSteps.includes(currentStep)) {
       setCompletedSteps(prev => [...prev, currentStep]);
     }
     setCurrentStep(prev => Math.min(3, prev + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Trigger floating toast
+    setToastInfo({ show: true, summary: summaryText });
   };
 
   const handlePrevStep = () => {
@@ -99,6 +122,15 @@ export default function PlacementOfficerRegistrationWizard() {
           )}
         </main>
       </div>
+
+      {/* Step Saved Toast */}
+      {toastInfo.show && (
+        <StepSavedToast 
+          title="Saved Successfully"
+          summary={toastInfo.summary}
+          onClose={() => setToastInfo({ show: false, summary: '' })}
+        />
+      )}
     </div>
   );
 }

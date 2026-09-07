@@ -16,6 +16,15 @@ import RecruiterRegistrationWizard from './components/recruiter/RecruiterRegistr
 import RecruiterDashboard from './components/recruiter/RecruiterDashboard';
 import PlacementOfficerRegistrationWizard from './components/officer/PlacementOfficerRegistrationWizard';
 import OfficerDashboard from './components/officer/OfficerDashboard';
+import StudentDashboard from './components/student/StudentDashboard';
+import StudentProfileEdit from './components/student/StudentProfileEdit';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+
+function StudentRegisterRoute() {
+  const navigate = useNavigate();
+  return <RegistrationWizard onExitWizard={() => navigate('/')} />;
+}
 
 function MainLandingApp() {
   const [role, setRole] = useState('officer');
@@ -52,10 +61,25 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<MainLandingApp />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/student/register" element={<StudentRegisterRoute />} />
       <Route path="/recruiter/register" element={<RecruiterRegistrationWizard />} />
-      <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
       <Route path="/placement-officer/register" element={<PlacementOfficerRegistrationWizard />} />
-      <Route path="/placement-officer/dashboard" element={<OfficerDashboard />} />
+
+      {/* Protected Routes */}
+      <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/student/profile/edit" element={<StudentProfileEdit />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['recruiter']} />}>
+        <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={['placement_officer']} />}>
+        <Route path="/placement-officer/dashboard" element={<OfficerDashboard />} />
+      </Route>
+
       <Route path="*" element={<MainLandingApp />} />
     </Routes>
   );
