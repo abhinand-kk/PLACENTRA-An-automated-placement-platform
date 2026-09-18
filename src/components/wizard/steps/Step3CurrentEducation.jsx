@@ -93,8 +93,54 @@ export default function Step3CurrentEducation({ state, onChange, onNext, onBack 
     });
   };
 
+  const [touched, setTouched] = useState({});
+
+  const handleBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const getStartDateError = (sDate) => {
+    if (!sDate) return "Course start date is required.";
+    if (sDate > todayStr) {
+      return "Course start date cannot be in the future.";
+    }
+    return "";
+  };
+
+  const getEndDateError = (sDate, eDate) => {
+    if (!eDate) return "Course end date is required.";
+    if (sDate && eDate <= sDate) {
+      return "Course end date must be after the course start date.";
+    }
+    return "";
+  };
+
+  const getBatchError = (eDate, bVal) => {
+    if (!bVal) return "Batch selection is required.";
+    if (eDate) {
+      const endYear = eDate.split('-')[0];
+      const batchYear = (bVal || '').match(/\d{4}/)?.[0];
+      if (endYear && batchYear && endYear !== batchYear) {
+        return "Batch year must match the course graduation year.";
+      }
+    }
+    return "";
+  };
+
+  const startDateError = getStartDateError(startDate);
+  const endDateError = getEndDateError(startDate, expectedEndDate);
+  const batchError = getBatchError(expectedEndDate, batch);
+
+  const isFormValid = !startDateError && !endDateError && !batchError;
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    setTouched({ startDate: true, expectedEndDate: true, batch: true });
+    if (!isFormValid) {
+      return;
+    }
     onChange('currentEducation', {
       status,
       fieldOfStudy,
@@ -351,12 +397,17 @@ export default function Step3CurrentEducation({ state, onChange, onNext, onBack 
             <div className="input-with-icon">
               <input 
                 type="date" 
-                className="form-control"
+                className={`form-control ${touched.startDate && startDateError ? 'invalid' : ''}`}
                 value={startDate}
+                max={todayStr}
                 onChange={(e) => handleChange('startDate', e.target.value)}
+                onBlur={() => handleBlur('startDate')}
                 required
               />
             </div>
+            {touched.startDate && startDateError && (
+              <span className="error-text">{startDateError}</span>
+            )}
           </div>
 
           {/* End Date */}
@@ -365,31 +416,38 @@ export default function Step3CurrentEducation({ state, onChange, onNext, onBack 
             <div className="input-with-icon">
               <input 
                 type="date" 
-                className="form-control"
+                className={`form-control ${touched.expectedEndDate && endDateError ? 'invalid' : ''}`}
                 value={expectedEndDate}
+                min={startDate || ''}
                 onChange={(e) => handleChange('expectedEndDate', e.target.value)}
+                onBlur={() => handleBlur('expectedEndDate')}
                 required
               />
             </div>
             <span className="sub-caption">Expected course graduation date</span>
+            {touched.expectedEndDate && endDateError && (
+              <span className="error-text">{endDateError}</span>
+            )}
           </div>
 
           {/* Batch */}
           <div className="form-group">
             <label className="form-label">Batch <span className="req">*</span></label>
             <select 
-              className="form-control"
+              className={`form-control ${touched.batch && batchError ? 'invalid' : ''}`}
               value={batch}
               onChange={(e) => handleChange('batch', e.target.value)}
+              onBlur={() => handleBlur('batch')}
               required
             >
               <option value="">Select Batch</option>
-              <option value="2024 Passout Batch">2024 Passout Batch</option>
-              <option value="2025 Passout Batch">2025 Passout Batch</option>
-              <option value="2026 Passout Batch">2026 Passout Batch</option>
-              <option value="2027 Passout Batch">2027 Passout Batch</option>
-              <option value="2028 Passout Batch">2028 Passout Batch</option>
+              {['2024', '2025', '2026', '2027', '2028', '2029', '2030'].map(y => (
+                <option key={y} value={`${y} Passout Batch`}>{y} Passout Batch</option>
+              ))}
             </select>
+            {touched.batch && batchError && (
+              <span className="error-text">{batchError}</span>
+            )}
           </div>
         </div>
 

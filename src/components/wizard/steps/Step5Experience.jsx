@@ -104,6 +104,10 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
 
   const handleSaveSubmit = (e) => {
     e.preventDefault();
+    if (!form.isCurrent && form.startDate && form.endDate && new Date(form.endDate) < new Date(form.startDate)) {
+      alert("End date cannot be earlier than start date.");
+      return;
+    }
     let updatedList;
     if (editingId) {
       updatedList = list.map(item => item.id === editingId ? { ...form, id: editingId } : item);

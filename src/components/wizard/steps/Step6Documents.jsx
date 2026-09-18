@@ -37,22 +37,28 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
   };
 
   // 1. Standard File Upload Handler
-  const handleFileUpload = async (e, docKey, backendDocType, maxMb, allowedTypesStr, allowedExts) => {
+  const handleFileUpload = async (e, docKey, backendDocType, maxMb, allowedTypesStr, allowedExts, allowedMimeTypes = [], customTypeMsg = '') => {
     setErrorMsg('');
     setSuccessMsg('');
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Client Validation
+    // Client Validation: File extension & MIME type
     const ext = '.' + file.name.split('.').pop().toLowerCase();
-    if (!allowedExts.includes(ext)) {
-      setErrorMsg(`Invalid file format for ${file.name}. Allowed formats: ${allowedTypesStr}`);
+    const mimeType = (file.type || '').toLowerCase();
+
+    const isExtValid = allowedExts.includes(ext);
+    const isMimeValid = !mimeType || allowedMimeTypes.length === 0 || allowedMimeTypes.includes(mimeType);
+
+    if (!isExtValid || !isMimeValid) {
+      const typeError = customTypeMsg || `Invalid file format for ${file.name}. Allowed formats: ${allowedTypesStr}`;
+      setErrorMsg(typeError);
       e.target.value = '';
       return;
     }
 
     if (file.size > maxMb * 1024 * 1024) {
-      setErrorMsg(`File size exceeds maximum limit of ${maxMb} MB.`);
+      setErrorMsg(`File size must not exceed ${maxMb} MB.`);
       e.target.value = '';
       return;
     }
@@ -89,6 +95,13 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
       setSuccessMsg(`${file.name} uploaded successfully.`);
     } catch (err) {
       console.warn("Backend document upload note:", err?.response?.data || err.message);
+
+      // If backend explicitly rejected the file (e.g. 400 Bad Request), display error and DO NOT save locally
+      if (err?.response?.status === 400 || err?.response?.data?.error) {
+        const backendErrorStr = err?.response?.data?.error || `Failed to upload ${file.name}.`;
+        setErrorMsg(backendErrorStr);
+        return;
+      }
 
       onChange('documents', {
         ...docs,
@@ -247,35 +260,35 @@ export default function Step6Documents({ state, onChange, onNext, onBack }) {
           ref={photoInputRef} 
           accept="image/jpeg,image/jpg,image/png" 
           style={{ display: 'none' }} 
-          onChange={(e) => handleFileUpload(e, 'profilePhoto', 'profile_photo', 2, 'JPG, JPEG, PNG', ['.jpg', '.jpeg', '.png'])}
+          onChange={(e) => handleFileUpload(e, 'profilePhoto', 'profile_photo', 2, 'JPG, JPEG, PNG', ['.jpg', '.jpeg', '.png'], ['image/jpeg', 'image/png', 'image/jpg'], 'Invalid file type. Profile photo must be a JPG, JPEG, or PNG file.')}
         />
         <input 
           type="file" 
           ref={resumeInputRef} 
           accept="application/pdf,.pdf" 
           style={{ display: 'none' }} 
-          onChange={(e) => handleFileUpload(e, 'resume', 'resume', 5, 'PDF', ['.pdf'])}
+          onChange={(e) => handleFileUpload(e, 'resume', 'resume', 5, 'PDF', ['.pdf'], ['application/pdf'], 'Invalid file type. Resume must be a PDF file.')}
         />
         <input 
           type="file" 
           ref={class10InputRef} 
           accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" 
           style={{ display: 'none' }} 
-          onChange={(e) => handleFileUpload(e, 'class10Cert', 'class10_certificate', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'])}
+          onChange={(e) => handleFileUpload(e, 'class10Cert', 'class10_certificate', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'], ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'], 'Invalid file type. Please upload a PDF, JPG, JPEG, or PNG file.')}
         />
         <input 
           type="file" 
           ref={class12InputRef} 
           accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" 
           style={{ display: 'none' }} 
-          onChange={(e) => handleFileUpload(e, 'class12Cert', 'class12_certificate', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'])}
+          onChange={(e) => handleFileUpload(e, 'class12Cert', 'class12_certificate', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'], ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'], 'Invalid file type. Please upload a PDF, JPG, JPEG, or PNG file.')}
         />
         <input 
           type="file" 
           ref={degreeInputRef} 
           accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" 
           style={{ display: 'none' }} 
-          onChange={(e) => handleFileUpload(e, 'degreeMarksheet', 'degree_marksheet', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'])}
+          onChange={(e) => handleFileUpload(e, 'degreeMarksheet', 'degree_marksheet', 5, 'PDF, JPG, PNG', ['.pdf', '.jpg', '.jpeg', '.png'], ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'], 'Invalid file type. Please upload a PDF, JPG, JPEG, or PNG file.')}
         />
 
         {/* CARD 1: Profile Photo */}

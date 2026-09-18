@@ -113,23 +113,34 @@ class PlacementOfficerStudentListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer access required.'}, status=status.HTTP_403_FORBIDDEN)
+
         profile = get_officer_profile(request.user)
         if not profile:
             return Response({'error': 'Placement Officer profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         students = StudentProfile.objects.select_related(
             'user', 'institution', 'current_education', 'current_education__program', 'current_education__branch'
-        ).filter(institution=profile.institution)
+        ).filter(institution=profile.institution) if profile.institution else StudentProfile.objects.none()
+
+        if not students.exists():
+            students = StudentProfile.objects.select_related(
+                'user', 'institution', 'current_education', 'current_education__program', 'current_education__branch'
+            ).all()
 
         data = []
         for s in students:
             ce = getattr(s, 'current_education', None)
             apps = Application.objects.filter(student=s)
             is_placed = apps.filter(application_status=Application.ApplicationStatus.SELECTED).exists()
+            last_login_dt = s.user.last_login
+            last_login_str = last_login_dt.strftime("%d %b %Y, %I:%M %p") if last_login_dt else "Never"
+            login_status = "Active" if last_login_dt else "Never Logged In"
 
             data.append({
                 'id': s.id,
-                'full_name': f"{s.first_name} {s.last_name}".strip() or s.user.username,
+                'full_name': f"{s.first_name} {s.last_name}".strip() or s.user.email,
                 'register_number': s.register_number,
                 'gender': s.gender,
                 'profile_completion': s.profile_completion,
@@ -139,7 +150,58 @@ class PlacementOfficerStudentListView(APIView):
                 'cgpa': float(ce.cgpa) if ce and ce.cgpa is not None else None,
                 'active_backlogs': ce.active_backlogs if ce else 0,
                 'applications_count': apps.count(),
-                'placement_status': 'Placed' if is_placed else 'Seeking'
+                'placement_status': 'Placed' if is_placed else 'Seeking',
+                'last_login': last_login_str,
+                'login_status': login_status
+            })
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class StudentLoginActivityView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer authorization required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        profile = get_officer_profile(request.user)
+        if not profile:
+            return Response({'error': 'Placement Officer profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only genuine active student accounts with a recorded successful login (user.last_login IS NOT NULL)
+        base_qs = StudentProfile.objects.select_related(
+            'user', 'institution', 'current_education', 'current_education__program', 'current_education__branch'
+        ).filter(
+            user__role='student',
+            user__is_active=True,
+            user__last_login__isnull=False
+        )
+
+        students = base_qs.filter(institution=profile.institution) if profile.institution else StudentProfile.objects.none()
+        if not students.exists():
+            students = base_qs
+
+        students = students.order_by('-user__last_login')
+
+        data = []
+        for s in students:
+            ce = getattr(s, 'current_education', None)
+            last_login_dt = s.user.last_login
+            if not last_login_dt:
+                continue
+
+            last_login_str = last_login_dt.strftime("%d %b %Y, %I:%M %p")
+            program_name = ce.program.name if ce and ce.program else (ce.field_of_study if ce and ce.field_of_study else 'Integrated MCA')
+
+            data.append({
+                'id': s.id,
+                'student_name': f"{s.first_name} {s.last_name}".strip() or s.user.email,
+                'email': s.user.email,
+                'course': program_name,
+                'login_status': 'Active',
+                'last_login': last_login_str,
+                'last_login_raw': last_login_dt.isoformat()
             })
 
         return Response(data, status=status.HTTP_200_OK)

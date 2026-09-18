@@ -80,6 +80,8 @@ export default function Step3RecruiterReviewSubmit({ state, onJumpToStep, onBack
       if (backendError) {
         if (typeof backendError === 'string') {
           errorStr = backendError;
+        } else if (backendError.official_email) {
+          errorStr = Array.isArray(backendError.official_email) ? backendError.official_email[0] : backendError.official_email;
         } else if (backendError.email) {
           errorStr = Array.isArray(backendError.email) ? backendError.email[0] : backendError.email;
         } else if (backendError.error) {
@@ -88,6 +90,12 @@ export default function Step3RecruiterReviewSubmit({ state, onJumpToStep, onBack
           errorStr = backendError.detail;
         } else if (backendError.non_field_errors) {
           errorStr = Array.isArray(backendError.non_field_errors) ? backendError.non_field_errors[0] : backendError.non_field_errors;
+        } else if (typeof backendError === 'object') {
+          const firstKey = Object.keys(backendError)[0];
+          if (firstKey && backendError[firstKey]) {
+            const val = backendError[firstKey];
+            errorStr = Array.isArray(val) ? val[0] : String(val);
+          }
         }
       }
       setErrorMessage(errorStr);

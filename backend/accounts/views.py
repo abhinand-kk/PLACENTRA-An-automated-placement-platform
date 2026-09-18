@@ -89,6 +89,8 @@ class LoginView(APIView):
             print("LOGIN SUCCESS")
 
             user = serializer.validated_data['user']
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
             tokens = get_tokens_for_user(user)
 
             return Response({
@@ -247,3 +249,40 @@ class CurrentUserView(APIView):
     def get(self, request):
         serializer = UserDetailSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not old_password or not new_password or not confirm_password:
+            return Response({
+                'error': 'Current password, new password, and confirm password are required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(old_password):
+            return Response({
+                'error': 'Current password is incorrect. Please verify and try again.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({
+                'error': 'New password and confirm password do not match.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(new_password) < 6:
+            return Response({
+                'error': 'New password must be at least 6 characters long.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({
+            'message': 'Password changed successfully. Your account security credentials have been updated.'
+        }, status=status.HTTP_200_OK)

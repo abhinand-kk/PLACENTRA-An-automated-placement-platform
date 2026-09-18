@@ -85,8 +85,8 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
 
         current_education: {
           institutionName: currEdu.institutionName || 'Amal Jyothi College of Engineering',
-          program_name: currEdu.program || 'Integrated MCA',
-          branch_name: currEdu.branch || 'Computer Science & Engineering',
+          program_name: currEdu.program || basic.course || 'Integrated MCA',
+          branch_name: currEdu.branch || (basic.branch === 'Others' ? basic.customBranch : basic.branch) || 'Computer Science & Engineering',
           field_of_study: currEdu.fieldOfStudy || 'Software Development',
           batch: currEdu.batch || '2024 - 2026',
           semester: currEdu.semester || '4',

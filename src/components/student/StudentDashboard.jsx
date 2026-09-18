@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import ChangePasswordCard from '../common/ChangePasswordCard';
 import './StudentDashboard.css';
 
 export default function StudentDashboard() {
@@ -769,8 +770,9 @@ export default function StudentDashboard() {
                   style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
                 >
                   <option value="All">All Companies</option>
-                  <option value="Innovate Software Systems">Innovate Systems</option>
-                  <option value="CloudTech Dynamics">CloudTech</option>
+                  {Array.from(new Set(jobs.map(j => j.recruiter_detail?.company_name || j.recruiter?.company_name).filter(Boolean))).map((comp, idx) => (
+                    <option key={idx} value={comp}>{comp}</option>
+                  ))}
                 </select>
 
                 {/* Location Filter */}
@@ -886,31 +888,43 @@ export default function StudentDashboard() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0', color: '#475569' }}>
-                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>Company</th>
-                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>Job Title</th>
-                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>Applied Date</th>
-                        <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'right' }}>Status</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>STUDENT NAME</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>APPLIED JOB</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>COMPANY</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700 }}>APPLICATION DATE</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'right' }}>STATUS</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredApplications.map((app) => (
-                        <tr key={app.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
-                          <td style={{ padding: '14px 16px', fontWeight: 700, color: '#0A192F' }}>
-                            {app.job_detail?.recruiter_detail?.company_name || app.job?.recruiter_detail?.company_name || 'Innovate Systems'}
-                          </td>
-                          <td style={{ padding: '14px 16px', color: '#334155' }}>
-                            {app.job_detail?.job_title || app.job?.job_title || 'Software Engineering Role'}
-                          </td>
-                          <td style={{ padding: '14px 16px', color: '#64748B', fontSize: '13px' }}>
-                            {new Date(app.applied_at).toLocaleDateString()}
-                          </td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                            <span className={`badge-tag ${getStatusBadgeClass(app.application_status)}`} style={{ padding: '6px 14px' }}>
-                              {app.application_status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredApplications.map((app) => {
+                        const sName = app.student_detail ? `${app.student_detail.first_name || ''} ${app.student_detail.last_name || ''}`.trim() : (profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Student Candidate');
+                        const jobTitle = app.job_detail?.job_title || app.job?.job_title || app.job_title || 'N/A';
+                        const compName = app.job_detail?.recruiter_detail?.company_name || app.job?.recruiter_detail?.company_name || app.company_name || 'N/A';
+                        const appDate = app.applied_at ? new Date(app.applied_at).toLocaleDateString('en-GB') : 'N/A';
+                        const appStatus = app.application_status || app.status || 'Applied';
+
+                        return (
+                          <tr key={app.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                            <td style={{ padding: '14px 16px', fontWeight: 700, color: '#0A192F' }}>
+                              {sName}
+                            </td>
+                            <td style={{ padding: '14px 16px', color: '#334155' }}>
+                              {jobTitle}
+                            </td>
+                            <td style={{ padding: '14px 16px', color: '#475569' }}>
+                              {compName}
+                            </td>
+                            <td style={{ padding: '14px 16px', color: '#64748B', fontSize: '13px' }}>
+                              {appDate}
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                              <span className={`badge-tag ${getStatusBadgeClass(appStatus)}`} style={{ padding: '6px 14px' }}>
+                                {appStatus}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -998,24 +1012,80 @@ export default function StudentDashboard() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Account & Security Settings</h3>
-              </div>
-              <div className="list-stack" style={{ gap: '16px' }}>
-                <div className="list-item-card">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
                   <div>
-                    <h4>Registered Email Address</h4>
-                    <p className="item-sub-info">{profile?.contact?.primary_email || user?.email}</p>
+                    <h3>Account & Security Settings</h3>
+                    <p style={{ fontSize: '13.5px', color: '#64748B', margin: '4px 0 0 0' }}>
+                      Manage your candidate account information, security credentials, and preferences.
+                    </p>
                   </div>
-                  <span className="badge-tag badge-open">Active</span>
                 </div>
-                <div className="list-item-card">
-                  <div>
-                    <h4>Account Role</h4>
-                    <p className="item-sub-info">Candidate Student (Integrated MCA)</p>
+
+                <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                  <div className="info-item">
+                    <span className="info-label">Candidate Name</span>
+                    <span className="info-val">{profile?.first_name ? `${profile.first_name} ${profile.last_name}` : (user?.username || 'Candidate Student')}</span>
                   </div>
-                  <span className="badge-tag badge-applied">Verified</span>
+
+                  <div className="info-item">
+                    <span className="info-label">Register Number</span>
+                    <span className="info-val">{profile?.register_number || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Primary Email Address</span>
+                    <span className="info-val">{profile?.contact?.primary_email || user?.email || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Account Role</span>
+                    <span className="info-val">Candidate Student</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Academic Program & Branch</span>
+                    <span className="info-val">
+                      {profile?.current_education?.program?.name || 'Integrated MCA'} 
+                      {profile?.current_education?.branch?.name ? ` (${profile.current_education.branch.name})` : ''}
+                    </span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Account & Verification Status</span>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <span className="status-pill pill-completed">Active</span>
+                      <span className="status-pill pill-ongoing">Verified Candidate</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security & Change Password Module */}
+              <ChangePasswordCard />
+
+              {/* Communication & Notification Preferences */}
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <h3>Notification Preferences</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Email Job Notifications</strong>
+                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive job alerts, drive schedules, and selection updates via registered email.</span>
+                    </div>
+                    <span className="status-pill pill-completed">Enabled</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Placement Cell Broadcasts</strong>
+                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Institutional placement cell notices and schedule broadcasts.</span>
+                    </div>
+                    <span className="status-pill pill-completed">Enabled</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -49,9 +49,95 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         )
 
     def validate_email(self, value):
-        if User.objects.filter(email__iexact=value.strip()).exists():
+        if not value or not isinstance(value, str):
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+        if value.strip() != value or ' ' in value:
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+        import re
+        if re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+        
+        parts = value.split('@')
+        if len(parts) != 2:
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+        
+        username, domain = parts
+        if domain != 'gmail.com':
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            
+        if not username or len(username) < 1 or username.startswith('.') or username.endswith('.'):
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            
+        if '..' in username:
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            
+        username_regex = r'^[a-z0-9]+([._+-][a-z0-9]+)*$'
+        if not re.match(username_regex, username):
+            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+
+        if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("A user with this email address already exists.")
-        return value.strip().lower()
+        return value
+
+    def validate_date_of_birth(self, value):
+        if not value:
+            return value
+        import datetime
+        today = datetime.date.today()
+        if value > today:
+            raise serializers.ValidationError("Date of birth cannot be in the future.")
+        
+        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        if age < 18:
+            raise serializers.ValidationError("You must be at least 18 years old to register.")
+        return value
+
+    def validate_current_education(self, value):
+        if not value or not isinstance(value, dict):
+            return value
+        import datetime, re
+        
+        start_date_str = value.get('startDate') or value.get('start_date')
+        end_date_str = value.get('expectedEndDate') or value.get('end_date')
+        batch_val = value.get('batch')
+        
+        today = datetime.date.today()
+        
+        start_date = None
+        if start_date_str:
+            try:
+                if isinstance(start_date_str, datetime.date):
+                    start_date = start_date_str
+                else:
+                    start_date = datetime.datetime.strptime(str(start_date_str)[:10], '%Y-%m-%d').date()
+            except Exception:
+                pass
+                
+        if start_date and start_date > today:
+            raise serializers.ValidationError("Course start date cannot be in the future.")
+            
+        end_date = None
+        if end_date_str:
+            try:
+                if isinstance(end_date_str, datetime.date):
+                    end_date = end_date_str
+                else:
+                    end_date = datetime.datetime.strptime(str(end_date_str)[:10], '%Y-%m-%d').date()
+            except Exception:
+                pass
+
+        if start_date and end_date and end_date <= start_date:
+            raise serializers.ValidationError("Course end date must be after the course start date.")
+            
+        if end_date and batch_val:
+            end_year = str(end_date.year)
+            batch_match = re.search(r'\d{4}', str(batch_val))
+            if batch_match:
+                batch_year = batch_match.group(0)
+                if end_year != batch_year:
+                    raise serializers.ValidationError("Batch year must match the course graduation year.")
+                    
+        return value
 
     @transaction.atomic
     def create(self, validated_data):
@@ -351,6 +437,70 @@ class RecruiterRegistrationSerializer(serializers.ModelSerializer):
         if User.objects.filter(email__iexact=value.strip()).exists():
             raise serializers.ValidationError("A user with this email address already exists.")
         return value.strip().lower()
+
+    def validate_official_email(self, value):
+        if not value or not isinstance(value, str):
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+        if value.strip() != value or ' ' in value:
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+        import re
+        if re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        parts = value.split('@')
+        if len(parts) != 2:
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        username, domain = parts
+        if not username or username.startswith('.') or username.endswith('.') or '..' in username:
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        username_regex = r'^[a-z0-9]+([._+-][a-z0-9]+)*$'
+        if not re.match(username_regex, username):
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+
+        if not domain or domain.startswith('.') or domain.endswith('.') or '..' in domain:
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        domain_regex = r'^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
+        if not re.match(domain_regex, domain):
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        PUBLIC_DOMAINS = {
+            'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
+            'aol.com', 'protonmail.com', 'rediffmail.com', 'yandex.com', 'g.in',
+            'mail.com', 'zoho.com', 'live.com', 'msn.com', 'college.edu'
+        }
+        if domain.lower() in PUBLIC_DOMAINS or domain.endswith('.edu') or domain.endswith('.ac.in'):
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        domain_labels = domain.split('.')
+        sld = domain_labels[0]
+        tld = domain_labels[-1]
+        
+        if len(sld) < 2 or len(tld) < 2:
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+            
+        if domain.endswith('.co') and not (domain.endswith('.co.in') or domain.endswith('.co.uk')):
+            raise serializers.ValidationError("Please enter a valid company work email address.")
+
+        return value
+
+    def validate(self, attrs):
+        company_name = attrs.get('company_name', '')
+        official_email = attrs.get('official_email', '')
+        if company_name and official_email:
+            stop_words = {'pvt', 'ltd', 'private', 'limited', 'inc', 'llc', 'corp', 'corporation', 'technologies', 'technology', 'software', 'services', 'solutions', 'india'}
+            import re
+            clean_tokens = [t for t in re.sub(r'[^a-z0-9\s]', '', company_name.lower()).split() if len(t) > 1 and t not in stop_words]
+            if clean_tokens:
+                domain_parts = official_email.split('@')
+                if len(domain_parts) == 2:
+                    domain_clean = re.sub(r'[^a-z0-9]', '', domain_parts[1])
+                    sld = domain_parts[1].split('.')[0]
+                    if not any(token in domain_clean or token in sld for token in clean_tokens):
+                        raise serializers.ValidationError({'official_email': "Please enter a valid company work email address."})
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):

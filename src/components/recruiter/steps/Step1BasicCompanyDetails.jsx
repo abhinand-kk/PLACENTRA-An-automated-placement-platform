@@ -16,13 +16,72 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
   };
 
   // Validation logic
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const PUBLIC_DOMAINS = new Set([
+    'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 
+    'aol.com', 'protonmail.com', 'rediffmail.com', 'yandex.com', 'g.in',
+    'mail.com', 'zoho.com', 'live.com', 'msn.com', 'college.edu'
+  ]);
+
+  const isValidWorkEmail = (email, companyName) => {
+    if (!email || typeof email !== 'string') return false;
+    if (email.trim() !== email) return false;
+    if (/\s/.test(email)) return false;
+    if (/[A-Z]/.test(email)) return false; // Strictly lowercase only
+    
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    
+    const [username, domainPart] = parts;
+    if (!username || username.length < 1) return false;
+    if (username.startsWith('.') || username.endsWith('.')) return false;
+    if (username.includes('..')) return false;
+    
+    const usernameRegex = /^[a-z0-9]+([._+-][a-z0-9]+)*$/;
+    if (!usernameRegex.test(username)) return false;
+    
+    if (!domainPart || domainPart.startsWith('.') || domainPart.endsWith('.')) return false;
+    if (domainPart.includes('..')) return false;
+    
+    if (PUBLIC_DOMAINS.has(domainPart.toLowerCase())) return false;
+    if (domainPart.endsWith('.edu') || domainPart.endsWith('.ac.in')) return false;
+    
+    const domainRegex = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/;
+    if (!domainRegex.test(domainPart)) return false;
+    
+    const domainLabels = domainPart.split('.');
+    const sld = domainLabels[0];
+    const tld = domainLabels[domainLabels.length - 1];
+    
+    if (!sld || sld.length < 2) return false;
+    if (!tld || tld.length < 2) return false;
+    if (domainPart.endsWith('.co') && !domainPart.endsWith('.co.in') && !domainPart.endsWith('.co.uk')) return false;
+    
+    if (companyName && typeof companyName === 'string' && companyName.trim().length > 0) {
+      const stopWords = new Set(['pvt', 'ltd', 'private', 'limited', 'inc', 'llc', 'corp', 'corporation', 'co', 'technologies', 'technology', 'software', 'services', 'solutions', 'india']);
+      const cleanTokens = companyName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .filter(t => t.length > 1 && !stopWords.has(t));
+        
+      if (cleanTokens.length > 0) {
+        const domainClean = domainPart.replace(/[^a-z0-9]/g, '');
+        const matchesCompany = cleanTokens.some(token => domainClean.includes(token) || token.includes(sld));
+        if (!matchesCompany) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  };
+
   const isValidMobile = (phone) => /^\d{10}$/.test(phone);
 
   const isCompanyNameValid = Boolean(data.companyName?.trim());
   const isRecruiterNameValid = Boolean(data.recruiterFullName?.trim());
   const isDesignationValid = Boolean(data.designation?.trim());
-  const isEmailValid = isValidEmail(data.workEmail || '');
+  const isEmailValid = isValidWorkEmail(data.workEmail || '', data.companyName || '');
   const isMobileValid = isValidMobile(data.mobileNumber || '');
   const isHiringVolumeValid = Boolean(data.hiringVolume);
 
@@ -151,7 +210,7 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
             </div>
             <span className="form-hint">Please use your company domain email address.</span>
             {touched.workEmail && !isEmailValid && (
-              <span className="error-text">Please enter a valid official work email</span>
+              <span className="error-text">Please enter a valid company work email address.</span>
             )}
           </div>
 

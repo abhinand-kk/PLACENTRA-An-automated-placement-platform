@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import ChangePasswordCard from '../common/ChangePasswordCard';
 import './OfficerDashboard.css';
 
 export default function OfficerDashboard() {
@@ -67,6 +68,7 @@ export default function OfficerDashboard() {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [loginActivity, setLoginActivity] = useState([]);
 
   // Fetch placement officer data on mount
   const fetchOfficerDashboardData = async () => {
@@ -80,7 +82,8 @@ export default function OfficerDashboard() {
         drivesRes,
         jobsRes,
         appsRes,
-        notifsRes
+        notifsRes,
+        loginActRes
       ] = await Promise.allSettled([
         api.get('/api/v1/placement-officers/profile/'),
         api.get('/api/v1/placement-officers/institution/'),
@@ -89,7 +92,8 @@ export default function OfficerDashboard() {
         api.get('/api/v1/placement-drives/my-institution/'),
         api.get('/api/v1/jobs/'),
         api.get('/api/v1/applications/'),
-        api.get('/api/v1/notifications/')
+        api.get('/api/v1/notifications/'),
+        api.get('/api/v1/placement-officers/students/login-activity/')
       ]);
 
       if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
@@ -100,6 +104,7 @@ export default function OfficerDashboard() {
       if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data.results || jobsRes.value.data || []);
       if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data.results || appsRes.value.data || []);
       if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
+      if (loginActRes.status === 'fulfilled') setLoginActivity(loginActRes.value.data.results || loginActRes.value.data || []);
     } catch (err) {
       console.warn("Placement officer data fetch error:", err);
     } finally {
@@ -585,6 +590,54 @@ export default function OfficerDashboard() {
                   </div>
                 )}
               </div>
+
+              {/* Student Login Activity Section */}
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <h3>Student Login Activity</h3>
+                  {loginActivity.length > 0 && (
+                    <button className="btn-link-action" onClick={() => setActiveTab('students')}>
+                      View All Students ({students.length})
+                    </button>
+                  )}
+                </div>
+
+                {loginActivity.length === 0 ? (
+                  <div className="empty-state-box">
+                    <UserCheck size={36} color="#64748B" />
+                    <p className="empty-state-text">No student login activity available yet.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="officer-table">
+                      <thead>
+                        <tr>
+                          <th>Student Name</th>
+                          <th>Email</th>
+                          <th>Course / Program</th>
+                          <th>Login Status</th>
+                          <th>Last Login</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loginActivity.slice(0, 5).map((st) => (
+                          <tr key={st.id}>
+                            <td className="title-text">{st.student_name}</td>
+                            <td>{st.email}</td>
+                            <td>{st.course}</td>
+                            <td>
+                              <span className={`status-pill ${st.login_status === 'Active' ? 'pill-completed' : 'pill-upcoming'}`}>
+                                {st.login_status}
+                              </span>
+                            </td>
+                            <td>{st.last_login}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -958,12 +1011,97 @@ export default function OfficerDashboard() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Placement Cell Settings</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <div>
+                    <h3>Placement Cell Account & Security Settings</h3>
+                    <p style={{ fontSize: '13.5px', color: '#64748B', margin: '4px 0 0 0' }}>
+                      Manage your placement officer account credentials, institution details, and cell security.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                  <div className="info-item">
+                    <span className="info-label">Placement Officer Name</span>
+                    <span className="info-val">{profile?.full_name || user?.username || 'Placement Officer'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Officer Designation</span>
+                    <span className="info-val">{profile?.designation || 'Head of Campus Placements'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Official Work Email</span>
+                    <span className="info-val">{profile?.official_email || user?.email || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Mobile Contact</span>
+                    <span className="info-val">{profile?.mobile_number || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Account Role</span>
+                    <span className="info-val">Placement Officer</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Institution Name</span>
+                    <span className="info-val">{institutionName}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Placement Cell Email</span>
+                    <span className="info-val">{institution?.placement_email || profile?.official_email || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Placement Cell Phone</span>
+                    <span className="info-val">{institution?.placement_phone || profile?.mobile_number || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Placement Season</span>
+                    <span className="info-val">{institution?.placement_season || '2026-2027'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Account Status</span>
+                    <div style={{ marginTop: '4px' }}>
+                      <span className="status-pill pill-completed">Active Manager</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '14px', color: '#94A3B8' }}>
-                Officer Account Email: <strong>{user?.email || profile?.official_email}</strong>
+
+              {/* Security & Change Password Module */}
+              <ChangePasswordCard />
+
+              {/* Placement Cell System Notifications */}
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <h3>Placement Cell System Preferences</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Campus Placement Alerts</strong>
+                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive real-time updates when corporate recruiters post jobs or student applications arrive.</span>
+                    </div>
+                    <span className="status-pill pill-completed">Enabled</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Recruiter Onboarding Notifications</strong>
+                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive notifications when new corporate employers register on PLACENTRA.</span>
+                    </div>
+                    <span className="status-pill pill-completed">Enabled</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

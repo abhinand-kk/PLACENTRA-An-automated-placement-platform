@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import ChangePasswordCard from '../common/ChangePasswordCard';
 import './RecruiterDashboard.css';
 
 export default function RecruiterDashboard() {
@@ -871,12 +872,89 @@ export default function RecruiterDashboard() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Employer Account Settings</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <div>
+                    <h3>Employer Account & Security Settings</h3>
+                    <p style={{ fontSize: '13.5px', color: '#64748B', margin: '4px 0 0 0' }}>
+                      Manage your corporate recruiter credentials, company profile details, and security.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                  <div className="info-item">
+                    <span className="info-label">Recruiter Lead Name</span>
+                    <span className="info-val">{profile?.recruiter_name || user?.username || 'HR Representative'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Designation</span>
+                    <span className="info-val">{profile?.designation || 'HR Lead / Hiring Manager'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Official Work Email</span>
+                    <span className="info-val">{profile?.official_email || user?.email || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Mobile Number</span>
+                    <span className="info-val">{profile?.mobile_number || 'N/A'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Account Role</span>
+                    <span className="info-val">Corporate Recruiter</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Company Name</span>
+                    <span className="info-val">{profile?.company_name || 'Partner Employer'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Hiring Volume</span>
+                    <span className="info-val">{profile?.hiring_volume || '1-10 Candidates'}</span>
+                  </div>
+
+                  <div className="info-item">
+                    <span className="info-label">Verification Status</span>
+                    <div style={{ marginTop: '4px' }}>
+                      <span className={`status-pill ${profile?.is_verified ? 'pill-completed' : 'pill-ongoing'}`}>
+                        {profile?.is_verified ? 'Verified Employer' : 'Active Employer'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '14px', color: '#94A3B8' }}>
-                Signed in as: <strong>{user?.email || profile?.official_email}</strong>
+
+              {/* Security & Change Password Module */}
+              <ChangePasswordCard />
+
+              {/* Recruiter Notification & Alert Preferences */}
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <h3>Recruiter Notification Preferences</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Candidate Application Alerts</strong>
+                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive instant alerts when candidates apply to your posted jobs.</span>
+                    </div>
+                    <span className="status-pill pill-completed">Enabled</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Placement Drive Schedules</strong>
+                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive updates on campus placement drive dates and venues.</span>
+                    </div>
+                    <span className="status-pill pill-completed">Enabled</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

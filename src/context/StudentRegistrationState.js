@@ -9,6 +9,7 @@ export const initialStudentRegistrationState = {
     college: '',
     course: '',
     branch: '',
+    customBranch: '',
     rollNumber: '',
     currentSemester: '',
     admissionYear: '',

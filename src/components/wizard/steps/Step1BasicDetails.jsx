@@ -32,16 +32,87 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
   };
 
   // Field validation functions
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = (email) => {
+    if (!email || typeof email !== 'string') return false;
+    if (email.trim() !== email) return false;
+    if (/\s/.test(email)) return false;
+    if (/[A-Z]/.test(email)) return false;
+    
+    if (!email.endsWith('@gmail.com')) return false;
+    
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    
+    const [username, domain] = parts;
+    if (domain !== 'gmail.com') return false;
+    
+    if (!username || username.length < 1) return false;
+    if (username.startsWith('.') || username.endsWith('.')) return false;
+    if (username.includes('..')) return false;
+    
+    const usernameRegex = /^[a-z0-9]+([._+-][a-z0-9]+)*$/;
+    if (!usernameRegex.test(username)) return false;
+    
+    return true;
+  };
   const isValidMobile = (phone) => /^\d{10}$/.test(phone);
+
+  const calculateAge = (dobString) => {
+    if (!dobString) return -1;
+    const parts = dobString.split('-');
+    if (parts.length !== 3) return -1;
+    const birthYear = parseInt(parts[0], 10);
+    const birthMonth = parseInt(parts[1], 10) - 1;
+    const birthDay = parseInt(parts[2], 10);
+    
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
+
+    let age = currentYear - birthYear;
+    if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
+      age--;
+    }
+    return age;
+  };
+
+  const getDobErrorMessage = (dobString) => {
+    if (!dobString) return "Date of birth is required";
+    
+    const parts = dobString.split('-');
+    if (parts.length !== 3) return "Date of birth is required";
+    
+    const birthYear = parseInt(parts[0], 10);
+    const birthMonth = parseInt(parts[1], 10) - 1;
+    const birthDay = parseInt(parts[2], 10);
+    const birthDate = new Date(birthYear, birthMonth, birthDay);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (birthDate > today) {
+      return "Date of birth cannot be in the future.";
+    }
+
+    const age = calculateAge(dobString);
+    if (age < 18) {
+      return "You must be at least 18 years old to register.";
+    }
+
+    return "";
+  };
 
   const isFirstNameValid = Boolean(data.firstName?.trim());
   const isLastNameValid = Boolean(data.lastName?.trim());
-  const isDobValid = Boolean(data.dob);
+  const dobErrorMessage = getDobErrorMessage(data.dob);
+  const isDobValid = Boolean(data.dob) && dobErrorMessage === "";
   const isGenderValid = Boolean(data.gender);
   const isCollegeValid = Boolean(data.college?.trim());
   const isCourseValid = Boolean(data.course);
-  const isBranchValid = Boolean(data.branch?.trim());
+  const isBranchValid = data.branch === 'Others' 
+    ? Boolean(data.customBranch?.trim()) 
+    : Boolean(data.branch?.trim());
   const isRollNoValid = Boolean(data.rollNumber?.trim());
   const isSemesterValid = Boolean(data.currentSemester);
   const isAdmissionYearValid = Boolean(data.admissionYear);
@@ -155,13 +226,14 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 type="date" 
                 className={`form-control ${touched.dob && !isDobValid ? 'invalid' : ''}`} 
                 value={data.dob}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => handleChange('dob', e.target.value)}
                 onBlur={() => handleBlur('dob')}
                 required
               />
             </div>
             {touched.dob && !isDobValid && (
-              <span className="error-text">Date of birth is required</span>
+              <span className="error-text">{dobErrorMessage}</span>
             )}
           </div>
 
@@ -251,11 +323,6 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 )}
               </div>
             )}
-
-            <div className="college-links-row">
-              <span className="college-link">Can't find your college?</span>
-              <span className="college-link">Search using PINCODE</span>
-            </div>
           </div>
 
           {/* Course / Program */}
@@ -298,7 +365,26 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
               <option value="Cyber Security">Cyber Security</option>
               <option value="Data Science">Data Science</option>
               <option value="Machine Learning">Machine Learning</option>
+              <option value="Others">Others</option>
             </select>
+            {data.branch === 'Others' && (
+              <div style={{ marginTop: '10px' }}>
+                <input 
+                  type="text" 
+                  className={`form-control ${(touched.customBranch || touched.branch) && !isBranchValid ? 'invalid' : ''}`} 
+                  placeholder="Enter your specialization"
+                  value={data.customBranch || ''}
+                  onChange={(e) => handleChange('customBranch', e.target.value)}
+                  onBlur={() => handleBlur('customBranch')}
+                  required
+                />
+              </div>
+            )}
+            {(touched.branch || touched.customBranch) && !isBranchValid && (
+              <span className="error-text">
+                {data.branch === 'Others' ? 'Please enter your specialization.' : 'Branch / Specialization is required'}
+              </span>
+            )}
           </div>
 
           <div className="form-group">
@@ -374,7 +460,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             </div>
             <span className="form-hint">This email will be used for all communications.</span>
             {touched.primaryEmail && !isEmailValid && (
-              <span className="error-text">Please enter a valid email address</span>
+              <span className="error-text">Please enter a valid lowercase Gmail address.</span>
             )}
           </div>
 
@@ -475,7 +561,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 <div className="summary-row">
                   <span className="sum-key">Branch / Specialization</span>
                   <span className="sum-sep">:</span>
-                  <span className="sum-val">{data.branch}</span>
+                  <span className="sum-val">{data.branch === 'Others' ? data.customBranch : data.branch}</span>
                 </div>
                 <div className="summary-row">
                   <span className="sum-key">Roll Number / University ID</span>
