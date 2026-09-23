@@ -33,3 +33,5 @@ backend/media/
 .env
 venv/
 env/
+scratch/
+

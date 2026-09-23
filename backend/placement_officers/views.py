@@ -205,3 +205,179 @@ class StudentLoginActivityView(APIView):
             })
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class PlacementOfficerRecruiterListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer authorization required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = RecruiterProfile.objects.all().order_by('-created_at')
+        status_param = request.query_params.get('status')
+        if status_param and status_param != 'All':
+            qs = qs.filter(approval_status__iexact=status_param)
+
+        data = []
+        for r in qs:
+            data.append({
+                'id': r.id,
+                'company_name': r.company_name,
+                'recruiter_name': r.recruiter_name,
+                'designation': r.designation,
+                'official_email': r.official_email,
+                'mobile_number': r.mobile_number,
+                'hiring_volume': r.hiring_volume,
+                'approval_status': r.approval_status,
+                'is_verified': r.is_verified,
+                'created_at': r.created_at.strftime("%d %b %Y") if r.created_at else None
+            })
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class PlacementOfficerRecruiterDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer authorization required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        recruiter = get_object_or_404(RecruiterProfile.objects.select_related('user'), pk=pk)
+
+        pref_data = None
+        if hasattr(recruiter, 'hiring_preference') and recruiter.hiring_preference:
+            hp = recruiter.hiring_preference
+            pref_data = {
+                'target_job_roles': [r.name for r in hp.target_job_roles.all()],
+                'hiring_type': hp.hiring_type.name if hp.hiring_type else None,
+                'eligible_programs': [p.name for p in hp.eligible_programs.all()],
+                'eligible_branches': [b.name for b in hp.eligible_branches.all()],
+                'minimum_cgpa': float(hp.minimum_cgpa) if hp.minimum_cgpa is not None else 0.0,
+                'maximum_active_backlogs': hp.maximum_active_backlogs,
+                'expected_hiring_month': hp.expected_hiring_month,
+                'expected_students': hp.expected_students,
+                'package_lpa': float(hp.package_lpa) if hp.package_lpa is not None else 0.0,
+                'work_mode': hp.work_mode.name if hp.work_mode else None,
+                'campus_visit_required': hp.campus_visit_required,
+                'additional_requirements': hp.additional_requirements
+            }
+
+        jobs_qs = Job.objects.filter(recruiter=recruiter).order_by('-created_at')
+        posted_jobs = []
+        for j in jobs_qs:
+            posted_jobs.append({
+                'id': j.id,
+                'job_title': j.job_title,
+                'package_lpa': float(j.package_lpa) if j.package_lpa is not None else None,
+                'location': j.location,
+                'status': j.status,
+                'created_at': j.created_at.strftime("%d %b %Y") if j.created_at else None,
+                'application_deadline': j.application_deadline.strftime("%d %b %Y") if j.application_deadline else None
+            })
+
+        data = {
+            'id': recruiter.id,
+            'company_name': recruiter.company_name,
+            'recruiter_name': recruiter.recruiter_name,
+            'designation': recruiter.designation,
+            'official_email': recruiter.official_email,
+            'mobile_number': recruiter.mobile_number,
+            'hiring_volume': recruiter.hiring_volume,
+            'approval_status': recruiter.approval_status,
+            'is_verified': recruiter.is_verified,
+            'created_at': recruiter.created_at.strftime("%d %b %Y, %I:%M %p") if recruiter.created_at else None,
+            'user_email': recruiter.user.email,
+            'user_date_joined': recruiter.user.created_at.strftime("%d %b %Y") if recruiter.user.created_at else None,
+            'hiring_preference': pref_data,
+            'posted_jobs_count': jobs_qs.count(),
+            'posted_jobs': posted_jobs
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class PlacementOfficerRecruiterApprovalView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer authorization required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        recruiter = get_object_or_404(RecruiterProfile, pk=pk)
+        new_status = request.data.get('status')
+
+        valid_statuses = [choice[0] for choice in RecruiterProfile.ApprovalStatus.choices]
+        if new_status not in valid_statuses:
+            return Response({
+                'error': f'Invalid status. Allowed choices are: {", ".join(valid_statuses)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        recruiter.approval_status = new_status
+        recruiter.is_verified = (new_status == RecruiterProfile.ApprovalStatus.APPROVED)
+        recruiter.save(update_fields=['approval_status', 'is_verified'])
+
+        return Response({
+            'message': f'Recruiter status updated to {new_status}.',
+            'id': recruiter.id,
+            'approval_status': recruiter.approval_status,
+            'is_verified': recruiter.is_verified
+        }, status=status.HTTP_200_OK)
+
+
+class PlacementOfficerJobListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer authorization required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = Job.objects.select_related('recruiter').all().order_by('-created_at')
+        status_param = request.query_params.get('status')
+        if status_param and status_param != 'All':
+            qs = qs.filter(status__iexact=status_param)
+
+        data = []
+        for j in qs:
+            data.append({
+                'id': j.id,
+                'job_title': j.job_title,
+                'company_name': j.recruiter.company_name if j.recruiter else 'N/A',
+                'recruiter_name': j.recruiter.recruiter_name if j.recruiter else 'N/A',
+                'package_lpa': float(j.package_lpa) if j.package_lpa is not None else None,
+                'location': j.location,
+                'status': j.status,
+                'created_at': j.created_at.strftime("%d %b %Y") if j.created_at else None,
+                'application_deadline': j.application_deadline.strftime("%d %b %Y") if j.application_deadline else None,
+                'job_description': j.job_description
+            })
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class PlacementOfficerJobApprovalView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        if getattr(request.user, 'role', '') != 'placement_officer':
+            return Response({'error': 'Permission denied. Placement Officer authorization required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        job = get_object_or_404(Job, pk=pk)
+        new_status = request.data.get('status')
+
+        valid_statuses = [choice[0] for choice in Job.Status.choices]
+        if new_status not in valid_statuses:
+            return Response({
+                'error': f'Invalid status. Allowed choices are: {", ".join(valid_statuses)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        job.status = new_status
+        job.save(update_fields=['status'])
+
+        return Response({
+            'message': f'Job status updated to {new_status}.',
+            'id': job.id,
+            'status': job.status
+        }, status=status.HTTP_200_OK)
+

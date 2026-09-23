@@ -4,7 +4,12 @@ from .views import (
     InstitutionDetailsView,
     PlacementOfficerDashboardView,
     PlacementOfficerStudentListView,
-    StudentLoginActivityView
+    StudentLoginActivityView,
+    PlacementOfficerRecruiterListView,
+    PlacementOfficerRecruiterDetailView,
+    PlacementOfficerRecruiterApprovalView,
+    PlacementOfficerJobListView,
+    PlacementOfficerJobApprovalView
 )
 
 urlpatterns = [
@@ -13,4 +18,10 @@ urlpatterns = [
     path('dashboard/', PlacementOfficerDashboardView.as_view(), name='officer-dashboard'),
     path('students/', PlacementOfficerStudentListView.as_view(), name='officer-students'),
     path('students/login-activity/', StudentLoginActivityView.as_view(), name='officer-student-login-activity'),
+    path('recruiters/', PlacementOfficerRecruiterListView.as_view(), name='officer-recruiters'),
+    path('recruiters/<int:pk>/', PlacementOfficerRecruiterDetailView.as_view(), name='officer-recruiter-detail'),
+    path('recruiters/<int:pk>/approval/', PlacementOfficerRecruiterApprovalView.as_view(), name='officer-recruiter-approval'),
+    path('jobs/', PlacementOfficerJobListView.as_view(), name='officer-jobs'),
+    path('jobs/<int:pk>/approval/', PlacementOfficerJobApprovalView.as_view(), name='officer-job-approval'),
 ]
+

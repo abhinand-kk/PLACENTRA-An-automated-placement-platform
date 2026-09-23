@@ -27,14 +27,16 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
+import StudentResume from './StudentResume';
 import './StudentDashboard.css';
 
-export default function StudentDashboard() {
+export default function StudentDashboard({ initialTab = 'dashboard' }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   // Active Tab State
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
   const [selectedDrive, setSelectedDrive] = useState(null);
 
   // Filter States for Jobs Page
@@ -263,12 +265,21 @@ export default function StudentDashboard() {
             </button>
 
             <button 
+              className={`nav-item-btn ${activeTab === 'resume' ? 'active' : ''}`}
+              onClick={() => setActiveTab('resume')}
+            >
+              <FileText size={18} />
+              <span>My Resume</span>
+            </button>
+
+            <button 
               className={`nav-item-btn ${activeTab === 'jobs' ? 'active' : ''}`}
               onClick={() => setActiveTab('jobs')}
             >
               <Briefcase size={18} />
               <span>Jobs & Opportunities</span>
             </button>
+
 
             <button 
               className={`nav-item-btn ${activeTab === 'applications' ? 'active' : ''}`}
@@ -1090,7 +1101,12 @@ export default function StudentDashboard() {
               </div>
             </div>
           )}
+
+          {activeTab === 'resume' && (
+            <StudentResume onNavigateTab={(tab) => setActiveTab(tab)} />
+          )}
         </div>
+
       </main>
 
       {/* Placement Drive Details Modal Dialog */}

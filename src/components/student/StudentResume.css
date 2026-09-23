@@ -1,0 +1,470 @@
+/* StudentResume.css */
+.student-resume-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.resume-loading-container, .resume-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1e3a8a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Top Banner */
+.resume-top-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.resume-header-info h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.resume-header-info p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.resume-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.completion-badge-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.progress-bar-small {
+  width: 70px;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.btn-download-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1e3a8a;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);
+}
+
+.btn-download-pdf:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-download-pdf:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Guidance Card */
+.resume-guidance-card {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.guidance-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.guidance-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guidance-item-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #fde68a;
+  font-size: 0.85rem;
+}
+
+.chip-sec {
+  font-weight: 700;
+  color: #78350f;
+  margin-right: 6px;
+}
+
+.chip-msg {
+  color: #451a03;
+  flex: 1;
+}
+
+.btn-chip-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-chip-action:hover {
+  background: #fde68a;
+}
+
+/* A4 Sheet Container */
+.resume-sheet-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.a4-resume-sheet {
+  width: 100%;
+  max-width: 800px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  border-radius: 4px;
+  padding: 40px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1e293b;
+}
+
+/* Sheet Header */
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.candidate-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.candidate-subtitle {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 0 0 10px 0;
+}
+
+.bullet-sep {
+  margin: 0 8px;
+  color: #94a3b8;
+}
+
+.candidate-contact-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.header-photo-block {
+  width: 90px;
+  height: 110px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.header-photo-block img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sheet-divider-line {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 16px 0;
+}
+
+.sheet-divider-line.primary-line {
+  height: 2px;
+  background: #1e3a8a;
+  margin: 18px 0;
+}
+
+/* Sheet Section */
+.sheet-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px 0;
+}
+
+/* Grids & Details */
+.details-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+  font-size: 0.9rem;
+}
+
+.detail-item {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-item.full-width {
+  grid-column: span 2;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #475569;
+  min-width: 130px;
+}
+
+.detail-val {
+  color: #0f172a;
+}
+
+/* Current Education */
+.current-edu-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.edu-main-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.program-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cgpa-pill {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.edu-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.edu-dates {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Tables */
+.resume-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.resume-table th {
+  background: #1e3a8a;
+  color: #ffffff;
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+
+}
+
+.resume-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.resume-table tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+/* Experience */
+.experience-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.experience-item {
+  border-left: 3px solid #3b82f6;
+  padding-left: 12px;
+}
+
+.exp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.exp-role {
+  color: #0f172a;
+}
+
+.exp-company {
+  color: #1d4ed8;
+}
+
+.exp-type {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.exp-sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 2px 0 4px 0;
+}
+
+.exp-desc {
+  font-size: 0.85rem;
+  color: #334155;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
+/* Documents */
+.doc-status-pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.doc-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  border: 1px solid #e2e8f0;
+}
+
+.doc-pill.uploaded {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.doc-pill.missing {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.no-data-text {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 4px 0;
+}

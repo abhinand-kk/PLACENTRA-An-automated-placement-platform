@@ -58,6 +58,8 @@ export default function OfficerDashboard() {
   // Filter States
   const [studentSearch, setStudentSearch] = useState('');
   const [studentStatusFilter, setStudentStatusFilter] = useState('all');
+  const [recruiterStatusFilter, setRecruiterStatusFilter] = useState('All');
+  const [jobStatusFilter, setJobStatusFilter] = useState('All');
 
   // Backend Data States
   const [profile, setProfile] = useState(null);
@@ -69,6 +71,29 @@ export default function OfficerDashboard() {
   const [applications, setApplications] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loginActivity, setLoginActivity] = useState([]);
+  const [officerRecruiters, setOfficerRecruiters] = useState([]);
+  const [officerJobs, setOfficerJobs] = useState([]);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Recruiter Detail Modal State
+  const [showRecruiterModal, setShowRecruiterModal] = useState(false);
+  const [selectedRecruiterDetail, setSelectedRecruiterDetail] = useState(null);
+  const [loadingRecruiterDetail, setLoadingRecruiterDetail] = useState(false);
+
+  const handleViewRecruiterDetails = async (recruiterId) => {
+    setLoadingRecruiterDetail(true);
+    setShowRecruiterModal(true);
+    try {
+      const res = await api.get(`/api/v1/placement-officers/recruiters/${recruiterId}/`);
+      setSelectedRecruiterDetail(res.data);
+    } catch (err) {
+      console.error("Failed to fetch recruiter details:", err);
+      alert(err.response?.data?.error || "Could not load recruiter details.");
+      setShowRecruiterModal(false);
+    } finally {
+      setLoadingRecruiterDetail(false);
+    }
+  };
 
   // Fetch placement officer data on mount
   const fetchOfficerDashboardData = async () => {
@@ -83,7 +108,9 @@ export default function OfficerDashboard() {
         jobsRes,
         appsRes,
         notifsRes,
-        loginActRes
+        loginActRes,
+        officerRecruitersRes,
+        officerJobsRes
       ] = await Promise.allSettled([
         api.get('/api/v1/placement-officers/profile/'),
         api.get('/api/v1/placement-officers/institution/'),
@@ -93,7 +120,9 @@ export default function OfficerDashboard() {
         api.get('/api/v1/jobs/'),
         api.get('/api/v1/applications/'),
         api.get('/api/v1/notifications/'),
-        api.get('/api/v1/placement-officers/students/login-activity/')
+        api.get('/api/v1/placement-officers/students/login-activity/'),
+        api.get('/api/v1/placement-officers/recruiters/'),
+        api.get('/api/v1/placement-officers/jobs/')
       ]);
 
       if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
@@ -105,10 +134,42 @@ export default function OfficerDashboard() {
       if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data.results || appsRes.value.data || []);
       if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
       if (loginActRes.status === 'fulfilled') setLoginActivity(loginActRes.value.data.results || loginActRes.value.data || []);
+      if (officerRecruitersRes.status === 'fulfilled') setOfficerRecruiters(officerRecruitersRes.value.data.results || officerRecruitersRes.value.data || []);
+      if (officerJobsRes.status === 'fulfilled') setOfficerJobs(officerJobsRes.value.data.results || officerJobsRes.value.data || []);
     } catch (err) {
       console.warn("Placement officer data fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateRecruiterApproval = async (recruiterId, newStatus) => {
+    setActionLoadingId(`recruiter-${recruiterId}`);
+    try {
+      await api.patch(`/api/v1/placement-officers/recruiters/${recruiterId}/approval/`, {
+        status: newStatus
+      });
+      await fetchOfficerDashboardData();
+    } catch (err) {
+      console.error("Failed to update recruiter approval:", err);
+      alert(err.response?.data?.error || "Failed to update recruiter status");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleUpdateJobApproval = async (jobId, newStatus) => {
+    setActionLoadingId(`job-${jobId}`);
+    try {
+      await api.patch(`/api/v1/placement-officers/jobs/${jobId}/approval/`, {
+        status: newStatus
+      });
+      await fetchOfficerDashboardData();
+    } catch (err) {
+      console.error("Failed to update job approval:", err);
+      alert(err.response?.data?.error || "Failed to update job status");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -735,10 +796,31 @@ export default function OfficerDashboard() {
               <div className="panel-header">
                 <h3>Partner Employers & Recruiters</h3>
               </div>
-              {jobs.length === 0 ? (
+
+              {/* Recruiter Status Filter Bar */}
+              <div className="student-filter-bar" style={{ marginBottom: '20px' }}>
+                <div className="status-filter-buttons">
+                  {['All', 'Pending', 'Approved', 'Rejected'].map(status => {
+                    const count = status === 'All' 
+                      ? officerRecruiters.length 
+                      : officerRecruiters.filter(r => (r.approval_status || 'Pending').toLowerCase() === status.toLowerCase()).length;
+                    return (
+                      <button
+                        key={status}
+                        className={`filter-btn ${recruiterStatusFilter === status ? 'active' : ''}`}
+                        onClick={() => setRecruiterStatusFilter(status)}
+                      >
+                        {status} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {officerRecruiters.filter(r => recruiterStatusFilter === 'All' || (r.approval_status || 'Pending').toLowerCase() === recruiterStatusFilter.toLowerCase()).length === 0 ? (
                 <div className="empty-state-box">
                   <Building2 size={36} color="#64748B" />
-                  <p className="empty-state-text">No active recruiters registered.</p>
+                  <p className="empty-state-text">No recruiters found matching status filter "{recruiterStatusFilter}".</p>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -747,19 +829,60 @@ export default function OfficerDashboard() {
                       <tr>
                         <th>Company Name</th>
                         <th>Contact Lead</th>
-                        <th>Work Mode</th>
-                        <th>Active Job Posting</th>
+                        <th>Designation</th>
+                        <th>Email / Mobile</th>
+                        <th>Approval Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {jobs.map((job) => (
-                        <tr key={job.id}>
-                          <td className="title-text">{job.recruiter_detail?.company_name || 'Employer'}</td>
-                          <td>{job.recruiter_detail?.recruiter_name || 'HR Representative'}</td>
-                          <td>{job.location || 'On-Site / Hybrid'}</td>
-                          <td>{job.job_title} ({job.package_lpa ? `${job.package_lpa} LPA` : 'Open'})</td>
-                        </tr>
-                      ))}
+                      {officerRecruiters
+                        .filter(r => recruiterStatusFilter === 'All' || (r.approval_status || 'Pending').toLowerCase() === recruiterStatusFilter.toLowerCase())
+                        .map((recruiter) => (
+                          <tr key={recruiter.id}>
+                            <td className="title-text">{recruiter.company_name}</td>
+                            <td>{recruiter.recruiter_name}</td>
+                            <td>{recruiter.designation || 'N/A'}</td>
+                            <td>
+                              <div>{recruiter.official_email}</div>
+                              {recruiter.mobile_number && <small style={{ color: '#64748B' }}>{recruiter.mobile_number}</small>}
+                            </td>
+                            <td>
+                              <span className={`status-pill pill-${(recruiter.approval_status || 'Pending').toLowerCase().replace(/\s+/g, '-')}`}>
+                                {recruiter.approval_status || 'Pending'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="action-buttons-cell">
+                                <button
+                                  className="btn-table-action"
+                                  onClick={() => handleViewRecruiterDetails(recruiter.id)}
+                                >
+                                  <Eye size={14} />
+                                  <span>View Details</span>
+                                </button>
+                                {recruiter.approval_status !== 'Approved' && (
+                                  <button
+                                    className="btn-approve-sm"
+                                    disabled={actionLoadingId === `recruiter-${recruiter.id}`}
+                                    onClick={() => handleUpdateRecruiterApproval(recruiter.id, 'Approved')}
+                                  >
+                                    Approve Company
+                                  </button>
+                                )}
+                                {recruiter.approval_status !== 'Rejected' && (
+                                  <button
+                                    className="btn-reject-sm"
+                                    disabled={actionLoadingId === `recruiter-${recruiter.id}`}
+                                    onClick={() => handleUpdateRecruiterApproval(recruiter.id, 'Rejected')}
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -773,10 +896,31 @@ export default function OfficerDashboard() {
               <div className="panel-header">
                 <h3>Campus Job Opportunities Directory</h3>
               </div>
-              {jobs.length === 0 ? (
+
+              {/* Job Status Filter Bar */}
+              <div className="student-filter-bar" style={{ marginBottom: '20px' }}>
+                <div className="status-filter-buttons">
+                  {['All', 'Pending Approval', 'Open', 'Rejected', 'Closed'].map(status => {
+                    const count = status === 'All'
+                      ? officerJobs.length
+                      : officerJobs.filter(j => (j.status || 'Pending Approval').toLowerCase() === status.toLowerCase()).length;
+                    return (
+                      <button
+                        key={status}
+                        className={`filter-btn ${jobStatusFilter === status ? 'active' : ''}`}
+                        onClick={() => setJobStatusFilter(status)}
+                      >
+                        {status} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {officerJobs.filter(j => jobStatusFilter === 'All' || (j.status || 'Pending Approval').toLowerCase() === jobStatusFilter.toLowerCase()).length === 0 ? (
                 <div className="empty-state-box">
                   <Briefcase size={36} color="#64748B" />
-                  <p className="empty-state-text">No active job postings for this institution.</p>
+                  <p className="empty-state-text">No job postings found matching status filter "{jobStatusFilter}".</p>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -788,22 +932,47 @@ export default function OfficerDashboard() {
                         <th>Package (LPA)</th>
                         <th>Deadline</th>
                         <th>Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {jobs.map((job) => (
-                        <tr key={job.id}>
-                          <td className="title-text">{job.job_title}</td>
-                          <td>{job.recruiter_detail?.company_name || 'Recruiter'}</td>
-                          <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
-                          <td>{job.application_deadline || 'Open'}</td>
-                          <td>
-                            <span className={`status-pill ${job.status === 'Open' ? 'pill-completed' : 'pill-upcoming'}`}>
-                              {job.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {officerJobs
+                        .filter(j => jobStatusFilter === 'All' || (j.status || 'Pending Approval').toLowerCase() === jobStatusFilter.toLowerCase())
+                        .map((job) => (
+                          <tr key={job.id}>
+                            <td className="title-text">{job.job_title}</td>
+                            <td>{job.company_name}</td>
+                            <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
+                            <td>{job.application_deadline || 'Open'}</td>
+                            <td>
+                              <span className={`status-pill pill-${(job.status || 'Pending Approval').toLowerCase().replace(/\s+/g, '-')}`}>
+                                {job.status}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="action-buttons-cell">
+                                {job.status !== 'Open' && (
+                                  <button
+                                    className="btn-approve-sm"
+                                    disabled={actionLoadingId === `job-${job.id}`}
+                                    onClick={() => handleUpdateJobApproval(job.id, 'Open')}
+                                  >
+                                    Approve Job
+                                  </button>
+                                )}
+                                {job.status !== 'Rejected' && (
+                                  <button
+                                    className="btn-reject-sm"
+                                    disabled={actionLoadingId === `job-${job.id}`}
+                                    onClick={() => handleUpdateJobApproval(job.id, 'Rejected')}
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -1195,6 +1364,219 @@ export default function OfficerDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Recruiter / Company Details Review Modal */}
+      {showRecruiterModal && (
+        <div className="modal-backdrop" onClick={() => setShowRecruiterModal(false)}>
+          <div className="drive-modal-content" style={{ maxWidth: '750px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Building2 size={24} color="#10B981" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '20px' }}>
+                    {selectedRecruiterDetail?.company_name || 'Company Details'}
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                    Recruiter & Employer Profile Review
+                  </p>
+                </div>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowRecruiterModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {loadingRecruiterDetail ? (
+              <div className="empty-state-box" style={{ border: 'none', background: 'transparent', padding: '40px' }}>
+                <Sparkles size={28} className="spin-gear-icon" color="#10B981" />
+                <p>Loading complete company details...</p>
+              </div>
+            ) : selectedRecruiterDetail ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Status Bar */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#F8FAFC',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>Verification Status:</span>
+                    <span className={`status-pill pill-${(selectedRecruiterDetail.approval_status || 'Pending').toLowerCase().replace(/\s+/g, '-')}`}>
+                      {selectedRecruiterDetail.approval_status || 'Pending'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: '#64748B' }}>
+                    Registered On: <strong>{selectedRecruiterDetail.created_at || 'N/A'}</strong>
+                  </div>
+                </div>
+
+                {/* Section 1: Company & Recruiter Overview */}
+                <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building2 size={16} color="#10B981" />
+                    Company & Contact Lead Information
+                  </h4>
+                  <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', background: 'transparent', padding: 0, border: 'none' }}>
+                    <div className="info-item">
+                      <span className="info-label">Company Name</span>
+                      <span className="info-val">{selectedRecruiterDetail.company_name}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">HR Contact Person</span>
+                      <span className="info-val">{selectedRecruiterDetail.recruiter_name}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Designation</span>
+                      <span className="info-val">{selectedRecruiterDetail.designation || 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Official Work Email</span>
+                      <span className="info-val">{selectedRecruiterDetail.official_email}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Mobile Number</span>
+                      <span className="info-val">{selectedRecruiterDetail.mobile_number || 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Expected Hiring Volume</span>
+                      <span className="info-val">{selectedRecruiterDetail.hiring_volume || '10-50'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Hiring Preferences & Eligibility */}
+                {selectedRecruiterDetail.hiring_preference && (
+                  <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Briefcase size={16} color="#10B981" />
+                      Campus Hiring Preferences & Criteria
+                    </h4>
+                    <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', background: 'transparent', padding: 0, border: 'none' }}>
+                      <div className="info-item">
+                        <span className="info-label">Target Job Roles</span>
+                        <span className="info-val">
+                          {selectedRecruiterDetail.hiring_preference.target_job_roles?.join(', ') || 'Software Development'}
+                        </span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Hiring Type</span>
+                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.hiring_type || 'Full Time'}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Eligible Programs</span>
+                        <span className="info-val">
+                          {selectedRecruiterDetail.hiring_preference.eligible_programs?.join(', ') || 'All Programs'}
+                        </span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Eligible Branches</span>
+                        <span className="info-val">
+                          {selectedRecruiterDetail.hiring_preference.eligible_branches?.join(', ') || 'Computer Science & Engg'}
+                        </span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Minimum CGPA</span>
+                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.minimum_cgpa} / 10.0</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Max Active Backlogs</span>
+                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.maximum_active_backlogs}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Package (LPA)</span>
+                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.package_lpa} LPA</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Work Mode</span>
+                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.work_mode || 'Hybrid'}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section 3: Posted Job Opportunities */}
+                <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} color="#10B981" />
+                    Posted Job Requirements ({selectedRecruiterDetail.posted_jobs_count || 0})
+                  </h4>
+                  {selectedRecruiterDetail.posted_jobs?.length === 0 ? (
+                    <p style={{ fontSize: '13.5px', color: '#64748B', margin: 0 }}>No job postings created by this company yet.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="officer-table">
+                        <thead>
+                          <tr>
+                            <th>Job Title</th>
+                            <th>Package</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedRecruiterDetail.posted_jobs?.map(j => (
+                            <tr key={j.id}>
+                              <td className="title-text">{j.job_title}</td>
+                              <td>{j.package_lpa ? `${j.package_lpa} LPA` : 'Competitive'}</td>
+                              <td>{j.location || 'Remote'}</td>
+                              <td>
+                                <span className={`status-pill pill-${(j.status || 'Pending Approval').toLowerCase().replace(/\s+/g, '-')}`}>
+                                  {j.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer Actions */}
+                <div className="modal-actions" style={{ justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '16px', marginTop: '8px' }}>
+                  <button type="button" className="btn-modal-cancel" onClick={() => setShowRecruiterModal(false)}>
+                    Close Review
+                  </button>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {selectedRecruiterDetail.approval_status !== 'Approved' && (
+                      <button
+                        className="btn-approve-sm"
+                        style={{ padding: '10px 18px', fontSize: '13.5px' }}
+                        disabled={actionLoadingId === `recruiter-${selectedRecruiterDetail.id}`}
+                        onClick={async () => {
+                          await handleUpdateRecruiterApproval(selectedRecruiterDetail.id, 'Approved');
+                          setSelectedRecruiterDetail(prev => prev ? { ...prev, approval_status: 'Approved', is_verified: true } : null);
+                        }}
+                      >
+                        Approve Company
+                      </button>
+                    )}
+                    {selectedRecruiterDetail.approval_status !== 'Rejected' && (
+                      <button
+                        className="btn-reject-sm"
+                        style={{ padding: '10px 18px', fontSize: '13.5px' }}
+                        disabled={actionLoadingId === `recruiter-${selectedRecruiterDetail.id}`}
+                        onClick={async () => {
+                          await handleUpdateRecruiterApproval(selectedRecruiterDetail.id, 'Rejected');
+                          setSelectedRecruiterDetail(prev => prev ? { ...prev, approval_status: 'Rejected', is_verified: false } : null);
+                        }}
+                      >
+                        Reject Company
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: '#EF4444' }}>Recruiter details unavailable.</p>
+            )}
           </div>
         </div>
       )}

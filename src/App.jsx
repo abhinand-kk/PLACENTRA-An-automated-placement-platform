@@ -69,8 +69,10 @@ export default function App() {
       {/* Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={['student']} />}>
         <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/student/resume" element={<StudentDashboard initialTab="resume" />} />
         <Route path="/student/profile/edit" element={<StudentProfileEdit />} />
       </Route>
+
 
       <Route element={<ProtectedRoute allowedRoles={['recruiter']} />}>
         <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />

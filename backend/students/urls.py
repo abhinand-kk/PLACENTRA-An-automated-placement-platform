@@ -10,7 +10,9 @@ from .views import (
     StudentDocumentView,
     StudentDocumentUploadView,
     DigiLockerFetchView,
-    StudentProfileCompletionView
+    StudentProfileCompletionView,
+    StudentResumeView,
+    StudentResumeDownloadView
 )
 
 urlpatterns = [
@@ -25,4 +27,7 @@ urlpatterns = [
     path('documents/upload/', StudentDocumentUploadView.as_view(), name='student-document-upload'),
     path('digilocker/fetch/', DigiLockerFetchView.as_view(), name='student-digilocker-fetch'),
     path('profile-completion/', StudentProfileCompletionView.as_view(), name='student-profile-completion'),
+    path('resume/', StudentResumeView.as_view(), name='student-resume'),
+    path('resume/download/', StudentResumeDownloadView.as_view(), name='student-resume-download'),
 ]
+

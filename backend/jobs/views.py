@@ -25,10 +25,10 @@ class JobViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
 
-        # If calling list action directly (/api/v1/jobs/), default to 'Open' status unless status filter is explicitly provided
+        # For student/public list action (/api/v1/jobs/), default to 'Open' status and approved recruiters only
         if self.action == 'list':
             if not self.request.query_params.get('status'):
-                qs = qs.filter(status=Job.Status.OPEN)
+                qs = qs.filter(status=Job.Status.OPEN, recruiter__approval_status='Approved')
         return qs
 
     def get_permissions(self):
@@ -40,6 +40,16 @@ class JobViewSet(viewsets.ModelViewSet):
             return [IsRecruiterUser()]
         return [permissions.IsAuthenticated()]
 
+    def create(self, request, *args, **kwargs):
+        recruiter = getattr(request.user, 'recruiter_profile', None)
+        if not recruiter:
+            return Response({'error': 'Only registered recruiters can post jobs.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        if recruiter.approval_status != 'Approved':
+            return Response({'error': 'Your recruiter/company profile is pending verification by the Placement Officer. Job posting will be enabled once approved.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         from master_data.models import EmploymentType, HiringType, TargetJobRole, Program, Branch, WorkMode
         recruiter = self.request.user.recruiter_profile
@@ -48,12 +58,15 @@ class JobViewSet(viewsets.ModelViewSet):
         wm_mode = serializer.validated_data.get('work_mode') or WorkMode.objects.first()
         exp_month = serializer.validated_data.get('expected_hiring_month') or 'Immediate'
         
+        job_status = serializer.validated_data.get('status') or Job.Status.PENDING_APPROVAL
+
         job = serializer.save(
             recruiter=recruiter,
             employment_type=emp_type,
             hiring_type=hir_type,
             work_mode=wm_mode,
-            expected_hiring_month=exp_month
+            expected_hiring_month=exp_month,
+            status=job_status
         )
         
         if not job.eligible_programs.exists():
@@ -62,6 +75,7 @@ class JobViewSet(viewsets.ModelViewSet):
             job.eligible_branches.set(Branch.objects.all())
         if not job.target_job_roles.exists():
             job.target_job_roles.set(TargetJobRole.objects.all())
+
 
     @action(detail=False, methods=['get'], url_path='my-jobs')
     def my_jobs(self, request):

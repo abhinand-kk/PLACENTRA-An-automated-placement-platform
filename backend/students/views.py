@@ -468,6 +468,9 @@ class DigiLockerFetchView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+from django.http import HttpResponse
+from .pdf_generator import StudentResumePDFGenerator
+
 class StudentProfileCompletionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -477,3 +480,96 @@ class StudentProfileCompletionView(APIView):
             return Response({'error': 'Student profile not found.'}, status=status.HTTP_404_NOT_FOUND)
         percentage = calculate_student_completion(profile)
         return Response({'completion_percentage': percentage}, status=status.HTTP_200_OK)
+
+
+class StudentResumeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = get_student_profile(request.user)
+        if not profile:
+            return Response({'error': 'Student profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        completion_score = calculate_student_completion(profile)
+
+        # Guidance for missing profile sections
+        missing_sections = []
+        
+        contact_data = None
+        if hasattr(profile, 'contact') and profile.contact:
+            contact_data = StudentContactSerializer(profile.contact).data
+        else:
+            missing_sections.append({
+                'section': 'Contact Details',
+                'tab': 'contact',
+                'message': 'Add your primary email, mobile number, and permanent address.'
+            })
+
+        current_edu_data = None
+        if hasattr(profile, 'current_education') and profile.current_education:
+            current_edu_data = StudentCurrentEducationSerializer(profile.current_education).data
+        else:
+            missing_sections.append({
+                'section': 'Current Education',
+                'tab': 'current-education',
+                'message': 'Specify your current degree, branch, semester, batch, and CGPA.'
+            })
+
+        prev_edu_qs = profile.previous_educations.all()
+        prev_edu_data = StudentPreviousEducationSerializer(prev_edu_qs, many=True).data
+        if not prev_edu_qs.exists():
+            missing_sections.append({
+                'section': 'Previous Academic Qualifications',
+                'tab': 'previous-education',
+                'message': 'Add Class 10th / 12th / Diploma / Bachelor degree scores.'
+            })
+
+        exp_qs = profile.experiences.all()
+        exp_data = StudentExperienceSerializer(exp_qs, many=True).data
+
+        doc_data = None
+        if hasattr(profile, 'documents') and profile.documents:
+            doc_data = StudentDocumentSerializer(profile.documents).data
+        else:
+            missing_sections.append({
+                'section': 'Verification Documents',
+                'tab': 'documents',
+                'message': 'Upload your resume document and academic certificates.'
+            })
+
+        profile_data = StudentProfileSerializer(profile).data
+
+        return Response({
+            'profile': profile_data,
+            'contact': contact_data,
+            'current_education': current_edu_data,
+            'previous_educations': prev_edu_data,
+            'experiences': exp_data,
+            'documents': doc_data,
+            'completion_percentage': completion_score,
+            'missing_sections': missing_sections
+        }, status=status.HTTP_200_OK)
+
+
+class StudentResumeDownloadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = get_student_profile(request.user)
+        if not profile:
+            return Response({'error': 'Student profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            pdf_gen = StudentResumePDFGenerator(profile)
+            pdf_bytes = pdf_gen.generate()
+            
+            full_name = f"{profile.first_name}_{profile.last_name}".replace(" ", "_")
+            filename = f"{full_name}_Resume.pdf"
+            
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except Exception as e:
+            traceback.print_exc()
+            return Response({'error': f'Failed to generate PDF resume: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

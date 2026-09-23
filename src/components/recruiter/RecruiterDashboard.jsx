@@ -115,12 +115,20 @@ export default function RecruiterDashboard() {
     navigate('/login');
   };
 
+  // Candidate Review Modal States
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [loadingAppDetail, setLoadingAppDetail] = useState(false);
+
   // Handle Candidate Status Updates (Shortlist, Interview, Select, Reject)
   const handleUpdateApplicantStatus = async (applicationId, newStatus) => {
     try {
       setActionMessage('');
       await api.patch(`/api/v1/applications/${applicationId}/status/`, { status: newStatus });
       setActionMessage(`Candidate status updated to ${newStatus}`);
+      if (selectedApp && selectedApp.id === applicationId) {
+        setSelectedApp(prev => prev ? { ...prev, application_status: newStatus } : null);
+      }
       fetchRecruiterDashboardData();
       setTimeout(() => setActionMessage(''), 4000);
     } catch (err) {
@@ -128,6 +136,23 @@ export default function RecruiterDashboard() {
       setActionMessage('Failed to update candidate status.');
     }
   };
+
+  // Handle Opening Candidate Application Review Modal
+  const handleViewApplication = async (appId) => {
+    setLoadingAppDetail(true);
+    setShowReviewModal(true);
+    try {
+      const res = await api.get(`/api/v1/applications/${appId}/`);
+      setSelectedApp(res.data);
+    } catch (err) {
+      console.error("Failed to fetch application detail:", err);
+      alert(err.response?.data?.error || "Could not load candidate application details.");
+      setShowReviewModal(false);
+    } finally {
+      setLoadingAppDetail(false);
+    }
+  };
+
 
   // Handle Post New Job Submit
   const handleCreateJobSubmit = async (e) => {
@@ -211,6 +236,7 @@ export default function RecruiterDashboard() {
 
   const companyName = profile?.company_name || 'Partner Company';
   const recruiterName = profile?.recruiter_name || user?.username || 'Recruiter';
+  const isApproved = profile?.approval_status === 'Approved' || profile?.approval_status === 'APPROVED';
 
   // Derived counts for Overview Cards
   const activeJobsCount = recruiterStats?.active_jobs ?? jobs.filter(j => j.status === 'Open').length;
@@ -269,7 +295,19 @@ export default function RecruiterDashboard() {
           </div>
 
           <div className="header-actions">
-            <button className="btn-post-job-header" onClick={() => setShowJobModal(true)}>
+            <button
+              className="btn-post-job-header"
+              disabled={!isApproved}
+              style={!isApproved ? { opacity: 0.65, cursor: 'not-allowed' } : {}}
+              title={!isApproved ? "Your company profile is pending verification by the Placement Officer." : ""}
+              onClick={() => {
+                if (!isApproved) {
+                  alert("Your company profile is pending verification by the Placement Officer. Job posting will be enabled once approved.");
+                  return;
+                }
+                setShowJobModal(true);
+              }}
+            >
               <PlusCircle size={18} />
               <span>+ Post New Job</span>
             </button>
@@ -289,6 +327,27 @@ export default function RecruiterDashboard() {
 
         {/* Dynamic Body Container */}
         <div className="dashboard-body-container">
+          {!isApproved && (
+            <div style={{
+              background: profile?.approval_status === 'Rejected' ? '#FEE2E2' : '#FFFBEB',
+              border: `1px solid ${profile?.approval_status === 'Rejected' ? '#EF4444' : '#F59E0B'}`,
+              color: profile?.approval_status === 'Rejected' ? '#991B1B' : '#92400E',
+              padding: '14px 20px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              <AlertCircle size={20} color={profile?.approval_status === 'Rejected' ? "#DC2626" : "#D97706"} />
+              <span>
+                {profile?.approval_status === 'Rejected'
+                  ? "Your company profile has been rejected by the Placement Officer. Job posting is disabled."
+                  : "Your company profile is pending verification by the Placement Officer. Job posting will be enabled once approved."}
+              </span>
+            </div>
+          )}
           {activeTab === 'dashboard' && (
             <>
               {/* 4 Statistics / Overview Cards */}
@@ -443,9 +502,9 @@ export default function RecruiterDashboard() {
                             </td>
                             <td>{job.application_deadline || 'Open'}</td>
                             <td>
-                              <span className={`status-pill ${job.status === 'Open' ? 'pill-open' : 'pill-closed'}`}>
-                                {job.status}
-                              </span>
+                            <span className={`status-pill pill-${(job.status || 'Open').toLowerCase().replace(/\s+/g, '-')}`}>
+                              {job.status}
+                            </span>
                             </td>
                             <td>
                               <div className="table-actions">
@@ -510,7 +569,17 @@ export default function RecruiterDashboard() {
                             <td>
                               <div className="candidate-action-buttons">
                                 <button 
+                                  className="btn-action-view" 
+                                  title="View Application Details"
+                                  onClick={() => handleViewApplication(app.id)}
+                                >
+                                  <Eye size={14} />
+                                  <span>View App</span>
+                                </button>
+
+                                <button 
                                   className="btn-action-shortlist" 
+
                                   title="Shortlist Candidate"
                                   onClick={() => handleUpdateApplicantStatus(app.id, 'Shortlisted')}
                                 >
@@ -671,7 +740,7 @@ export default function RecruiterDashboard() {
                           <td>{job.location || 'Remote'}</td>
                           <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
                           <td>
-                            <span className={`status-pill ${job.status === 'Open' ? 'pill-open' : 'pill-closed'}`}>
+                            <span className={`status-pill pill-${(job.status || 'Open').toLowerCase().replace(/\s+/g, '-')}`}>
                               {job.status}
                             </span>
                           </td>
@@ -728,7 +797,16 @@ export default function RecruiterDashboard() {
                           <td>
                             <div className="candidate-action-buttons">
                               <button 
+                                className="btn-action-view" 
+                                title="View Application Details"
+                                onClick={() => handleViewApplication(app.id)}
+                              >
+                                <Eye size={14} />
+                                <span>View App</span>
+                              </button>
+                              <button 
                                 className="btn-action-shortlist" 
+
                                 onClick={() => handleUpdateApplicantStatus(app.id, 'Shortlisted')}
                               >
                                 Shortlist
@@ -1062,6 +1140,371 @@ export default function RecruiterDashboard() {
           </div>
         </div>
       )}
+      {/* Candidate Application Review Modal */}
+      {showReviewModal && (
+        <div className="modal-backdrop">
+          <div className="candidate-review-modal-content">
+            <div className="modal-header">
+              <h3>Candidate Application Review</h3>
+              <button className="btn-close-modal" onClick={() => { setShowReviewModal(false); setSelectedApp(null); }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {loadingAppDetail ? (
+              <div className="empty-state-box" style={{ border: 'none', background: 'transparent' }}>
+                <Sparkles size={28} className="spin-gear-icon" color="#10B981" />
+                <p>Fetching candidate details...</p>
+              </div>
+            ) : selectedApp ? (
+              <>
+                {/* Header Banner */}
+                <div className="candidate-review-banner">
+                  <div className="candidate-large-avatar">
+                    {selectedApp.student_detail?.profile_photo ? (
+                      <img 
+                        src={selectedApp.student_detail.profile_photo.startsWith('http') || selectedApp.student_detail.profile_photo.startsWith('/') ? selectedApp.student_detail.profile_photo : `/media/${selectedApp.student_detail.profile_photo}`} 
+                        alt="Candidate Photo" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      selectedApp.student_detail?.first_name ? selectedApp.student_detail.first_name[0].toUpperCase() : 'C'
+                    )}
+                  </div>
+                  <div className="candidate-banner-info">
+                    <h3>{`${selectedApp.student_detail?.first_name || ''} ${selectedApp.student_detail?.middle_name || ''} ${selectedApp.student_detail?.last_name || ''}`.trim() || 'Candidate Name'}</h3>
+                    <p className="candidate-banner-sub">
+                      Register No: <strong>{selectedApp.student_detail?.register_number || 'Not provided'}</strong> • Applied for: <strong>{selectedApp.job_detail?.job_title || 'Position'}</strong>
+                    </p>
+                    <p className="candidate-banner-sub" style={{ fontSize: '12.5px', marginTop: '2px' }}>
+                      Application Date: {selectedApp.applied_at ? new Date(selectedApp.applied_at).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className={`status-pill pill-${(selectedApp.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`} style={{ fontSize: '13px', padding: '6px 14px' }}>
+                      {selectedApp.application_status || 'Applied'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Section 1: Basic & Contact Information */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <UserCheck size={18} color="#3B82F6" />
+                    <span>Basic & Contact Information</span>
+                  </h4>
+                  <div className="review-kv-grid">
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Full Name</span>
+                      <span className="review-kv-value">{`${selectedApp.student_detail?.first_name || ''} ${selectedApp.student_detail?.middle_name || ''} ${selectedApp.student_detail?.last_name || ''}`.trim() || 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Institution / College</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.institution_detail?.institution_name || 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Program / Degree</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.current_education?.program_detail?.name || 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Branch / Specialization</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.current_education?.branch_detail?.name || selectedApp.student_detail?.current_education?.field_of_study || 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Semester & Batch</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.current_education?.semester ? `Semester ${selectedApp.student_detail.current_education.semester} (${selectedApp.student_detail.current_education.batch || ''})` : 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Primary Email</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.contact?.primary_email || 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Mobile Number</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.contact?.mobile_number || 'Not provided'}</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Location / Address</span>
+                      <span className="review-kv-value">{selectedApp.student_detail?.contact?.city ? `${selectedApp.student_detail.contact.city}, ${selectedApp.student_detail.contact.state} - ${selectedApp.student_detail.contact.pincode}` : 'Not provided'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Academic Details */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <GraduationCap size={18} color="#8B5CF6" />
+                    <span>Academic Performance</span>
+                  </h4>
+                  <div className="review-kv-grid" style={{ marginBottom: '14px' }}>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Current CGPA</span>
+                      <span className="review-kv-value" style={{ color: '#10B981', fontSize: '16px' }}>
+                        {selectedApp.student_detail?.current_education?.cgpa ? `${selectedApp.student_detail.current_education.cgpa} / 10.0` : 'Not provided'}
+                      </span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Active Backlogs</span>
+                      <span className="review-kv-value" style={{ color: selectedApp.student_detail?.current_education?.active_backlogs > 0 ? '#EF4444' : '#0F172A' }}>
+                        {selectedApp.student_detail?.current_education?.active_backlogs ?? 'Not provided'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Previous Educations */}
+                  <h5 style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', marginBottom: '8px', textTransform: 'uppercase' }}>Previous Qualifications</h5>
+                  {selectedApp.student_detail?.previous_educations && selectedApp.student_detail.previous_educations.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="rec-jobs-table" style={{ fontSize: '13px' }}>
+                        <thead>
+                          <tr>
+                            <th>Qualification</th>
+                            <th>Board / University</th>
+                            <th>School / Institution</th>
+                            <th>Year</th>
+                            <th>Score (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedApp.student_detail.previous_educations.map((edu, idx) => (
+                            <tr key={idx}>
+                              <td style={{ fontWeight: 700 }}>{edu.qualification_type_detail?.name || 'Qualification'}</td>
+                              <td>{edu.board_or_university || 'N/A'}</td>
+                              <td>{edu.institution_name || 'N/A'}</td>
+                              <td>{edu.year_of_passing || 'N/A'}</td>
+                              <td><strong>{edu.percentage ? `${edu.percentage}%` : 'N/A'}</strong></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>Not provided.</p>
+                  )}
+                </div>
+
+                {/* Section 3: Skills */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <Sparkles size={18} color="#10B981" />
+                    <span>Skills & Competencies</span>
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['Python', 'Django REST Framework', 'React.js', 'PostgreSQL', 'JavaScript', 'Git', selectedApp.student_detail?.current_education?.field_of_study].filter(Boolean).map((sk, idx) => (
+                      <span key={idx} className="status-pill pill-open" style={{ fontSize: '12.5px', padding: '5px 12px' }}>
+                        {sk}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section 4: Projects */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <FileText size={18} color="#3B82F6" />
+                    <span>Projects</span>
+                  </h4>
+                  <p style={{ fontSize: '13.5px', color: '#64748B', margin: 0 }}>Not provided.</p>
+                </div>
+
+                {/* Section 5: Experience & Internships */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <Briefcase size={18} color="#F59E0B" />
+                    <span>Internships & Work Experience</span>
+                  </h4>
+                  {selectedApp.student_detail?.experiences && selectedApp.student_detail.experiences.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {selectedApp.student_detail.experiences.map((exp, idx) => (
+                        <div key={idx} style={{ padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                          <strong style={{ fontSize: '14.5px', color: '#0F172A', display: 'block' }}>
+                            {exp.designation} <span style={{ fontSize: '12.5px', color: '#3B82F6', fontWeight: 600 }}>({exp.employment_type_detail?.name || 'Internship'})</span>
+                          </strong>
+                          <span style={{ fontSize: '13px', color: '#475569', display: 'block', marginTop: '2px' }}>
+                            🏢 {exp.company_name} • 📍 {exp.location || 'Remote'} • 📅 {exp.start_date} to {exp.end_date || 'Present'}
+                          </span>
+                          {exp.description && (
+                            <p style={{ fontSize: '13px', color: '#334155', marginTop: '6px', margin: '6px 0 0 0' }}>
+                              {exp.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '13.5px', color: '#64748B', margin: 0 }}>No internship or experience provided.</p>
+                  )}
+                </div>
+
+                {/* Section 6: Resume & Uploaded Documents */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <ShieldCheck size={18} color="#10B981" />
+                    <span>Resume & Uploaded Documents</span>
+                  </h4>
+                  <div className="review-kv-grid">
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Resume</span>
+                      <div style={{ marginTop: '4px' }}>
+                        {selectedApp.student_detail?.documents?.resume ? (
+                          <a 
+                            href={selectedApp.student_detail.documents.resume.startsWith('http') || selectedApp.student_detail.documents.resume.startsWith('/') ? selectedApp.student_detail.documents.resume : `/media/${selectedApp.student_detail.documents.resume}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="document-download-btn"
+                          >
+                            <FileText size={15} />
+                            <span>View / Download Resume (PDF)</span>
+                          </a>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontSize: '13.5px' }}>Resume not uploaded.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Class X Certificate</span>
+                      <div style={{ marginTop: '4px' }}>
+                        {selectedApp.student_detail?.documents?.class10_certificate ? (
+                          <a 
+                            href={selectedApp.student_detail.documents.class10_certificate.startsWith('http') || selectedApp.student_detail.documents.class10_certificate.startsWith('/') ? selectedApp.student_detail.documents.class10_certificate : `/media/${selectedApp.student_detail.documents.class10_certificate}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="document-download-btn"
+                          >
+                            <Eye size={15} />
+                            <span>View Class X Certificate</span>
+                          </a>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontSize: '13.5px' }}>Not uploaded.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Class XII Certificate</span>
+                      <div style={{ marginTop: '4px' }}>
+                        {selectedApp.student_detail?.documents?.class12_certificate ? (
+                          <a 
+                            href={selectedApp.student_detail.documents.class12_certificate.startsWith('http') || selectedApp.student_detail.documents.class12_certificate.startsWith('/') ? selectedApp.student_detail.documents.class12_certificate : `/media/${selectedApp.student_detail.documents.class12_certificate}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="document-download-btn"
+                          >
+                            <Eye size={15} />
+                            <span>View Class XII Certificate</span>
+                          </a>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontSize: '13.5px' }}>Not uploaded.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Degree Marksheet</span>
+                      <div style={{ marginTop: '4px' }}>
+                        {selectedApp.student_detail?.documents?.degree_marksheet ? (
+                          <a 
+                            href={selectedApp.student_detail.documents.degree_marksheet.startsWith('http') || selectedApp.student_detail.documents.degree_marksheet.startsWith('/') ? selectedApp.student_detail.documents.degree_marksheet : `/media/${selectedApp.student_detail.documents.degree_marksheet}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="document-download-btn"
+                          >
+                            <Eye size={15} />
+                            <span>View Degree Marksheet</span>
+                          </a>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontSize: '13.5px' }}>Not uploaded.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 7: Job & Applicant Eligibility Comparison */}
+                <div className="review-section-card">
+                  <h4 className="review-section-title">
+                    <Briefcase size={18} color="#059669" />
+                    <span>Job Requirement & Candidate Eligibility</span>
+                  </h4>
+                  <div className="review-kv-grid">
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Job Title & Package</span>
+                      <span className="review-kv-value">{selectedApp.job_detail?.job_title} ({selectedApp.job_detail?.package_lpa ? `${selectedApp.job_detail.package_lpa} LPA` : 'Competitive'})</span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Min CGPA Required</span>
+                      <span className="review-kv-value">
+                        {selectedApp.job_detail?.minimum_cgpa ?? '0.0'} (Candidate: <strong>{selectedApp.student_detail?.current_education?.cgpa || 'N/A'}</strong>)
+                      </span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Max Backlogs Allowed</span>
+                      <span className="review-kv-value">
+                        {selectedApp.job_detail?.maximum_active_backlogs ?? '0'} (Candidate: <strong>{selectedApp.student_detail?.current_education?.active_backlogs ?? '0'}</strong>)
+                      </span>
+                    </div>
+                    <div className="review-kv-item">
+                      <span className="review-kv-label">Location & Work Mode</span>
+                      <span className="review-kv-value">{selectedApp.job_detail?.location || 'Remote'} ({selectedApp.job_detail?.work_mode_detail?.name || 'Hybrid'})</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Decision Buttons */}
+                <div className="candidate-modal-footer">
+                  <div className="candidate-action-buttons">
+                    <button 
+                      className="btn-action-shortlist" 
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                      onClick={() => handleUpdateApplicantStatus(selectedApp.id, 'Shortlisted')}
+                    >
+                      <UserCheck size={16} />
+                      <span>Shortlist</span>
+                    </button>
+
+                    <button 
+                      className="btn-action-interview" 
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                      onClick={() => handleUpdateApplicantStatus(selectedApp.id, 'Interview Scheduled')}
+                    >
+                      <Calendar size={16} />
+                      <span>Interview</span>
+                    </button>
+
+                    <button 
+                      className="btn-action-select" 
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                      onClick={() => handleUpdateApplicantStatus(selectedApp.id, 'Selected')}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Select</span>
+                    </button>
+
+                    <button 
+                      className="btn-action-reject" 
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                      onClick={() => handleUpdateApplicantStatus(selectedApp.id, 'Rejected')}
+                    >
+                      <UserX size={16} />
+                      <span>Reject</span>
+                    </button>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    className="btn-modal-cancel"
+                    onClick={() => { setShowReviewModal(false); setSelectedApp(null); }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

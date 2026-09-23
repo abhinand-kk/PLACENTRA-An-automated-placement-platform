@@ -41,6 +41,7 @@ class RecruiterProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'user', 'company_name', 'recruiter_name', 'designation',
             'official_email', 'mobile_number', 'hiring_volume', 'is_verified',
-            'hiring_preference', 'created_at', 'updated_at'
+            'approval_status', 'hiring_preference', 'created_at', 'updated_at'
         )
         read_only_fields = ('id', 'user', 'created_at', 'updated_at')
+

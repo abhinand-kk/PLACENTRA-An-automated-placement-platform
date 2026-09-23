@@ -11,14 +11,46 @@ from jobs.models import Job
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
-    queryset = Application.objects.select_related(
-        'student',
-        'job',
-        'job__recruiter',
-        'student__institution',
-        'student__current_education'
-    ).all()
     serializer_class = ApplicationSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Application.objects.none()
+
+        qs = Application.objects.select_related(
+            'student',
+            'student__institution',
+            'student__contact',
+            'student__current_education',
+            'student__current_education__program',
+            'student__current_education__branch',
+            'student__documents',
+            'job',
+            'job__recruiter',
+            'job__employment_type',
+            'job__hiring_type',
+            'job__work_mode'
+        ).prefetch_related(
+            'student__previous_educations',
+            'student__previous_educations__qualification_type',
+            'student__experiences',
+            'student__experiences__employment_type',
+            'job__target_job_roles',
+            'job__eligible_programs',
+            'job__eligible_branches'
+        )
+
+        if hasattr(user, 'recruiter_profile'):
+            return qs.filter(job__recruiter=user.recruiter_profile)
+        elif hasattr(user, 'student_profile'):
+            return qs.filter(student=user.student_profile)
+        elif hasattr(user, 'placement_officer_profile'):
+            return qs.filter(student__institution=user.placement_officer_profile.institution)
+        elif user.is_staff or user.is_superuser:
+            return qs
+        return Application.objects.none()
+
 
     def get_permissions(self):
         if self.action in ['create', 'my_applications', 'student_dashboard', 'destroy']:
@@ -38,9 +70,10 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
         job = get_object_or_404(Job, pk=job_id)
 
-        # Check job status
-        if job.status != Job.Status.OPEN:
-            return Response({'error': 'Applications are closed for this job posting.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Check job status and recruiter approval
+        if job.status != Job.Status.OPEN or getattr(job.recruiter, 'approval_status', 'Approved') != 'Approved':
+            return Response({'error': 'Applications are closed or pending approval for this job posting.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
         # Check application deadline
         if date.today() > job.application_deadline:

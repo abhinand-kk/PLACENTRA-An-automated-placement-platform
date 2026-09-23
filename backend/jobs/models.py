@@ -5,9 +5,12 @@ from master_data.models import EmploymentType, HiringType, TargetJobRole, Progra
 
 class Job(models.Model):
     class Status(models.TextChoices):
+        PENDING_APPROVAL = 'Pending Approval', 'Pending Approval'
         OPEN = 'Open', 'Open'
+        REJECTED = 'Rejected', 'Rejected'
         CLOSED = 'Closed', 'Closed'
         DRAFT = 'Draft', 'Draft'
+
 
     recruiter = models.ForeignKey(
         RecruiterProfile,

@@ -4,6 +4,11 @@ from master_data.models import TargetJobRole, HiringType, Program, Branch, WorkM
 
 
 class RecruiterProfile(models.Model):
+    class ApprovalStatus(models.TextChoices):
+        PENDING = 'Pending', 'Pending'
+        APPROVED = 'Approved', 'Approved'
+        REJECTED = 'Rejected', 'Rejected'
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -16,8 +21,14 @@ class RecruiterProfile(models.Model):
     mobile_number = models.CharField(max_length=20)
     hiring_volume = models.CharField(max_length=100)
     is_verified = models.BooleanField(default=False)
+    approval_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.PENDING
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
 
     class Meta:
         ordering = ['company_name']
