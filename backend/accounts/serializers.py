@@ -49,31 +49,39 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         )
 
     def validate_email(self, value):
+        err_msg = "Please enter a valid lowercase email address."
         if not value or not isinstance(value, str):
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
         if value.strip() != value or ' ' in value:
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
         import re
         if re.search(r'[A-Z]', value):
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
         
         parts = value.split('@')
         if len(parts) != 2:
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
         
         username, domain = parts
-        if domain != 'gmail.com':
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
-            
         if not username or len(username) < 1 or username.startswith('.') or username.endswith('.'):
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
             
         if '..' in username:
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
             
         username_regex = r'^[a-z0-9]+([._+-][a-z0-9]+)*$'
         if not re.match(username_regex, username):
-            raise serializers.ValidationError("Please enter a valid lowercase Gmail address.")
+            raise serializers.ValidationError(err_msg)
+
+        if not domain or len(domain) < 3 or domain.startswith('.') or domain.endswith('.'):
+            raise serializers.ValidationError(err_msg)
+
+        if '..' in domain:
+            raise serializers.ValidationError(err_msg)
+
+        domain_regex = r'^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
+        if not re.match(domain_regex, domain):
+            raise serializers.ValidationError(err_msg)
 
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("A user with this email address already exists.")

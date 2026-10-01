@@ -38,20 +38,23 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
     if (/\s/.test(email)) return false;
     if (/[A-Z]/.test(email)) return false;
     
-    if (!email.endsWith('@gmail.com')) return false;
-    
     const parts = email.split('@');
     if (parts.length !== 2) return false;
     
     const [username, domain] = parts;
-    if (domain !== 'gmail.com') return false;
-    
     if (!username || username.length < 1) return false;
     if (username.startsWith('.') || username.endsWith('.')) return false;
     if (username.includes('..')) return false;
     
     const usernameRegex = /^[a-z0-9]+([._+-][a-z0-9]+)*$/;
     if (!usernameRegex.test(username)) return false;
+    
+    if (!domain || domain.length < 3) return false;
+    if (domain.startsWith('.') || domain.endsWith('.')) return false;
+    if (domain.includes('..')) return false;
+    
+    const domainRegex = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/;
+    if (!domainRegex.test(domain)) return false;
     
     return true;
   };
@@ -336,11 +339,36 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
               required
             >
               <option value="">Select Course / Program</option>
-              <option value="MCA (Integrated)">MCA (Integrated)</option>
-              <option value="B.Tech Computer Science">B.Tech Computer Science</option>
-              <option value="B.Tech Electronics & Comm">B.Tech Electronics & Comm</option>
-              <option value="M.Tech Artificial Intelligence">M.Tech Artificial Intelligence</option>
-              <option value="MBA">MBA</option>
+              {[
+                'MCA',
+                'MCA (Integrated)',
+                'MCA (Lateral Entry)',
+                'MCA + MBA (Integrated)',
+                'BCA',
+                'BCA + MCA (Integrated)',
+                'B.Tech Computer Science',
+                'B.Tech Information Technology',
+                'B.Tech Electronics & Communication',
+                'B.Tech Electronics & Comm',
+                'B.Tech Electrical & Electronics',
+                'B.Tech Electrical Engineering',
+                'B.Tech Mechanical Engineering',
+                'B.Tech Mechanical',
+                'B.Tech Civil Engineering',
+                'B.Tech Artificial Intelligence',
+                'B.Tech Artificial Intelligence & Data Science',
+                'B.Tech Data Science',
+                'B.Tech Cyber Security',
+                'M.Tech',
+                'M.Tech Computer Science',
+                'M.Tech Artificial Intelligence',
+                'M.Tech + MCA (Integrated)',
+                'MCA + M.Tech (Integrated)',
+                'MBA',
+                'PGDM + MCA (Integrated)'
+              ].map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
             {touched.course && !isCourseValid && (
               <span className="error-text">Course selection is required</span>
@@ -460,7 +488,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
             </div>
             <span className="form-hint">This email will be used for all communications.</span>
             {touched.primaryEmail && !isEmailValid && (
-              <span className="error-text">Please enter a valid lowercase Gmail address.</span>
+              <span className="error-text">Please enter a valid lowercase email address.</span>
             )}
           </div>
 

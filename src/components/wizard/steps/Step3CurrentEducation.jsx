@@ -34,19 +34,32 @@ export default function Step3CurrentEducation({ state, onChange, onNext, onBack 
   ];
 
   const programOptions = [
-    'MCA (Integrated)',
     'MCA',
+    'MCA (Integrated)',
     'MCA (Lateral Entry)',
     'MCA + MBA (Integrated)',
+    'BCA',
     'BCA + MCA (Integrated)',
+    'B.Tech Computer Science',
+    'B.Tech Information Technology',
+    'B.Tech Electronics & Communication',
+    'B.Tech Electronics & Comm',
+    'B.Tech Electrical & Electronics',
+    'B.Tech Electrical Engineering',
+    'B.Tech Mechanical Engineering',
+    'B.Tech Mechanical',
+    'B.Tech Civil Engineering',
+    'B.Tech Artificial Intelligence',
+    'B.Tech Artificial Intelligence & Data Science',
+    'B.Tech Data Science',
+    'B.Tech Cyber Security',
+    'M.Tech',
+    'M.Tech Computer Science',
+    'M.Tech Artificial Intelligence',
     'M.Tech + MCA (Integrated)',
     'MCA + M.Tech (Integrated)',
-    'PGDM + MCA (Integrated)',
-    'B.Tech Computer Science',
-    'B.Tech Electronics & Comm',
-    'B.Tech Mechanical',
-    'M.Tech Artificial Intelligence',
-    'MBA'
+    'MBA',
+    'PGDM + MCA (Integrated)'
   ];
 
   const majorOptions = [

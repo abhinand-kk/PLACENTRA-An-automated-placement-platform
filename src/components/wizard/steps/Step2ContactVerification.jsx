@@ -14,7 +14,8 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
 
   // OTP State & Refs (6 digits)
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
-  const [resendTimer, setResendTimer] = useState(60);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -45,13 +46,25 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
   // Countdown timer for OTP resend (60 seconds)
   useEffect(() => {
     let timer;
-    if (activeOtpTarget && resendTimer > 0) {
+    if (activeOtpTarget && otpSent && resendTimer > 0) {
       timer = setInterval(() => {
         setResendTimer(prev => prev - 1);
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [activeOtpTarget, resendTimer]);
+  }, [activeOtpTarget, otpSent, resendTimer]);
+
+  // Helper to close OTP modal and reset state
+  const closeOtpModal = () => {
+    setActiveOtpTarget(null);
+    setOtpSent(false);
+    setOtpDigits(['', '', '', '', '', '']);
+    setOtpError('');
+    setOtpSuccessMsg('');
+    setResendTimer(0);
+    setIsSendingOtp(false);
+    setIsVerifyingOtp(false);
+  };
 
   // Get contact value based on target
   const getContactValue = (target) => {
@@ -61,42 +74,75 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
     return '';
   };
 
-  // 1. Send OTP Request to Backend
+  // Helper to mask email or phone number for security
+  const maskContact = (val, target) => {
+    if (!val) return '';
+    if (target === 'mobile') {
+      const clean = val.replace(/\D/g, '');
+      if (clean.length >= 10) {
+        return `${clean.slice(0, 2)}******${clean.slice(-2)}`;
+      }
+      return val;
+    }
+    const parts = val.split('@');
+    if (parts.length === 2) {
+      const name = parts[0];
+      const domain = parts[1];
+      if (name.length <= 2) {
+        return `${name}***@${domain}`;
+      }
+      const showFront = Math.min(4, Math.floor(name.length / 2));
+      return `${name.slice(0, showFront)}${'*'.repeat(Math.max(4, name.length - showFront))}@${domain}`;
+    }
+    return val;
+  };
+
+  // 1. Send / Retry OTP Request to Backend
   const handleOpenOtpModal = async (target) => {
+    if (isSendingOtp) return;
     const contactValue = getContactValue(target);
     setActiveOtpTarget(target);
+    setOtpSent(false);
     setOtpDigits(['', '', '', '', '', '']);
     setOtpError('');
     setOtpSuccessMsg('');
-    setResendTimer(60);
+    setResendTimer(0);
     setIsSendingOtp(true);
 
     try {
-      const res = await api.post('/api/v1/auth/otp/send/', {
+      await api.post('/api/v1/auth/otp/send/', {
         target_type: target,
         contact_value: contactValue
       });
 
-      setOtpSuccessMsg(`OTP sent to ${contactValue}`);
-      if (res.data?.otp) {
-        console.log(`[DEV OTP] Generated OTP for ${contactValue}: ${res.data.otp}`);
-        const digits = String(res.data.otp).split('').slice(0, 6);
-        setOtpDigits(digits);
-      }
-    } catch (err) {
-      const errMsg = err?.response?.data?.error || 'Failed to send OTP via SMS/Email service. You may verify later from your profile.';
-      setOtpError(errMsg);
-    } finally {
-      setIsSendingOtp(false);
+      const masked = maskContact(contactValue, target);
+      setOtpSuccessMsg(`An OTP has been sent to ${masked}. Please check your inbox.`);
+      setOtpError('');
+      setOtpSent(true);
+      setResendTimer(60);
       setTimeout(() => {
         if (otpRefs[0].current) otpRefs[0].current.focus();
       }, 100);
+    } catch (err) {
+      setOtpSent(false);
+      setOtpSuccessMsg('');
+      setResendTimer(0);
+      const errMsg = err?.response?.data?.error || 'Unable to send the verification email. Please try again later.';
+      setOtpError(errMsg);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
-  // Resend OTP handler
+  // Dedicated Retry handler for failed send attempts
+  const handleRetryOtp = async () => {
+    if (isSendingOtp || !activeOtpTarget) return;
+    await handleOpenOtpModal(activeOtpTarget);
+  };
+
+  // Resend OTP handler for active countdown expiry
   const handleResendOtp = async () => {
-    if (resendTimer > 0 || !activeOtpTarget) return;
+    if (resendTimer > 0 || isSendingOtp || !activeOtpTarget) return;
     await handleOpenOtpModal(activeOtpTarget);
   };
 
@@ -483,84 +529,112 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
               <h3>
                 Verify {activeOtpTarget === 'mobile' ? 'Mobile Number' : 'Email'} OTP
               </h3>
-              <button className="modal-close-btn" onClick={() => setActiveOtpTarget(null)}>
+              <button className="modal-close-btn" onClick={closeOtpModal}>
                 <X size={18} />
               </button>
             </div>
             <div className="modal-body text-center">
-              <p className="otp-modal-desc">
-                An OTP has been sent to <span className="highlight-email">{getContactValue(activeOtpTarget)}</span>. 
-                Please check your inbox or mobile messages!
-              </p>
-
-              {otpError && (
-                <div className="wizard-alert alert-amber otp-warning-banner" style={{ color: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
-                  <AlertCircle size={18} className="flex-shrink-0" />
-                  <span>{otpError}</span>
+              {isSendingOtp && (
+                <div className="sending-otp-state" style={{ padding: '24px 0', color: '#64748B' }}>
+                  <p style={{ fontSize: '14px', fontWeight: 500 }}>Sending verification OTP request...</p>
                 </div>
               )}
 
-              {otpSuccessMsg && !otpError && (
-                <div className="wizard-alert alert-green otp-warning-banner" style={{ color: '#047857', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }}>
-                  <CheckCircle2 size={18} className="flex-shrink-0" />
-                  <span>{otpSuccessMsg}</span>
-                </div>
-              )}
-
-              <div className="otp-prompt-label">
-                Enter the 6-digit OTP code below.
-              </div>
-
-              <div className="resend-timer-text">
-                {resendTimer > 0 ? (
-                  <>You can re-send the OTP in <span className="timer-sec">{resendTimer}s</span></>
-                ) : (
-                  <button 
-                    type="button" 
-                    className="btn-card-action"
-                    style={{ fontSize: '13px', textDecoration: 'underline' }}
-                    onClick={handleResendOtp}
+              {/* STATE B — EMAIL SEND FAILURE: Show ONLY error banner and Retry button */}
+              {!isSendingOtp && !otpSent && otpError && (
+                <div className="otp-failure-container" style={{ padding: '8px 0' }}>
+                  <div className="wizard-alert alert-amber otp-warning-banner" style={{ color: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', marginBottom: '16px' }}>
+                    <AlertCircle size={18} className="flex-shrink-0" />
+                    <span>{otpError}</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '16px', lineHeight: 1.5 }}>
+                    Please verify your network connection and email configuration, then try requesting the OTP again.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-wizard-primary"
+                    style={{ margin: '0 auto', padding: '8px 20px', fontSize: '13.5px' }}
+                    disabled={isSendingOtp}
+                    onClick={handleRetryOtp}
                   >
-                    Resend OTP Code
+                    {isSendingOtp ? 'Sending Request...' : 'Retry Requesting OTP'}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* 6-Digit OTP Input Grid */}
-              <div className="otp-4digit-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }} onPaste={handleOtpPaste}>
-                {otpDigits.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={otpRefs[idx]}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength="1"
-                    className="otp-single-box"
-                    style={{ width: '42px', height: '48px', fontSize: '18px', textAlign: 'center' }}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                  />
-                ))}
-              </div>
+              {/* STATE A — EMAIL SEND SUCCESS: Show success banner, prompt label, countdown timer & OTP inputs */}
+              {!isSendingOtp && otpSent && (
+                <>
+                  <div className="wizard-alert alert-green otp-warning-banner" style={{ color: '#047857', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', marginBottom: '16px' }}>
+                    <CheckCircle2 size={18} className="flex-shrink-0" />
+                    <span>{otpSuccessMsg}</span>
+                  </div>
+
+                  {otpError && (
+                    <div className="wizard-alert alert-amber otp-warning-banner" style={{ color: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', marginBottom: '16px' }}>
+                      <AlertCircle size={18} className="flex-shrink-0" />
+                      <span>{otpError}</span>
+                    </div>
+                  )}
+
+                  <div className="otp-prompt-label">
+                    Enter the 6-digit OTP code below.
+                  </div>
+
+                  <div className="resend-timer-text">
+                    {resendTimer > 0 ? (
+                      <>You can re-send the OTP in <span className="timer-sec">{resendTimer}s</span></>
+                    ) : (
+                      <button 
+                        type="button" 
+                        className="btn-card-action"
+                        style={{ fontSize: '13px', textDecoration: 'underline' }}
+                        onClick={handleResendOtp}
+                      >
+                        Resend OTP Code
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 6-Digit OTP Input Grid */}
+                  <div className="otp-4digit-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }} onPaste={handleOtpPaste}>
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={otpRefs[idx]}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength="1"
+                        className="otp-single-box"
+                        style={{ width: '42px', height: '48px', fontSize: '18px', textAlign: 'center' }}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="modal-footer">
               <button 
                 type="button" 
                 className="btn-wizard-secondary"
-                onClick={() => setActiveOtpTarget(null)}
+                onClick={closeOtpModal}
               >
-                Cancel
+                Close
               </button>
-              <button 
-                type="button" 
-                className="btn-wizard-primary"
-                onClick={handleVerifyOtpSubmit}
-                disabled={isVerifyingOtp || isSendingOtp}
-              >
-                {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
-              </button>
+              {otpSent && (
+                <button 
+                  type="button" 
+                  className="btn-wizard-primary"
+                  onClick={handleVerifyOtpSubmit}
+                  disabled={isVerifyingOtp || isSendingOtp}
+                >
+                  {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 import './Login.css';
 
 export default function Login() {
@@ -28,6 +29,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -197,7 +199,7 @@ export default function Login() {
                 className="login-forgot-link"
                 onClick={(e) => {
                   e.preventDefault();
-                  alert("Please contact your placement administrator to reset your password.");
+                  setIsForgotOpen(true);
                 }}
               >
                 Forgot Password?
@@ -269,6 +271,12 @@ export default function Login() {
           </div>
         </div>
       </main>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotOpen}
+        onClose={() => setIsForgotOpen(false)}
+      />
 
       {/* Footer Notice */}
       <footer className="login-footer-copyright">
