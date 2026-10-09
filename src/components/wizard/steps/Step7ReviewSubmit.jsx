@@ -50,10 +50,14 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
   };
 
   const handleFinalSubmit = async () => {
+    if (isSubmitting) return;
+
     setErrorMessage('');
     if (!validatePassword()) {
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const email = (basic.primaryEmail || 'student@placentra.edu').trim().toLowerCase();
@@ -74,7 +78,7 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
         
         contact_details: {
           primary_email: email,
-          personal_email: contact.personalEmail || email,
+          personal_email: email,
           mobile_number: basic.mobileNumber || contact.mobileNumber || '9876543210',
           state: contact.state || 'Kerala',
           district: contact.district || 'Kottayam',
@@ -110,7 +114,6 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
         localStorage.setItem('user_role', 'student');
         localStorage.setItem('user', JSON.stringify(res.data.user || {}));
       }
-      setIsSubmitting(true);
     } catch (err) {
       console.error("API student registration error:", err?.response?.data || err.message);
       const backendError = err?.response?.data;
@@ -238,27 +241,18 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
 
           <div className="review-kv-table">
             <div className="kv-row">
-              <span className="kv-key">Primary Email</span>
+              <span className="kv-key">Email Address</span>
               <span className="kv-sep">:</span>
               <span className="kv-val">
                 {basic.primaryEmail || 'abhinand@placentra.edu'}{' '}
-                <span className="badge-verified-tiny">✓ Verified</span>
-              </span>
-            </div>
-            <div className="kv-row">
-              <span className="kv-key">Personal Email</span>
-              <span className="kv-sep">:</span>
-              <span className="kv-val">
-                {contact.personalEmail || 'abhinand.kk@gmail.com'}{' '}
-                <span className="badge-verified-tiny">✓ Verified</span>
+                {contact.primaryEmailVerified && <span className="badge-verified-tiny">✓ Verified</span>}
               </span>
             </div>
             <div className="kv-row">
               <span className="kv-key">Mobile Number</span>
               <span className="kv-sep">:</span>
               <span className="kv-val">
-                +91 {basic.mobileNumber || '9876543210'}{' '}
-                <span className="badge-verified-tiny">✓ Verified</span>
+                +91 {basic.mobileNumber || '9876543210'}
               </span>
             </div>
             <div className="kv-row">
@@ -332,24 +326,24 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
             <div className="kv-row">
               <span className="kv-key">Board / Institution</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{`${c12.board || 'CBSE'} • ${c12.school || 'St. Antony Higher Secondary'}`}</span>
+              <span className="kv-val">{`${c12.board || '—'} • ${c12.schoolName || c12.school || '—'}`}</span>
             </div>
             <div className="kv-row">
               <span className="kv-key">Passing Year & Score</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{`${c12.passingYear || '2020'} (${c12.percentage || '92.4'}%)`}</span>
+              <span className="kv-val">{`${c12.yearOfPassing || c12.passingYear || '—'} (${c12.percentage ? c12.percentage + '%' : '—'})`}</span>
             </div>
 
             <div className="review-section-subtitle" style={{ marginTop: '10px' }}>Class X (Secondary)</div>
             <div className="kv-row">
               <span className="kv-key">Board / Institution</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{`${c10.board || 'CBSE'} • ${c10.school || 'St. Antony Public School'}`}</span>
+              <span className="kv-val">{`${c10.board || '—'} • ${c10.schoolName || c10.school || '—'}`}</span>
             </div>
             <div className="kv-row">
               <span className="kv-key">Passing Year & Score</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{`${c10.passingYear || '2018'} (${c10.percentage || '94.8'}%)`}</span>
+              <span className="kv-val">{`${c10.yearOfPassing || c10.passingYear || '—'} (${c10.percentage ? c10.percentage + '%' : '—'})`}</span>
             </div>
           </div>
         </div>
@@ -456,11 +450,15 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
 
             <div className="doc-item-row">
               <div className="doc-item-left">
-                <ShieldCheck size={16} color="#10B981" />
-                <span>Degree Marksheet (DigiLocker)</span>
+                <FileText size={16} color="#4F46E5" />
+                <span>Degree Marksheet</span>
               </div>
               <div className="doc-item-status">
-                Fetched <CheckCircle2 size={14} color="#10B981" />
+                {docs.degreeMarksheet?.status === 'Uploaded' || docs.degreeMarksheet?.name ? (
+                  <>Uploaded <CheckCircle2 size={14} color="#10B981" /></>
+                ) : (
+                  <span style={{ color: '#94A3B8' }}>Pending</span>
+                )}
               </div>
             </div>
           </div>
@@ -494,10 +492,11 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
         </button>
         <button 
           type="button" 
-          className="btn-wizard-primary"
+          className={`btn-wizard-primary ${isSubmitting ? 'disabled' : ''}`}
+          disabled={isSubmitting}
           onClick={handleFinalSubmit}
         >
-          <span>Submit Registration</span>
+          <span>{isSubmitting ? 'Submitting Registration...' : 'Submit Registration'}</span>
           <ArrowRight size={16} />
         </button>
       </div>

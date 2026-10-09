@@ -26,7 +26,15 @@ import {
   AlertCircle,
   Clock,
   UserCheck,
-  CheckCircle
+  CheckCircle,
+  Filter,
+  Video,
+  MapPin,
+  ExternalLink,
+  Award,
+  XCircle,
+  ArrowUpRight,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -55,10 +63,22 @@ export default function OfficerDashboard() {
     description: ''
   });
 
-  // Filter States
+  // Filter & Search States
   const [studentSearch, setStudentSearch] = useState('');
   const [studentStatusFilter, setStudentStatusFilter] = useState('all');
+  
+  const [appSearch, setAppSearch] = useState('');
+  const [appStatusFilter, setAppStatusFilter] = useState('All');
+
+  const [interviewSearch, setInterviewSearch] = useState('');
+  const [interviewTypeFilter, setInterviewTypeFilter] = useState('All');
+  const [interviewStatusFilter, setInterviewStatusFilter] = useState('All');
+  const [interviewViewMode, setInterviewViewMode] = useState('all'); // 'all' | 'upcoming'
+
+  const [recruiterSearch, setRecruiterSearch] = useState('');
   const [recruiterStatusFilter, setRecruiterStatusFilter] = useState('All');
+
+  const [jobSearch, setJobSearch] = useState('');
   const [jobStatusFilter, setJobStatusFilter] = useState('All');
 
   // Backend Data States
@@ -69,16 +89,85 @@ export default function OfficerDashboard() {
   const [drives, setDrives] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [interviews, setInterviews] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loginActivity, setLoginActivity] = useState([]);
   const [officerRecruiters, setOfficerRecruiters] = useState([]);
   const [officerJobs, setOfficerJobs] = useState([]);
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  // Recruiter Detail Modal State
+  // Modal States
   const [showRecruiterModal, setShowRecruiterModal] = useState(false);
   const [selectedRecruiterDetail, setSelectedRecruiterDetail] = useState(null);
   const [loadingRecruiterDetail, setLoadingRecruiterDetail] = useState(false);
+
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [selectedStudentDetail, setSelectedStudentDetail] = useState(null);
+  const [loadingStudentDetail, setLoadingStudentDetail] = useState(false);
+
+  const [showAppModal, setShowAppModal] = useState(false);
+  const [selectedAppDetail, setSelectedAppDetail] = useState(null);
+
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [selectedInterviewDetail, setSelectedInterviewDetail] = useState(null);
+
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [selectedJobDetail, setSelectedJobDetail] = useState(null);
+
+  // Fetch placement officer data on mount
+  const fetchOfficerDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [
+        profRes,
+        instRes,
+        dashRes,
+        studentsRes,
+        drivesRes,
+        jobsRes,
+        appsRes,
+        interviewsRes,
+        activitiesRes,
+        notifsRes,
+        loginActRes,
+        officerRecruitersRes,
+        officerJobsRes
+      ] = await Promise.allSettled([
+        api.get('/api/v1/placement-officers/profile/'),
+        api.get('/api/v1/placement-officers/institution/'),
+        api.get('/api/v1/placement-officers/dashboard/'),
+        api.get('/api/v1/placement-officers/students/'),
+        api.get('/api/v1/placement-drives/my-institution/'),
+        api.get('/api/v1/jobs/'),
+        api.get('/api/v1/applications/'),
+        api.get('/api/v1/interviews/'),
+        api.get('/api/v1/placement-officers/activity/'),
+        api.get('/api/v1/notifications/'),
+        api.get('/api/v1/placement-officers/students/login-activity/'),
+        api.get('/api/v1/placement-officers/recruiters/'),
+        api.get('/api/v1/placement-officers/jobs/')
+      ]);
+
+      if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
+      if (instRes.status === 'fulfilled') setInstitution(instRes.value.data);
+      if (dashRes.status === 'fulfilled') setOfficerStats(dashRes.value.data);
+      if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value.data.results || studentsRes.value.data || []);
+      if (drivesRes.status === 'fulfilled') setDrives(drivesRes.value.data.results || drivesRes.value.data || []);
+      if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data.results || jobsRes.value.data || []);
+      if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data.results || appsRes.value.data || []);
+      if (interviewsRes.status === 'fulfilled') setInterviews(interviewsRes.value.data.results || interviewsRes.value.data || []);
+      if (activitiesRes.status === 'fulfilled') setActivities(activitiesRes.value.data.results || activitiesRes.value.data || []);
+      if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
+      if (loginActRes.status === 'fulfilled') setLoginActivity(loginActRes.value.data.results || loginActRes.value.data || []);
+      if (officerRecruitersRes.status === 'fulfilled') setOfficerRecruiters(officerRecruitersRes.value.data.results || officerRecruitersRes.value.data || []);
+      if (officerJobsRes.status === 'fulfilled') setOfficerJobs(officerJobsRes.value.data.results || officerJobsRes.value.data || []);
+    } catch (err) {
+      console.warn("Placement officer data fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleViewRecruiterDetails = async (recruiterId) => {
     setLoadingRecruiterDetail(true);
@@ -95,51 +184,18 @@ export default function OfficerDashboard() {
     }
   };
 
-  // Fetch placement officer data on mount
-  const fetchOfficerDashboardData = async () => {
-    setLoading(true);
+  const handleViewStudentDetails = async (studentId) => {
+    setLoadingStudentDetail(true);
+    setShowStudentModal(true);
     try {
-      const [
-        profRes,
-        instRes,
-        dashRes,
-        studentsRes,
-        drivesRes,
-        jobsRes,
-        appsRes,
-        notifsRes,
-        loginActRes,
-        officerRecruitersRes,
-        officerJobsRes
-      ] = await Promise.allSettled([
-        api.get('/api/v1/placement-officers/profile/'),
-        api.get('/api/v1/placement-officers/institution/'),
-        api.get('/api/v1/placement-officers/dashboard/'),
-        api.get('/api/v1/placement-officers/students/'),
-        api.get('/api/v1/placement-drives/my-institution/'),
-        api.get('/api/v1/jobs/'),
-        api.get('/api/v1/applications/'),
-        api.get('/api/v1/notifications/'),
-        api.get('/api/v1/placement-officers/students/login-activity/'),
-        api.get('/api/v1/placement-officers/recruiters/'),
-        api.get('/api/v1/placement-officers/jobs/')
-      ]);
-
-      if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
-      if (instRes.status === 'fulfilled') setInstitution(instRes.value.data);
-      if (dashRes.status === 'fulfilled') setOfficerStats(dashRes.value.data);
-      if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value.data.results || studentsRes.value.data || []);
-      if (drivesRes.status === 'fulfilled') setDrives(drivesRes.value.data.results || drivesRes.value.data || []);
-      if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data.results || jobsRes.value.data || []);
-      if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data.results || appsRes.value.data || []);
-      if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
-      if (loginActRes.status === 'fulfilled') setLoginActivity(loginActRes.value.data.results || loginActRes.value.data || []);
-      if (officerRecruitersRes.status === 'fulfilled') setOfficerRecruiters(officerRecruitersRes.value.data.results || officerRecruitersRes.value.data || []);
-      if (officerJobsRes.status === 'fulfilled') setOfficerJobs(officerJobsRes.value.data.results || officerJobsRes.value.data || []);
+      const res = await api.get(`/api/v1/placement-officers/students/${studentId}/`);
+      setSelectedStudentDetail(res.data);
     } catch (err) {
-      console.warn("Placement officer data fetch error:", err);
+      console.error("Failed to fetch student placement details:", err);
+      alert(err.response?.data?.error || "Could not load student placement details.");
+      setShowStudentModal(false);
     } finally {
-      setLoading(false);
+      setLoadingStudentDetail(false);
     }
   };
 
@@ -170,6 +226,25 @@ export default function OfficerDashboard() {
       alert(err.response?.data?.error || "Failed to update job status");
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleDownloadResume = async (appId) => {
+    try {
+      const response = await api.get(`/api/v1/applications/${appId}/resume/`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Candidate_Resume_${appId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Resume download error:", err);
+      alert(err.response?.data?.error || "Failed to download candidate resume.");
     }
   };
 
@@ -242,6 +317,7 @@ export default function OfficerDashboard() {
     { id: 'jobs', label: 'Job Opportunities', icon: Briefcase },
     { id: 'drives', label: 'Placement Drives', icon: Calendar },
     { id: 'applications', label: 'Applications', icon: FileText },
+    { id: 'interviews', label: 'Interview Monitoring', icon: Clock },
     { id: 'placements', label: 'Placements', icon: CheckCircle2 },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -262,22 +338,31 @@ export default function OfficerDashboard() {
   const institutionName = institution?.institution_name || profile?.institution_detail?.institution_name || 'Campus Institution';
   const officerName = profile?.full_name || user?.username || 'Placement Officer';
 
-  // Derived counts for Overview Cards
+  // Derived REAL counts for Overview Cards
   const regStudentsCount = officerStats?.total_registered_students ?? students.length;
-  const recruitersCount = officerStats?.total_recruiters ?? 0;
-  const upcomingDrivesCount = officerStats?.upcoming_placement_drives ?? drives.filter(d => d.status === 'Upcoming').length;
-  const placedStudentsCount = officerStats?.selected_students ?? applications.filter(a => a.status === 'Selected' || a.application_status === 'Selected').length;
+  const studentsAppliedCount = officerStats?.students_applied ?? applications.reduce((acc, a) => acc.add(a.student), new Set()).size;
   const totalAppsCount = officerStats?.total_applications ?? applications.length;
+  const shortlistedAppsCount = officerStats?.shortlisted_applications ?? applications.filter(a => ['Shortlisted', 'Interview Scheduled', 'Selected'].includes(a.status || a.application_status)).length;
+  const interviewsScheduledCount = officerStats?.interviews_scheduled ?? interviews.filter(i => i.status !== 'Cancelled').length;
+  const techInterviewsCount = officerStats?.technical_interviews_count ?? interviews.filter(i => i.interview_type === 'Technical Interview' && i.status !== 'Cancelled').length;
+  const hrInterviewsCount = officerStats?.hr_interviews_count ?? interviews.filter(i => i.interview_type === 'HR Interview' && i.status !== 'Cancelled').length;
+  const placedStudentsCount = officerStats?.selected_students ?? applications.filter(a => (a.status || a.application_status) === 'Selected').length;
+  const rejectedStudentsCount = officerStats?.rejected_students ?? applications.filter(a => (a.status || a.application_status) === 'Rejected').length;
+  
+  const recruitersCount = officerStats?.total_recruiters ?? officerRecruiters.length;
+  const approvedCompaniesCount = officerStats?.approved_companies ?? officerRecruiters.filter(r => r.approval_status === 'Approved').length;
+  const pendingRecruiterCount = officerStats?.pending_recruiter_approvals ?? officerRecruiters.filter(r => r.approval_status === 'Pending').length;
+  const activeJobsCount = officerStats?.active_jobs ?? officerJobs.filter(j => j.status === 'Open').length;
+  const pendingJobCount = officerStats?.pending_job_approvals ?? officerJobs.filter(j => j.status === 'Pending Approval').length;
+  const upcomingDrivesCount = officerStats?.upcoming_placement_drives ?? drives.filter(d => d.status === 'Upcoming').length;
 
-  const shortlistedAppsCount = applications.filter(a => (a.status || a.application_status) === 'Shortlisted').length;
-  const interviewAppsCount = applications.filter(a => (a.status || a.application_status) === 'Interview Scheduled').length;
-
-  // Filtered Students
+  // Filtered Lists
   const filteredStudents = students.filter(student => {
     const matchesSearch = 
       (student.full_name || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
       (student.register_number || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
-      (student.branch || '').toLowerCase().includes(studentSearch.toLowerCase());
+      (student.branch || '').toLowerCase().includes(studentSearch.toLowerCase()) ||
+      (student.program || '').toLowerCase().includes(studentSearch.toLowerCase());
 
     const matchesStatus = 
       studentStatusFilter === 'all' || 
@@ -285,6 +370,48 @@ export default function OfficerDashboard() {
       (studentStatusFilter === 'seeking' && student.placement_status === 'Seeking');
 
     return matchesSearch && matchesStatus;
+  });
+
+  const filteredApplications = applications.filter(app => {
+    const sName = (app.student_name || app.student_detail?.first_name || '').toLowerCase();
+    const regNum = (app.register_number || app.student_detail?.register_number || '').toLowerCase();
+    const jobTitle = (app.job_title || app.job_detail?.job_title || '').toLowerCase();
+    const compName = (app.job_detail?.recruiter_detail?.company_name || app.company_name || '').toLowerCase();
+
+    const matchesSearch = 
+      sName.includes(appSearch.toLowerCase()) ||
+      regNum.includes(appSearch.toLowerCase()) ||
+      jobTitle.includes(appSearch.toLowerCase()) ||
+      compName.includes(appSearch.toLowerCase());
+
+    const statusVal = app.status || app.application_status || 'Applied';
+    const matchesStatus = appStatusFilter === 'All' || statusVal.toLowerCase() === appStatusFilter.toLowerCase();
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredInterviews = interviews.filter(item => {
+    const candName = (item.candidate_name || '').toLowerCase();
+    const regNum = (item.register_number || '').toLowerCase();
+    const jTitle = (item.job_title || '').toLowerCase();
+    const cName = (item.company_name || '').toLowerCase();
+
+    const matchesSearch = 
+      candName.includes(interviewSearch.toLowerCase()) ||
+      regNum.includes(interviewSearch.toLowerCase()) ||
+      jTitle.includes(interviewSearch.toLowerCase()) ||
+      cName.includes(interviewSearch.toLowerCase());
+
+    const matchesType = interviewTypeFilter === 'All' || item.interview_type === interviewTypeFilter;
+    const matchesStatus = interviewStatusFilter === 'All' || item.status === interviewStatusFilter;
+
+    let matchesView = true;
+    if (interviewViewMode === 'upcoming') {
+      const today = new Date().toISOString().split('T')[0];
+      matchesView = item.interview_date >= today && item.status !== 'Cancelled';
+    }
+
+    return matchesSearch && matchesType && matchesStatus && matchesView;
   });
 
   return (
@@ -371,14 +498,14 @@ export default function OfficerDashboard() {
                       <Building2 size={22} />
                     </div>
                   </div>
-                  <span className="off-stat-val">{recruitersCount}</span>
-                  <span className="off-stat-sub">Partner hiring companies</span>
+                  <span className="off-stat-val">{approvedCompaniesCount} / {recruitersCount}</span>
+                  <span className="off-stat-sub">{pendingRecruiterCount} Pending Approvals</span>
                 </div>
 
                 {/* 3. Active Placement Drives */}
                 <div className="off-stat-card">
                   <div className="off-stat-header">
-                    <span className="off-stat-lbl">Active Placement Drives</span>
+                    <span className="off-stat-lbl">Scheduled Drives</span>
                     <div className="off-stat-icon ic-pink">
                       <Calendar size={22} />
                     </div>
@@ -396,7 +523,7 @@ export default function OfficerDashboard() {
                     </div>
                   </div>
                   <span className="off-stat-val">{placedStudentsCount}</span>
-                  <span className="off-stat-sub">Hired with offers</span>
+                  <span className="off-stat-sub">Hired with confirmed offers</span>
                 </div>
               </div>
 
@@ -404,7 +531,7 @@ export default function OfficerDashboard() {
               <div className="dashboard-card-panel">
                 <div className="panel-header">
                   <h3>Campus Placement Overview</h3>
-                  <span className="overview-badge">Season 2026-2027</span>
+                  <span className="overview-badge">{institutionName}</span>
                 </div>
                 <div className="placement-overview-grid">
                   <div className="overview-metric">
@@ -412,20 +539,43 @@ export default function OfficerDashboard() {
                     <span className="metric-lbl">Total Registered</span>
                   </div>
                   <div className="overview-metric">
-                    <span className="metric-val">{institution?.eligible_final_year_students || regStudentsCount}</span>
-                    <span className="metric-lbl">Eligible Students</span>
+                    <span className="metric-val">{studentsAppliedCount}</span>
+                    <span className="metric-lbl">Students Applied</span>
                   </div>
                   <div className="overview-metric">
                     <span className="metric-val">{totalAppsCount}</span>
-                    <span className="metric-lbl">Students Applied</span>
+                    <span className="metric-lbl">Total Applications</span>
                   </div>
                   <div className="overview-metric">
                     <span className="metric-val">{shortlistedAppsCount}</span>
                     <span className="metric-lbl">Shortlisted</span>
                   </div>
                   <div className="overview-metric">
-                    <span className="metric-val">{placedStudentsCount}</span>
-                    <span className="metric-lbl">Selected & Placed</span>
+                    <span className="metric-val">{interviewsScheduledCount}</span>
+                    <span className="metric-lbl">Interviews Scheduled</span>
+                  </div>
+                </div>
+
+                <div className="placement-overview-grid" style={{ marginTop: '16px' }}>
+                  <div className="overview-metric">
+                    <span className="metric-val" style={{ color: '#7C3AED' }}>{techInterviewsCount}</span>
+                    <span className="metric-lbl">Technical Interviews</span>
+                  </div>
+                  <div className="overview-metric">
+                    <span className="metric-val" style={{ color: '#047857' }}>{hrInterviewsCount}</span>
+                    <span className="metric-lbl">HR Interviews</span>
+                  </div>
+                  <div className="overview-metric">
+                    <span className="metric-val" style={{ color: '#16A34A' }}>{placedStudentsCount}</span>
+                    <span className="metric-lbl">Selected / Placed</span>
+                  </div>
+                  <div className="overview-metric">
+                    <span className="metric-val" style={{ color: '#DC2626' }}>{rejectedStudentsCount}</span>
+                    <span className="metric-lbl">Rejected</span>
+                  </div>
+                  <div className="overview-metric">
+                    <span className="metric-val" style={{ color: '#D97706' }}>{pendingJobCount}</span>
+                    <span className="metric-lbl">Pending Job Approvals</span>
                   </div>
                 </div>
               </div>
@@ -454,14 +604,14 @@ export default function OfficerDashboard() {
                     <FileText size={16} />
                     <span>View Applications</span>
                   </button>
-                  <button className="btn-quick-action" onClick={() => setActiveTab('reports')}>
-                    <BarChart3 size={16} />
-                    <span>View Reports</span>
+                  <button className="btn-quick-action" onClick={() => setActiveTab('interviews')}>
+                    <Clock size={16} />
+                    <span>View Interviews</span>
                   </button>
                 </div>
               </div>
 
-              {/* Phase 1 Placement Pipeline */}
+              {/* Campus Recruitment Pipeline */}
               <div className="dashboard-card-panel">
                 <div className="panel-header">
                   <h3>Campus Recruitment Pipeline</h3>
@@ -479,20 +629,62 @@ export default function OfficerDashboard() {
                   </div>
                   <ChevronRight size={20} className="pipeline-arrow" />
                   <div className="pipeline-step">
-                    <div className="step-count">{interviewAppsCount}</div>
-                    <div className="step-name">Interview</div>
+                    <div className="step-count" style={{ color: '#7C3AED' }}>{techInterviewsCount}</div>
+                    <div className="step-name">Tech Interviews</div>
                   </div>
                   <ChevronRight size={20} className="pipeline-arrow" />
                   <div className="pipeline-step">
-                    <div className="step-count">{placedStudentsCount}</div>
-                    <div className="step-name">Selected</div>
+                    <div className="step-count" style={{ color: '#047857' }}>{hrInterviewsCount}</div>
+                    <div className="step-name">HR Interviews</div>
                   </div>
                   <ChevronRight size={20} className="pipeline-arrow" />
                   <div className="pipeline-step step-success">
                     <div className="step-count">{placedStudentsCount}</div>
-                    <div className="step-name">Placed</div>
+                    <div className="step-name">Selected & Placed</div>
                   </div>
                 </div>
+              </div>
+
+              {/* Recent Placement Activity Section */}
+              <div className="dashboard-card-panel">
+                <div className="panel-header">
+                  <h3>Recent Placement Activity</h3>
+                  <span className="overview-badge">Real Database Log</span>
+                </div>
+                {activities.length === 0 ? (
+                  <div className="empty-state-box">
+                    <Clock size={36} color="#64748B" />
+                    <p className="empty-state-text">No recent placement activity recorded in database.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {activities.map(act => (
+                      <div 
+                        key={act.id} 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 16px',
+                          background: '#F8FAFC',
+                          borderRadius: '8px',
+                          border: '1px solid #E2E8F0'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: act.type === 'selection' ? '#10B981' : act.type === 'interview' ? '#F59E0B' : act.type === 'shortlist' ? '#8B5CF6' : '#3B82F6'
+                          }} />
+                          <span style={{ fontSize: '14px', color: '#0F172A', fontWeight: 500 }}>{act.text}</span>
+                        </div>
+                        {act.date && <span style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', marginLeft: '12px' }}>{act.date}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Upcoming Placement Drives Section */}
@@ -509,7 +701,7 @@ export default function OfficerDashboard() {
                 {drives.length === 0 ? (
                   <div className="empty-state-box">
                     <Calendar size={36} color="#64748B" />
-                    <p className="empty-state-text">No upcoming placement drives.</p>
+                    <p className="empty-state-text">No upcoming placement drives scheduled.</p>
                     <button className="btn-create-first-drive" onClick={() => setShowDriveModal(true)}>
                       <PlusCircle size={16} />
                       <span>Create Placement Drive</span>
@@ -555,158 +747,15 @@ export default function OfficerDashboard() {
                   </div>
                 )}
               </div>
-
-              {/* Recent Recruiters / Companies Overview */}
-              <div className="dashboard-card-panel">
-                <div className="panel-header">
-                  <h3>Participating Employers & Recruiters</h3>
-                  {jobs.length > 0 && (
-                    <button className="btn-link-action" onClick={() => setActiveTab('recruiters')}>
-                      View All Recruiters
-                    </button>
-                  )}
-                </div>
-
-                {jobs.length === 0 ? (
-                  <div className="empty-state-box">
-                    <Building2 size={36} color="#64748B" />
-                    <p className="empty-state-text">No active recruiter listings registered.</p>
-                  </div>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="officer-table">
-                      <thead>
-                        <tr>
-                          <th>Company Name</th>
-                          <th>Recruiter Contact</th>
-                          <th>Active Role</th>
-                          <th>Package</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {jobs.slice(0, 5).map((job) => (
-                          <tr key={job.id}>
-                            <td className="title-text">{job.recruiter_detail?.company_name || 'Employer'}</td>
-                            <td>{job.recruiter_detail?.recruiter_name || 'HR Lead'}</td>
-                            <td>{job.job_title}</td>
-                            <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
-                            <td>
-                              <span className="status-pill pill-completed">
-                                Active
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Recent Application Activity Section */}
-              <div className="dashboard-card-panel">
-                <div className="panel-header">
-                  <h3>Recent Application Activity</h3>
-                  {applications.length > 0 && (
-                    <button className="btn-link-action" onClick={() => setActiveTab('applications')}>
-                      View All Applications
-                    </button>
-                  )}
-                </div>
-
-                {applications.length === 0 ? (
-                  <div className="empty-state-box">
-                    <FileText size={36} color="#64748B" />
-                    <p className="empty-state-text">No recent application activity.</p>
-                  </div>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="officer-table">
-                      <thead>
-                        <tr>
-                          <th>Student Name</th>
-                          <th>Applied Job</th>
-                          <th>Company</th>
-                          <th>Application Date</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {applications.slice(0, 5).map((app) => (
-                          <tr key={app.id}>
-                            <td>{app.student_name || app.student?.full_name || 'Student Candidate'}</td>
-                            <td className="title-text">{app.job_title || app.job?.job_title}</td>
-                            <td>{app.company_name || app.job?.recruiter_detail?.company_name || 'Partner Employer'}</td>
-                            <td>{app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Recent'}</td>
-                            <td>
-                              <span className={`status-pill pill-${(app.status || app.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`}>
-                                {app.status || app.application_status || 'Applied'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Student Login Activity Section */}
-              <div className="dashboard-card-panel">
-                <div className="panel-header">
-                  <h3>Student Login Activity</h3>
-                  {loginActivity.length > 0 && (
-                    <button className="btn-link-action" onClick={() => setActiveTab('students')}>
-                      View All Students ({students.length})
-                    </button>
-                  )}
-                </div>
-
-                {loginActivity.length === 0 ? (
-                  <div className="empty-state-box">
-                    <UserCheck size={36} color="#64748B" />
-                    <p className="empty-state-text">No student login activity available yet.</p>
-                  </div>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="officer-table">
-                      <thead>
-                        <tr>
-                          <th>Student Name</th>
-                          <th>Email</th>
-                          <th>Course / Program</th>
-                          <th>Login Status</th>
-                          <th>Last Login</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loginActivity.slice(0, 5).map((st) => (
-                          <tr key={st.id}>
-                            <td className="title-text">{st.student_name}</td>
-                            <td>{st.email}</td>
-                            <td>{st.course}</td>
-                            <td>
-                              <span className={`status-pill ${st.login_status === 'Active' ? 'pill-completed' : 'pill-upcoming'}`}>
-                                {st.login_status}
-                              </span>
-                            </td>
-                            <td>{st.last_login}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
             </>
           )}
 
-          {/* Students Tab */}
+          {/* Students Tab — Student Placement Monitoring */}
           {activeTab === 'students' && (
             <div className="dashboard-card-panel">
               <div className="panel-header">
-                <h3>Campus Student Directory</h3>
+                <h3>Campus Student Placement Monitoring</h3>
+                <span className="overview-badge">{filteredStudents.length} Students</span>
               </div>
 
               {/* Search & Status Filter */}
@@ -715,7 +764,7 @@ export default function OfficerDashboard() {
                   <Search size={16} color="#64748B" />
                   <input 
                     type="text"
-                    placeholder="Search by student name, register number, or branch..."
+                    placeholder="Search by student name, register number, program, or branch..."
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
                   />
@@ -746,7 +795,7 @@ export default function OfficerDashboard() {
               {filteredStudents.length === 0 ? (
                 <div className="empty-state-box">
                   <GraduationCap size={36} color="#64748B" />
-                  <p className="empty-state-text">No registered students found matching your filter criteria.</p>
+                  <p className="empty-state-text">No registered students found matching your search or filter criteria.</p>
                 </div>
               ) : (
                 <div className="table-responsive">
@@ -757,8 +806,11 @@ export default function OfficerDashboard() {
                         <th>Student Name</th>
                         <th>Program / Branch</th>
                         <th>CGPA</th>
-                        <th>Profile Completion</th>
+                        <th>Apps</th>
+                        <th>Shortlisted</th>
+                        <th>Interviews</th>
                         <th>Placement Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -768,18 +820,22 @@ export default function OfficerDashboard() {
                           <td className="title-text">{st.full_name}</td>
                           <td>{st.program} ({st.branch})</td>
                           <td>{st.cgpa ? `${st.cgpa} / 10.0` : 'N/A'}</td>
+                          <td><span className="status-pill pill-applied">{st.applications_count || 0}</span></td>
+                          <td><span className="status-pill pill-shortlisted">{st.shortlisted_count || 0}</span></td>
+                          <td><span className="status-pill pill-upcoming">{st.interviews_count || 0}</span></td>
                           <td>
-                            <div className="completion-bar-cell">
-                              <span className="comp-val">{st.profile_completion || 0}%</span>
-                              <div className="comp-progress">
-                                <div className="comp-fill" style={{ width: `${st.profile_completion || 0}%` }}></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`status-pill ${st.placement_status === 'Placed' ? 'pill-completed' : 'pill-upcoming'}`}>
+                            <span className={`status-pill ${st.placement_status === 'Placed' ? 'pill-completed' : 'pill-ongoing'}`}>
                               {st.placement_status}
                             </span>
+                          </td>
+                          <td>
+                            <button
+                              className="btn-table-action"
+                              onClick={() => handleViewStudentDetails(st.id)}
+                            >
+                              <Eye size={14} />
+                              <span>View Journey</span>
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -794,11 +850,21 @@ export default function OfficerDashboard() {
           {activeTab === 'recruiters' && (
             <div className="dashboard-card-panel">
               <div className="panel-header">
-                <h3>Partner Employers & Recruiters</h3>
+                <h3>Partner Employers & Corporate Recruiters</h3>
               </div>
 
               {/* Recruiter Status Filter Bar */}
               <div className="student-filter-bar" style={{ marginBottom: '20px' }}>
+                <div className="search-input-box">
+                  <Search size={16} color="#64748B" />
+                  <input 
+                    type="text"
+                    placeholder="Search by company or recruiter name..."
+                    value={recruiterSearch}
+                    onChange={(e) => setRecruiterSearch(e.target.value)}
+                  />
+                </div>
+
                 <div className="status-filter-buttons">
                   {['All', 'Pending', 'Approved', 'Rejected'].map(status => {
                     const count = status === 'All' 
@@ -817,7 +883,11 @@ export default function OfficerDashboard() {
                 </div>
               </div>
 
-              {officerRecruiters.filter(r => recruiterStatusFilter === 'All' || (r.approval_status || 'Pending').toLowerCase() === recruiterStatusFilter.toLowerCase()).length === 0 ? (
+              {officerRecruiters.filter(r => {
+                const matchesSearch = r.company_name?.toLowerCase().includes(recruiterSearch.toLowerCase()) || r.recruiter_name?.toLowerCase().includes(recruiterSearch.toLowerCase());
+                const matchesStatus = recruiterStatusFilter === 'All' || (r.approval_status || 'Pending').toLowerCase() === recruiterStatusFilter.toLowerCase();
+                return matchesSearch && matchesStatus;
+              }).length === 0 ? (
                 <div className="empty-state-box">
                   <Building2 size={36} color="#64748B" />
                   <p className="empty-state-text">No recruiters found matching status filter "{recruiterStatusFilter}".</p>
@@ -829,24 +899,34 @@ export default function OfficerDashboard() {
                       <tr>
                         <th>Company Name</th>
                         <th>Contact Lead</th>
-                        <th>Designation</th>
                         <th>Email / Mobile</th>
+                        <th>Jobs</th>
+                        <th>Applications</th>
+                        <th>Shortlisted</th>
+                        <th>Selected</th>
                         <th>Approval Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {officerRecruiters
-                        .filter(r => recruiterStatusFilter === 'All' || (r.approval_status || 'Pending').toLowerCase() === recruiterStatusFilter.toLowerCase())
+                        .filter(r => {
+                          const matchesSearch = r.company_name?.toLowerCase().includes(recruiterSearch.toLowerCase()) || r.recruiter_name?.toLowerCase().includes(recruiterSearch.toLowerCase());
+                          const matchesStatus = recruiterStatusFilter === 'All' || (r.approval_status || 'Pending').toLowerCase() === recruiterStatusFilter.toLowerCase();
+                          return matchesSearch && matchesStatus;
+                        })
                         .map((recruiter) => (
                           <tr key={recruiter.id}>
                             <td className="title-text">{recruiter.company_name}</td>
                             <td>{recruiter.recruiter_name}</td>
-                            <td>{recruiter.designation || 'N/A'}</td>
                             <td>
                               <div>{recruiter.official_email}</div>
                               {recruiter.mobile_number && <small style={{ color: '#64748B' }}>{recruiter.mobile_number}</small>}
                             </td>
+                            <td><strong>{recruiter.posted_jobs_count || 0}</strong></td>
+                            <td><span className="status-pill pill-applied">{recruiter.applications_count || 0}</span></td>
+                            <td><span className="status-pill pill-shortlisted">{recruiter.shortlisted_count || 0}</span></td>
+                            <td><span className="status-pill pill-completed">{recruiter.selected_count || 0}</span></td>
                             <td>
                               <span className={`status-pill pill-${(recruiter.approval_status || 'Pending').toLowerCase().replace(/\s+/g, '-')}`}>
                                 {recruiter.approval_status || 'Pending'}
@@ -859,7 +939,7 @@ export default function OfficerDashboard() {
                                   onClick={() => handleViewRecruiterDetails(recruiter.id)}
                                 >
                                   <Eye size={14} />
-                                  <span>View Details</span>
+                                  <span>Details</span>
                                 </button>
                                 {recruiter.approval_status !== 'Approved' && (
                                   <button
@@ -867,7 +947,7 @@ export default function OfficerDashboard() {
                                     disabled={actionLoadingId === `recruiter-${recruiter.id}`}
                                     onClick={() => handleUpdateRecruiterApproval(recruiter.id, 'Approved')}
                                   >
-                                    Approve Company
+                                    Approve
                                   </button>
                                 )}
                                 {recruiter.approval_status !== 'Rejected' && (
@@ -894,11 +974,21 @@ export default function OfficerDashboard() {
           {activeTab === 'jobs' && (
             <div className="dashboard-card-panel">
               <div className="panel-header">
-                <h3>Campus Job Opportunities Directory</h3>
+                <h3>Campus Job Opportunities & Posting Approvals</h3>
               </div>
 
               {/* Job Status Filter Bar */}
               <div className="student-filter-bar" style={{ marginBottom: '20px' }}>
+                <div className="search-input-box">
+                  <Search size={16} color="#64748B" />
+                  <input 
+                    type="text"
+                    placeholder="Search by job title or employer name..."
+                    value={jobSearch}
+                    onChange={(e) => setJobSearch(e.target.value)}
+                  />
+                </div>
+
                 <div className="status-filter-buttons">
                   {['All', 'Pending Approval', 'Open', 'Rejected', 'Closed'].map(status => {
                     const count = status === 'All'
@@ -917,7 +1007,11 @@ export default function OfficerDashboard() {
                 </div>
               </div>
 
-              {officerJobs.filter(j => jobStatusFilter === 'All' || (j.status || 'Pending Approval').toLowerCase() === jobStatusFilter.toLowerCase()).length === 0 ? (
+              {officerJobs.filter(j => {
+                const matchesSearch = j.job_title?.toLowerCase().includes(jobSearch.toLowerCase()) || j.company_name?.toLowerCase().includes(jobSearch.toLowerCase());
+                const matchesStatus = jobStatusFilter === 'All' || (j.status || 'Pending Approval').toLowerCase() === jobStatusFilter.toLowerCase();
+                return matchesSearch && matchesStatus;
+              }).length === 0 ? (
                 <div className="empty-state-box">
                   <Briefcase size={36} color="#64748B" />
                   <p className="empty-state-text">No job postings found matching status filter "{jobStatusFilter}".</p>
@@ -929,21 +1023,31 @@ export default function OfficerDashboard() {
                       <tr>
                         <th>Job Title</th>
                         <th>Employer</th>
-                        <th>Package (LPA)</th>
-                        <th>Deadline</th>
+                        <th>Package</th>
+                        <th>Work Mode</th>
+                        <th>Apps</th>
+                        <th>Shortlisted</th>
+                        <th>Selected</th>
                         <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {officerJobs
-                        .filter(j => jobStatusFilter === 'All' || (j.status || 'Pending Approval').toLowerCase() === jobStatusFilter.toLowerCase())
+                        .filter(j => {
+                          const matchesSearch = j.job_title?.toLowerCase().includes(jobSearch.toLowerCase()) || j.company_name?.toLowerCase().includes(jobSearch.toLowerCase());
+                          const matchesStatus = jobStatusFilter === 'All' || (j.status || 'Pending Approval').toLowerCase() === jobStatusFilter.toLowerCase();
+                          return matchesSearch && matchesStatus;
+                        })
                         .map((job) => (
                           <tr key={job.id}>
                             <td className="title-text">{job.job_title}</td>
                             <td>{job.company_name}</td>
                             <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
-                            <td>{job.application_deadline || 'Open'}</td>
+                            <td>{job.work_mode || 'N/A'}</td>
+                            <td><span className="status-pill pill-applied">{job.applications_count || 0}</span></td>
+                            <td><span className="status-pill pill-shortlisted">{job.shortlisted_count || 0}</span></td>
+                            <td><span className="status-pill pill-completed">{job.selected_count || 0}</span></td>
                             <td>
                               <span className={`status-pill pill-${(job.status || 'Pending Approval').toLowerCase().replace(/\s+/g, '-')}`}>
                                 {job.status}
@@ -951,13 +1055,23 @@ export default function OfficerDashboard() {
                             </td>
                             <td>
                               <div className="action-buttons-cell">
+                                <button
+                                  className="btn-table-action"
+                                  onClick={() => {
+                                    setSelectedJobDetail(job);
+                                    setShowJobModal(true);
+                                  }}
+                                >
+                                  <Eye size={14} />
+                                  <span>Details</span>
+                                </button>
                                 {job.status !== 'Open' && (
                                   <button
                                     className="btn-approve-sm"
                                     disabled={actionLoadingId === `job-${job.id}`}
                                     onClick={() => handleUpdateJobApproval(job.id, 'Open')}
                                   >
-                                    Approve Job
+                                    Approve
                                   </button>
                                 )}
                                 {job.status !== 'Rejected' && (
@@ -973,6 +1087,246 @@ export default function OfficerDashboard() {
                             </td>
                           </tr>
                         ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Applications Tab — Application & Shortlist Monitoring */}
+          {activeTab === 'applications' && (
+            <div className="dashboard-card-panel">
+              <div className="panel-header">
+                <h3>Campus Application & Shortlist Monitoring</h3>
+                <span className="overview-badge">{filteredApplications.length} Submissions</span>
+              </div>
+
+              {/* Search & Status Filters */}
+              <div className="student-filter-bar" style={{ marginBottom: '20px' }}>
+                <div className="search-input-box">
+                  <Search size={16} color="#64748B" />
+                  <input 
+                    type="text"
+                    placeholder="Search by candidate name, register number, job title, or company..."
+                    value={appSearch}
+                    onChange={(e) => setAppSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="status-filter-buttons" style={{ flexWrap: 'wrap' }}>
+                  {['All', 'Applied', 'Under Review', 'Shortlisted', 'Interview Scheduled', 'Selected', 'Rejected'].map(st => {
+                    const count = st === 'All'
+                      ? applications.length
+                      : applications.filter(a => (a.status || a.application_status || 'Applied').toLowerCase() === st.toLowerCase()).length;
+                    return (
+                      <button
+                        key={st}
+                        className={`filter-btn ${appStatusFilter === st ? 'active' : ''}`}
+                        onClick={() => setAppStatusFilter(st)}
+                      >
+                        {st} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {filteredApplications.length === 0 ? (
+                <div className="empty-state-box">
+                  <FileText size={36} color="#64748B" />
+                  <p className="empty-state-text">No student applications found matching your filter criteria.</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="officer-table">
+                    <thead>
+                      <tr>
+                        <th>Candidate Name</th>
+                        <th>Reg Number</th>
+                        <th>Applied Position</th>
+                        <th>Employer</th>
+                        <th>Application Date</th>
+                        <th>Current Status</th>
+                        <th>Interviews</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredApplications.map((app) => {
+                        const hasTech = app.interviews?.some(i => i.interview_type === 'Technical Interview');
+                        const hasHR = app.interviews?.some(i => i.interview_type === 'HR Interview');
+                        return (
+                          <tr key={app.id}>
+                            <td className="title-text">{app.student_name || app.student_detail?.first_name || 'Candidate'}</td>
+                            <td><strong>{app.register_number || app.student_detail?.register_number || 'N/A'}</strong></td>
+                            <td>{app.job_title || app.job_detail?.job_title}</td>
+                            <td>{app.company_name || app.job_detail?.recruiter_detail?.company_name || 'Employer'}</td>
+                            <td>{app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'N/A'}</td>
+                            <td>
+                              <span className={`status-pill pill-${(app.status || app.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`}>
+                                {app.status || app.application_status || 'Applied'}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                {hasTech && <span className="badge-tech-interview" style={{ fontSize: '11px', padding: '2px 6px' }}>Tech</span>}
+                                {hasHR && <span className="badge-hr-interview" style={{ fontSize: '11px', padding: '2px 6px' }}>HR</span>}
+                                {!hasTech && !hasHR && <span style={{ fontSize: '12px', color: '#94A3B8' }}>None</span>}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="action-buttons-cell">
+                                <button
+                                  className="btn-table-action"
+                                  onClick={() => {
+                                    setSelectedAppDetail(app);
+                                    setShowAppModal(true);
+                                  }}
+                                >
+                                  <Eye size={14} />
+                                  <span>Details</span>
+                                </button>
+                                {app.student_detail?.documents?.resume && (
+                                  <button
+                                    className="btn-table-action"
+                                    title="Download Candidate Resume"
+                                    onClick={() => handleDownloadResume(app.id)}
+                                  >
+                                    <Download size={14} color="#10B981" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Interviews Tab — Comprehensive Interview Monitoring */}
+          {activeTab === 'interviews' && (
+            <div className="dashboard-card-panel">
+              <div className="panel-header">
+                <h3>Campus Technical & HR Interview Monitoring</h3>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    className={`filter-btn ${interviewViewMode === 'all' ? 'active' : ''}`}
+                    onClick={() => setInterviewViewMode('all')}
+                  >
+                    All Interviews ({interviews.length})
+                  </button>
+                  <button 
+                    className={`filter-btn ${interviewViewMode === 'upcoming' ? 'active' : ''}`}
+                    onClick={() => setInterviewViewMode('upcoming')}
+                  >
+                    Upcoming Interviews ({interviews.filter(i => i.status !== 'Cancelled').length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Filters Bar */}
+              <div className="student-filter-bar" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
+                <div className="search-input-box" style={{ minWidth: '260px' }}>
+                  <Search size={16} color="#64748B" />
+                  <input 
+                    type="text"
+                    placeholder="Search candidate, reg number, job, or company..."
+                    value={interviewSearch}
+                    onChange={(e) => setInterviewSearch(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>Type:</span>
+                  <select 
+                    value={interviewTypeFilter}
+                    onChange={(e) => setInterviewTypeFilter(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none' }}
+                  >
+                    <option value="All">All Types</option>
+                    <option value="Technical Interview">Technical Interview</option>
+                    <option value="HR Interview">HR Interview</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>Status:</span>
+                  <select 
+                    value={interviewStatusFilter}
+                    onChange={(e) => setInterviewStatusFilter(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none' }}
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Rescheduled">Rescheduled</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              {filteredInterviews.length === 0 ? (
+                <div className="empty-state-box">
+                  <Clock size={36} color="#64748B" />
+                  <p className="empty-state-text">No interview records found matching your filter criteria.</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="officer-table">
+                    <thead>
+                      <tr>
+                        <th>Candidate Name</th>
+                        <th>Reg Number</th>
+                        <th>Interview Round</th>
+                        <th>Company</th>
+                        <th>Position</th>
+                        <th>Date & Time</th>
+                        <th>Mode</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInterviews.map((item) => (
+                        <tr key={item.id}>
+                          <td className="title-text">{item.candidate_name}</td>
+                          <td><strong>{item.register_number || 'N/A'}</strong></td>
+                          <td>
+                            <span className={item.interview_type === 'Technical Interview' ? 'badge-tech-interview' : 'badge-hr-interview'}>
+                              {item.interview_type}
+                            </span>
+                          </td>
+                          <td>{item.company_name}</td>
+                          <td>{item.job_title}</td>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{item.interview_date}</div>
+                            <small style={{ color: '#64748B' }}>{item.interview_time} ({item.duration_minutes} mins)</small>
+                          </td>
+                          <td>{item.mode}</td>
+                          <td>
+                            <span className={`status-pill pill-${item.status.toLowerCase()}`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className="btn-table-action"
+                              onClick={() => {
+                                setSelectedInterviewDetail(item);
+                                setShowInterviewModal(true);
+                              }}
+                            >
+                              <Eye size={14} />
+                              <span>Details</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1032,55 +1386,12 @@ export default function OfficerDashboard() {
             </div>
           )}
 
-          {/* Applications Tab */}
-          {activeTab === 'applications' && (
-            <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Campus Application Monitoring</h3>
-              </div>
-              {applications.length === 0 ? (
-                <div className="empty-state-box">
-                  <FileText size={36} color="#64748B" />
-                  <p className="empty-state-text">No student applications recorded yet.</p>
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="officer-table">
-                    <thead>
-                      <tr>
-                        <th>Student Name</th>
-                        <th>Applied Position</th>
-                        <th>Employer</th>
-                        <th>Application Date</th>
-                        <th>Current Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {applications.map((app) => (
-                        <tr key={app.id}>
-                          <td className="title-text">{app.student_name || app.student?.full_name || 'Student Candidate'}</td>
-                          <td>{app.job_title || app.job?.job_title}</td>
-                          <td>{app.company_name || app.job?.recruiter_detail?.company_name || 'Employer'}</td>
-                          <td>{app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'N/A'}</td>
-                          <td>
-                            <span className={`status-pill pill-${(app.status || app.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`}>
-                              {app.status || app.application_status || 'Applied'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Placements Tab */}
           {activeTab === 'placements' && (
             <div className="dashboard-card-panel">
               <div className="panel-header">
-                <h3>Successful Student Placements</h3>
+                <h3>Successful Student Placements & Confirmed Offers</h3>
+                <span className="overview-badge">{placedStudentsCount} Placed Candidates</span>
               </div>
               {applications.filter(a => (a.status || a.application_status) === 'Selected').length === 0 ? (
                 <div className="empty-state-box">
@@ -1093,6 +1404,7 @@ export default function OfficerDashboard() {
                     <thead>
                       <tr>
                         <th>Placed Student</th>
+                        <th>Reg Number</th>
                         <th>Hiring Employer</th>
                         <th>Role Title</th>
                         <th>Package (LPA)</th>
@@ -1102,10 +1414,11 @@ export default function OfficerDashboard() {
                     <tbody>
                       {applications.filter(a => (a.status || a.application_status) === 'Selected').map((app) => (
                         <tr key={app.id}>
-                          <td className="title-text">{app.student_name || app.student?.full_name || 'Placed Candidate'}</td>
-                          <td>{app.company_name || app.job?.recruiter_detail?.company_name || 'Partner Company'}</td>
-                          <td>{app.job_title || app.job?.job_title}</td>
-                          <td>{app.job?.package_lpa ? `${app.job.package_lpa} LPA` : 'Offered'}</td>
+                          <td className="title-text">{app.student_name || app.student_detail?.first_name || 'Placed Candidate'}</td>
+                          <td><strong>{app.register_number || app.student_detail?.register_number || 'N/A'}</strong></td>
+                          <td>{app.company_name || app.job_detail?.recruiter_detail?.company_name || 'Partner Company'}</td>
+                          <td>{app.job_title || app.job_detail?.job_title}</td>
+                          <td>{app.job_detail?.package_lpa ? `${app.job_detail.package_lpa} LPA` : 'Offered'}</td>
                           <td>
                             <span className="status-pill pill-completed">
                               Confirmed Offer
@@ -1128,28 +1441,40 @@ export default function OfficerDashboard() {
               </div>
               <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div className="info-item">
-                  <span className="info-label">Total Student Roster</span>
+                  <span className="info-label">Total Registered Students</span>
                   <span className="info-val">{regStudentsCount} Candidates</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Participating Employers</span>
-                  <span className="info-val">{recruitersCount} Companies</span>
+                  <span className="info-label">Students Who Applied</span>
+                  <span className="info-val">{studentsAppliedCount} Candidates</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Scheduled Placement Drives</span>
-                  <span className="info-val">{drives.length} Drives</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Total Applications Submitted</span>
+                  <span className="info-label">Total Applications</span>
                   <span className="info-val">{totalAppsCount} Submissions</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Confirmed Hires</span>
-                  <span className="info-val">{placedStudentsCount} Placements</span>
+                  <span className="info-label">Shortlisted Candidates</span>
+                  <span className="info-val">{shortlistedAppsCount} Candidates</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Current Season Status</span>
-                  <span className="info-val">Active Placement Season</span>
+                  <span className="info-label">Technical Interviews Scheduled</span>
+                  <span className="info-val">{techInterviewsCount} Rounds</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">HR Interviews Scheduled</span>
+                  <span className="info-val">{hrInterviewsCount} Rounds</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Confirmed Placements</span>
+                  <span className="info-val">{placedStudentsCount} Students</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Rejected Applications</span>
+                  <span className="info-val">{rejectedStudentsCount} Applications</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Partner Employers</span>
+                  <span className="info-val">{approvedCompaniesCount} Approved Companies</span>
                 </div>
               </div>
             </div>
@@ -1221,57 +1546,11 @@ export default function OfficerDashboard() {
                     <span className="info-label">Institution Name</span>
                     <span className="info-val">{institutionName}</span>
                   </div>
-
-                  <div className="info-item">
-                    <span className="info-label">Placement Cell Email</span>
-                    <span className="info-val">{institution?.placement_email || profile?.official_email || 'N/A'}</span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="info-label">Placement Cell Phone</span>
-                    <span className="info-val">{institution?.placement_phone || profile?.mobile_number || 'N/A'}</span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="info-label">Placement Season</span>
-                    <span className="info-val">{institution?.placement_season || '2026-2027'}</span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="info-label">Account Status</span>
-                    <div style={{ marginTop: '4px' }}>
-                      <span className="status-pill pill-completed">Active Manager</span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
               {/* Security & Change Password Module */}
               <ChangePasswordCard />
-
-              {/* Placement Cell System Notifications */}
-              <div className="dashboard-card-panel">
-                <div className="panel-header">
-                  <h3>Placement Cell System Preferences</h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                    <div>
-                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Campus Placement Alerts</strong>
-                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive real-time updates when corporate recruiters post jobs or student applications arrive.</span>
-                    </div>
-                    <span className="status-pill pill-completed">Enabled</span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-                    <div>
-                      <strong style={{ fontSize: '14px', color: '#0F172A', display: 'block' }}>Recruiter Onboarding Notifications</strong>
-                      <span style={{ fontSize: '12.5px', color: '#64748B' }}>Receive notifications when new corporate employers register on PLACENTRA.</span>
-                    </div>
-                    <span className="status-pill pill-completed">Enabled</span>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -1368,6 +1647,164 @@ export default function OfficerDashboard() {
         </div>
       )}
 
+      {/* Student Detail & Placement Journey Modal */}
+      {showStudentModal && (
+        <div className="modal-backdrop" onClick={() => setShowStudentModal(false)}>
+          <div className="drive-modal-content" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <GraduationCap size={24} color="#10B981" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '20px' }}>
+                    {selectedStudentDetail?.full_name || 'Student Placement Profile'}
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                    Register Number: <strong>{selectedStudentDetail?.register_number || 'N/A'}</strong>
+                  </p>
+                </div>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowStudentModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {loadingStudentDetail ? (
+              <div className="empty-state-box" style={{ border: 'none', background: 'transparent', padding: '40px' }}>
+                <Sparkles size={28} className="spin-gear-icon" color="#10B981" />
+                <p>Loading candidate placement journey & history...</p>
+              </div>
+            ) : selectedStudentDetail ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Academic & Contact Header Summary */}
+                <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                  <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', background: 'transparent', padding: 0, border: 'none' }}>
+                    <div className="info-item">
+                      <span className="info-label">Program & Branch</span>
+                      <span className="info-val">{selectedStudentDetail.current_education?.program} ({selectedStudentDetail.current_education?.branch})</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">CGPA / Backlogs</span>
+                      <span className="info-val">{selectedStudentDetail.current_education?.cgpa || 'N/A'} CGPA ({selectedStudentDetail.current_education?.active_backlogs || 0} Backlogs)</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Email & Contact</span>
+                      <span className="info-val">{selectedStudentDetail.email}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Profile Completion</span>
+                      <span className="info-val">{selectedStudentDetail.profile_completion || 0}%</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Institution</span>
+                      <span className="info-val">{selectedStudentDetail.institution_name}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Resume Status</span>
+                      <div>
+                        {selectedStudentDetail.has_resume ? (
+                          <span className="status-pill pill-completed">Uploaded</span>
+                        ) : (
+                          <span className="status-pill pill-ongoing">Pending</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Candidate Placement Timeline */}
+                <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Clock size={16} color="#10B981" />
+                    Student Placement Progress & History
+                  </h4>
+                  {selectedStudentDetail.timeline?.length === 0 ? (
+                    <p style={{ fontSize: '13.5px', color: '#64748B' }}>No placement history recorded.</p>
+                  ) : (
+                    <div className="placement-timeline">
+                      {selectedStudentDetail.timeline?.map((evt, idx) => (
+                        <div key={idx} className="timeline-item">
+                          <div className={`timeline-dot dot-${evt.type}`} />
+                          <div className="timeline-header">
+                            <span className="timeline-title">{evt.title}</span>
+                            <span className="timeline-date">{evt.date}</span>
+                          </div>
+                          <span className="timeline-desc">{evt.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Candidate Applications & Interview Records */}
+                <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} color="#10B981" />
+                    Submitted Applications & Interview Details ({selectedStudentDetail.applications?.length || 0})
+                  </h4>
+                  {selectedStudentDetail.applications?.length === 0 ? (
+                    <p style={{ fontSize: '13.5px', color: '#64748B' }}>Student has not submitted any job applications yet.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {selectedStudentDetail.applications?.map(app => (
+                        <div key={app.id} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <div>
+                              <strong style={{ fontSize: '15px', color: '#0F172A' }}>{app.job_title}</strong>
+                              <span style={{ fontSize: '13px', color: '#64748B', marginLeft: '8px' }}>at {app.company_name}</span>
+                            </div>
+                            <span className={`status-pill pill-${app.application_status.toLowerCase().replace(/\s+/g, '-')}`}>
+                              {app.application_status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12.5px', color: '#64748B', marginBottom: '12px' }}>
+                            Applied Date: <strong>{app.applied_at}</strong> | Location: <strong>{app.location || 'Remote'}</strong> | Package: <strong>{app.package_lpa ? `${app.package_lpa} LPA` : 'Competitive'}</strong>
+                          </div>
+
+                          {/* Interviews attached to this application */}
+                          {app.interviews && app.interviews.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px', borderTop: '1px solid #E2E8F0', paddingTop: '10px' }}>
+                              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#334155' }}>Scheduled Interview Rounds:</span>
+                              {app.interviews.map(inv => (
+                                <div key={inv.id} style={{ background: '#FFFFFF', padding: '10px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span className={inv.interview_type === 'Technical Interview' ? 'badge-tech-interview' : 'badge-hr-interview'}>
+                                        {inv.interview_type}
+                                      </span>
+                                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>{inv.interview_date} at {inv.interview_time}</span>
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                                      Mode: <strong>{inv.mode}</strong> | Venue/Link: <strong>{inv.location_or_link}</strong> | Duration: {inv.duration_minutes} mins
+                                    </div>
+                                  </div>
+                                  <span className={`status-pill pill-${inv.status.toLowerCase()}`}>{inv.status}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '12px', color: '#94A3B8', fontStyle: 'italic', marginTop: '4px' }}>
+                              Interview Not Scheduled yet.
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="btn-modal-cancel" onClick={() => setShowStudentModal(false)}>
+                    Close Profile
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: '#EF4444' }}>Student profile details unavailable.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Recruiter / Company Details Review Modal */}
       {showRecruiterModal && (
         <div className="modal-backdrop" onClick={() => setShowRecruiterModal(false)}>
@@ -1417,7 +1854,7 @@ export default function OfficerDashboard() {
                   </div>
                 </div>
 
-                {/* Section 1: Company & Recruiter Overview */}
+                {/* Overview */}
                 <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Building2 size={16} color="#10B981" />
@@ -1451,96 +1888,33 @@ export default function OfficerDashboard() {
                   </div>
                 </div>
 
-                {/* Section 2: Hiring Preferences & Eligibility */}
-                {selectedRecruiterDetail.hiring_preference && (
-                  <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Briefcase size={16} color="#10B981" />
-                      Campus Hiring Preferences & Criteria
-                    </h4>
-                    <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', background: 'transparent', padding: 0, border: 'none' }}>
-                      <div className="info-item">
-                        <span className="info-label">Target Job Roles</span>
-                        <span className="info-val">
-                          {selectedRecruiterDetail.hiring_preference.target_job_roles?.join(', ') || 'Software Development'}
-                        </span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Hiring Type</span>
-                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.hiring_type || 'Full Time'}</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Eligible Programs</span>
-                        <span className="info-val">
-                          {selectedRecruiterDetail.hiring_preference.eligible_programs?.join(', ') || 'All Programs'}
-                        </span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Eligible Branches</span>
-                        <span className="info-val">
-                          {selectedRecruiterDetail.hiring_preference.eligible_branches?.join(', ') || 'Computer Science & Engg'}
-                        </span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Minimum CGPA</span>
-                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.minimum_cgpa} / 10.0</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Max Active Backlogs</span>
-                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.maximum_active_backlogs}</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Package (LPA)</span>
-                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.package_lpa} LPA</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Work Mode</span>
-                        <span className="info-val">{selectedRecruiterDetail.hiring_preference.work_mode || 'Hybrid'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Section 3: Posted Job Opportunities */}
+                {/* Candidate Engagement Metrics */}
                 <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FileText size={16} color="#10B981" />
-                    Posted Job Requirements ({selectedRecruiterDetail.posted_jobs_count || 0})
+                    <BarChart3 size={16} color="#10B981" />
+                    Institutional Candidate Engagement Metrics
                   </h4>
-                  {selectedRecruiterDetail.posted_jobs?.length === 0 ? (
-                    <p style={{ fontSize: '13.5px', color: '#64748B', margin: 0 }}>No job postings created by this company yet.</p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="officer-table">
-                        <thead>
-                          <tr>
-                            <th>Job Title</th>
-                            <th>Package</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedRecruiterDetail.posted_jobs?.map(j => (
-                            <tr key={j.id}>
-                              <td className="title-text">{j.job_title}</td>
-                              <td>{j.package_lpa ? `${j.package_lpa} LPA` : 'Competitive'}</td>
-                              <td>{j.location || 'Remote'}</td>
-                              <td>
-                                <span className={`status-pill pill-${(j.status || 'Pending Approval').toLowerCase().replace(/\s+/g, '-')}`}>
-                                  {j.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  <div className="placement-overview-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: 0, padding: '12px' }}>
+                    <div className="overview-metric">
+                      <span className="metric-val">{selectedRecruiterDetail.posted_jobs_count || 0}</span>
+                      <span className="metric-lbl">Jobs Posted</span>
                     </div>
-                  )}
+                    <div className="overview-metric">
+                      <span className="metric-val">{selectedRecruiterDetail.applications_count || 0}</span>
+                      <span className="metric-lbl">Applications</span>
+                    </div>
+                    <div className="overview-metric">
+                      <span className="metric-val">{selectedRecruiterDetail.shortlisted_count || 0}</span>
+                      <span className="metric-lbl">Shortlisted</span>
+                    </div>
+                    <div className="overview-metric">
+                      <span className="metric-val">{selectedRecruiterDetail.selected_count || 0}</span>
+                      <span className="metric-lbl">Selected</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Modal Footer Actions */}
-                <div className="modal-actions" style={{ justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '16px', marginTop: '8px' }}>
+                <div className="modal-actions" style={{ justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '16px' }}>
                   <button type="button" className="btn-modal-cancel" onClick={() => setShowRecruiterModal(false)}>
                     Close Review
                   </button>
@@ -1577,6 +1951,252 @@ export default function OfficerDashboard() {
             ) : (
               <p style={{ color: '#EF4444' }}>Recruiter details unavailable.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Application Detail Modal */}
+      {showAppModal && selectedAppDetail && (
+        <div className="modal-backdrop" onClick={() => setShowAppModal(false)}>
+          <div className="drive-modal-content" style={{ maxWidth: '650px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px' }}>
+                  Application Details — {selectedAppDetail.job_title || selectedAppDetail.job_detail?.job_title}
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Candidate: <strong>{selectedAppDetail.student_name || selectedAppDetail.student_detail?.first_name}</strong> ({selectedAppDetail.register_number || 'N/A'})
+                </p>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowAppModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', background: '#F8FAFC' }}>
+                <div className="info-item">
+                  <span className="info-label">Company / Employer</span>
+                  <span className="info-val">{selectedAppDetail.company_name || selectedAppDetail.job_detail?.recruiter_detail?.company_name || 'Employer'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Application Date</span>
+                  <span className="info-val">{selectedAppDetail.applied_at ? new Date(selectedAppDetail.applied_at).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Current Application Status</span>
+                  <div>
+                    <span className={`status-pill pill-${(selectedAppDetail.status || selectedAppDetail.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`}>
+                      {selectedAppDetail.status || selectedAppDetail.application_status || 'Applied'}
+                    </span>
+                  </div>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Package (LPA)</span>
+                  <span className="info-val">{selectedAppDetail.job_detail?.package_lpa ? `${selectedAppDetail.job_detail.package_lpa} LPA` : 'Competitive'}</span>
+                </div>
+              </div>
+
+              {/* Scheduled Interviews Box */}
+              <div className="dashboard-card-panel" style={{ padding: '16px', boxShadow: 'none', border: '1px solid #E2E8F0' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14.5px', color: '#0F172A' }}>Interview Rounds & Status</h4>
+                {selectedAppDetail.interviews && selectedAppDetail.interviews.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {selectedAppDetail.interviews.map(inv => (
+                      <div key={inv.id} style={{ background: '#FFFFFF', padding: '12px 14px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span className={inv.interview_type === 'Technical Interview' ? 'badge-tech-interview' : 'badge-hr-interview'}>
+                            {inv.interview_type}
+                          </span>
+                          <span className={`status-pill pill-${inv.status.toLowerCase()}`}>{inv.status}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: 600 }}>
+                          {inv.interview_date} at {inv.interview_time} ({inv.duration_minutes} mins)
+                        </div>
+                        <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '4px' }}>
+                          Mode: <strong>{inv.mode}</strong> | Venue/Link: <span className="meeting-link-box">{inv.location_or_link || 'Pending'}</span>
+                        </div>
+                        {inv.instructions && (
+                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', fontStyle: 'italic' }}>
+                            Instructions: {inv.instructions}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '13px', color: '#64748B', padding: '10px', background: '#F8FAFC', borderRadius: '6px' }}>
+                    Interview Not Scheduled. Candidate is currently in state <strong>{selectedAppDetail.status || selectedAppDetail.application_status}</strong>.
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-modal-cancel" onClick={() => setShowAppModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Detail Modal */}
+      {showInterviewModal && selectedInterviewDetail && (
+        <div className="modal-backdrop" onClick={() => setShowInterviewModal(false)}>
+          <div className="drive-modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <span className={selectedInterviewDetail.interview_type === 'Technical Interview' ? 'badge-tech-interview' : 'badge-hr-interview'}>
+                  {selectedInterviewDetail.interview_type}
+                </span>
+                <h3 style={{ margin: '8px 0 0 0', fontSize: '20px' }}>
+                  {selectedInterviewDetail.candidate_name}
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Register Number: <strong>{selectedInterviewDetail.register_number || 'N/A'}</strong>
+                </p>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowInterviewModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', background: '#F8FAFC' }}>
+                <div className="info-item">
+                  <span className="info-label">Company Name</span>
+                  <span className="info-val">{selectedInterviewDetail.company_name}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Applied Role</span>
+                  <span className="info-val">{selectedInterviewDetail.job_title}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Scheduled Date</span>
+                  <span className="info-val">{selectedInterviewDetail.interview_date}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Scheduled Time & Duration</span>
+                  <span className="info-val">{selectedInterviewDetail.interview_time} ({selectedInterviewDetail.duration_minutes} mins)</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Interview Mode</span>
+                  <span className="info-val">{selectedInterviewDetail.mode}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Interview Status</span>
+                  <div>
+                    <span className={`status-pill pill-${selectedInterviewDetail.status.toLowerCase()}`}>
+                      {selectedInterviewDetail.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '14px', borderRadius: '8px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1E40AF', display: 'block', marginBottom: '4px' }}>Venue / Meeting Link:</span>
+                <span style={{ fontSize: '14px', color: '#1E3A8A', wordBreak: 'break-all', fontWeight: 600 }}>
+                  {selectedInterviewDetail.location_or_link || 'Details pending from recruiter.'}
+                </span>
+              </div>
+
+              {selectedInterviewDetail.instructions && (
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Instructions:</span>
+                  <span style={{ fontSize: '13.5px', color: '#1E293B' }}>
+                    {selectedInterviewDetail.instructions}
+                  </span>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button type="button" className="btn-modal-cancel" onClick={() => setShowInterviewModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Job Detail Modal */}
+      {showJobModal && selectedJobDetail && (
+        <div className="modal-backdrop" onClick={() => setShowJobModal(false)}>
+          <div className="drive-modal-content" style={{ maxWidth: '650px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ margin: 0, fontSize: '20px' }}>
+                  {selectedJobDetail.job_title}
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                  Employer: <strong>{selectedJobDetail.company_name}</strong>
+                </p>
+              </div>
+              <button className="btn-close-modal" onClick={() => setShowJobModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', background: '#F8FAFC' }}>
+                <div className="info-item">
+                  <span className="info-label">Package (LPA)</span>
+                  <span className="info-val">{selectedJobDetail.package_lpa ? `${selectedJobDetail.package_lpa} LPA` : 'Competitive'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Location / Work Mode</span>
+                  <span className="info-val">{selectedJobDetail.location} ({selectedJobDetail.work_mode || 'N/A'})</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Application Deadline</span>
+                  <span className="info-val">{selectedJobDetail.application_deadline || 'Open'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Job Approval Status</span>
+                  <div>
+                    <span className={`status-pill pill-${(selectedJobDetail.status || 'Pending Approval').toLowerCase().replace(/\s+/g, '-')}`}>
+                      {selectedJobDetail.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metrics */}
+              <div className="placement-overview-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: 0, padding: '12px' }}>
+                <div className="overview-metric">
+                  <span className="metric-val">{selectedJobDetail.applications_count || 0}</span>
+                  <span className="metric-lbl">Applications</span>
+                </div>
+                <div className="overview-metric">
+                  <span className="metric-val">{selectedJobDetail.shortlisted_count || 0}</span>
+                  <span className="metric-lbl">Shortlisted</span>
+                </div>
+                <div className="overview-metric">
+                  <span className="metric-val">{selectedJobDetail.interviews_count || 0}</span>
+                  <span className="metric-lbl">Interviews</span>
+                </div>
+                <div className="overview-metric">
+                  <span className="metric-val">{selectedJobDetail.selected_count || 0}</span>
+                  <span className="metric-lbl">Selected</span>
+                </div>
+              </div>
+
+              {selectedJobDetail.job_description && (
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '14px', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Job Description:</span>
+                  <span style={{ fontSize: '13.5px', color: '#1E293B', whiteSpace: 'pre-line' }}>
+                    {selectedJobDetail.job_description}
+                  </span>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button type="button" className="btn-modal-cancel" onClick={() => setShowJobModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

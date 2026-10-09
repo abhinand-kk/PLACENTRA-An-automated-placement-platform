@@ -4,10 +4,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
-from .models import Application
-from .serializers import ApplicationSerializer
+from .models import Application, Interview
+from .serializers import ApplicationSerializer, InterviewSerializer, InterviewCreateUpdateSerializer
 from .permissions import IsStudentUser, IsApplicationParticipant
 from jobs.models import Job
+from .email_service import send_interview_notification_email
+
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -55,7 +57,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'my_applications', 'student_dashboard', 'destroy']:
             return [IsStudentUser()]
-        elif self.action in ['job_applications', 'status_update', 'recruiter_dashboard']:
+        elif self.action in ['job_applications', 'status_update', 'recruiter_dashboard', 'download_resume']:
             return [permissions.IsAuthenticated()]
         return [IsApplicationParticipant()]
 
@@ -181,8 +183,15 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 'error': f'Invalid status. Allowed choices: {", ".join(valid_statuses)}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        previous_status = application.application_status
         application.application_status = new_status
         application.save(update_fields=['application_status'])
+
+        # Trigger shortlisting email & PDF notification idempotently when transitioning to SHORTLISTED
+        if previous_status != Application.ApplicationStatus.SHORTLISTED and new_status == Application.ApplicationStatus.SHORTLISTED:
+            from .email_service import send_shortlisting_notification
+            send_shortlisting_notification(application)
+
         serializer = self.get_serializer(application)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -225,3 +234,194 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             'rejected': student_apps.filter(application_status=Application.ApplicationStatus.REJECTED).count(),
         }
         return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='resume')
+    def download_resume(self, request, pk=None):
+        import os, urllib.parse, logging
+        from django.conf import settings
+        from django.http import FileResponse
+
+        application = self.get_object()
+        student = application.student
+        doc = getattr(student, 'documents', None)
+
+        if not doc or not doc.resume:
+            return Response({'error': 'Candidate resume has not been uploaded.'}, status=status.HTTP_404_NOT_FOUND)
+
+        resume_field = doc.resume
+        stored_path = str(resume_field)
+        unquoted_path = urllib.parse.unquote(stored_path)
+
+        media_root = settings.MEDIA_ROOT
+        full_path = os.path.join(media_root, unquoted_path)
+
+        if not os.path.exists(full_path):
+            full_path = os.path.join(media_root, stored_path)
+
+        if not os.path.exists(full_path):
+            base_name = os.path.basename(unquoted_path)
+            doc_dir = os.path.join(media_root, 'student_documents')
+            if os.path.exists(doc_dir):
+                for root_dir, _, files in os.walk(doc_dir):
+                    if base_name in files:
+                        full_path = os.path.join(root_dir, base_name)
+                        break
+
+        if not os.path.exists(full_path):
+            logging.getLogger('django').error(f"Resume PDF file missing from disk storage: {full_path}")
+            return Response({'error': 'Candidate resume file not found on server storage.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            filename = os.path.basename(full_path)
+            response = FileResponse(open(full_path, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            return response
+        except Exception as e:
+            logging.getLogger('django').error(f"Error serving resume PDF: {str(e)}")
+            return Response({'error': 'Unable to open candidate resume PDF.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class InterviewViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return InterviewCreateUpdateSerializer
+        return InterviewSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Interview.objects.none()
+
+        qs = Interview.objects.select_related(
+            'application',
+            'application__student',
+            'application__student__user',
+            'application__job',
+            'application__job__recruiter'
+        )
+
+        if hasattr(user, 'recruiter_profile'):
+            return qs.filter(application__job__recruiter=user.recruiter_profile)
+        elif hasattr(user, 'student_profile'):
+            return qs.filter(application__student=user.student_profile)
+        elif hasattr(user, 'placement_officer_profile'):
+            return qs.filter(application__student__institution=user.placement_officer_profile.institution)
+        elif user.is_staff or user.is_superuser:
+            return qs
+        return Interview.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        recruiter = getattr(request.user, 'recruiter_profile', None)
+        if not recruiter:
+            return Response({'error': 'Only authorized recruiters can schedule candidate interviews.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        interview = serializer.save()
+
+        # Update application status to INTERVIEW_SCHEDULED if currently SHORTLISTED
+        application = interview.application
+        if application.application_status == Application.ApplicationStatus.SHORTLISTED:
+            application.application_status = Application.ApplicationStatus.INTERVIEW_SCHEDULED
+            application.save(update_fields=['application_status'])
+
+        # Send email and in-app notification
+        email_sent = send_interview_notification_email(interview)
+
+        response_serializer = InterviewSerializer(interview)
+        data = response_serializer.data
+        data['email_sent'] = email_sent
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        recruiter = getattr(request.user, 'recruiter_profile', None)
+        if not recruiter:
+            return Response({'error': 'Only authorized recruiters can update/reschedule interviews.'}, status=status.HTTP_403_FORBIDDEN)
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        if instance.application.job.recruiter != recruiter:
+            return Response({'error': 'You are not authorized to edit this interview.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        interview = serializer.save()
+
+        if 'interview_date' in request.data or 'interview_time' in request.data:
+            interview.status = Interview.InterviewStatus.RESCHEDULED
+            interview.save(update_fields=['status'])
+
+        email_sent = send_interview_notification_email(interview)
+
+        response_serializer = InterviewSerializer(interview)
+        data = response_serializer.data
+        data['email_sent'] = email_sent
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='calendar')
+    def calendar(self, request):
+        qs = self.get_queryset().exclude(status=Interview.InterviewStatus.CANCELLED)
+        events = []
+        for item in qs:
+            student_name = f"{item.application.student.first_name} {item.application.student.last_name}".strip()
+            job_title = item.application.job.job_title
+            company_name = getattr(item.application.job.recruiter, 'company_name', 'Company')
+            events.append({
+                'id': item.id,
+                'application_id': item.application.id,
+                'title': f"{item.interview_type} - {student_name}",
+                'candidate_name': student_name,
+                'job_title': job_title,
+                'company_name': company_name,
+                'interview_type': item.interview_type,
+                'date': item.interview_date,
+                'time': item.interview_time,
+                'duration_minutes': item.duration_minutes,
+                'mode': item.mode,
+                'location_or_link': item.location_or_link,
+                'instructions': item.instructions,
+                'status': item.status,
+            })
+        return Response(events, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='my-interviews')
+    def my_interviews(self, request):
+        student = getattr(request.user, 'student_profile', None)
+        if not student:
+            return Response({'error': 'Student profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        qs = self.get_queryset().filter(application__student=student).exclude(status=Interview.InterviewStatus.CANCELLED)
+        serializer = InterviewSerializer(qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        recruiter = getattr(request.user, 'recruiter_profile', None)
+        if not recruiter:
+            return Response({'error': 'Only authorized recruiters can cancel candidate interviews.'}, status=status.HTTP_403_FORBIDDEN)
+        instance = self.get_object()
+        if instance.application.job.recruiter != recruiter:
+            return Response({'error': 'You are not authorized to cancel this interview.'}, status=status.HTTP_403_FORBIDDEN)
+
+        instance.status = Interview.InterviewStatus.CANCELLED
+        instance.save(update_fields=['status'])
+
+        # Notify student about cancellation
+        try:
+            from notifications.models import Notification
+            student_user = instance.application.student.user
+            job_title = instance.application.job.job_title
+            company_name = getattr(instance.application.job.recruiter, 'company_name', 'Company')
+            Notification.objects.create(
+                user=student_user,
+                title=f"{instance.interview_type} Cancelled",
+                message=f"Your scheduled {instance.interview_type} for {job_title} at {company_name} has been cancelled.",
+                notification_type="Interview"
+            )
+        except Exception as e:
+            pass
+
+        return Response({'message': 'Interview cancelled successfully.'}, status=status.HTTP_200_OK)
+
+

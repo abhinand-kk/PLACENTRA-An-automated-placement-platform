@@ -544,12 +544,15 @@ class PlacementOfficerRegistrationSerializer(serializers.ModelSerializer):
     official_email = serializers.EmailField(write_only=True)
     mobile_number = serializers.CharField(write_only=True)
     institution_name = serializers.CharField(write_only=True, required=False)
+    college_email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    placement_email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = (
             'id', 'email', 'password', 'full_name',
-            'designation', 'official_email', 'mobile_number', 'institution_name'
+            'designation', 'official_email', 'mobile_number', 'institution_name',
+            'college_email', 'placement_email'
         )
 
     def validate_email(self, value):
@@ -564,7 +567,15 @@ class PlacementOfficerRegistrationSerializer(serializers.ModelSerializer):
         official_email = validated_data.pop('official_email').strip()
         mobile_number = validated_data.pop('mobile_number').strip()
         institution_name = validated_data.pop('institution_name', 'Main Campus Institution').strip()
+        college_email = (
+            validated_data.pop('college_email', None) or 
+            validated_data.pop('placement_email', None) or 
+            official_email
+        )
+        if isinstance(college_email, str):
+            college_email = college_email.strip().lower()
 
+        # User.email is created from validated_data['email'] (Placement Officer Email)
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
@@ -578,12 +589,15 @@ class PlacementOfficerRegistrationSerializer(serializers.ModelSerializer):
                 'district': 'Default',
                 'state': 'Default',
                 'pincode': '000000',
-                'placement_email': official_email,
+                'placement_email': college_email,
                 'placement_phone': mobile_number
             }
         )
+        if institution and college_email and institution.placement_email != college_email:
+            institution.placement_email = college_email
+            institution.save(update_fields=['placement_email'])
 
-        PlacementOfficerProfile.objects.create(
+        profile = PlacementOfficerProfile.objects.create(
             user=user,
             institution=institution,
             full_name=full_name,
@@ -591,6 +605,19 @@ class PlacementOfficerRegistrationSerializer(serializers.ModelSerializer):
             official_email=official_email,
             mobile_number=mobile_number
         )
+
+        from placement_officers.models import InstitutionDetails
+        InstitutionDetails.objects.get_or_create(
+            placement_officer=profile,
+            defaults={
+                'student_strength': 100,
+                'eligible_final_year_students': 100,
+                'placement_cell_email': college_email,
+                'placement_cell_phone': mobile_number,
+                'placement_season': '2026-2027'
+            }
+        )
+
         return user
 
 
@@ -606,9 +633,31 @@ class LoginSerializer(serializers.Serializer):
         if not email_input or not password:
             raise serializers.ValidationError("Both email address and password are required.")
 
-        # Find user via case-insensitive email lookup
+        # Find user via case-insensitive email lookup across User, StudentContact, RecruiterProfile, and PlacementOfficerProfile
         user_obj = User.objects.filter(email__iexact=email_input).first()
+        if not user_obj:
+            from django.db.models import Q
+            from students.models import StudentContact
+            sc = StudentContact.objects.filter(
+                Q(primary_email__iexact=email_input) | Q(personal_email__iexact=email_input)
+            ).select_related('student__user').first()
+            if sc and sc.student and sc.student.user:
+                user_obj = sc.student.user
+
+        if not user_obj:
+            from recruiters.models import RecruiterProfile
+            rp = RecruiterProfile.objects.filter(official_email__iexact=email_input).select_related('user').first()
+            if rp and rp.user:
+                user_obj = rp.user
+
+        if not user_obj:
+            from placement_officers.models import PlacementOfficerProfile
+            po = PlacementOfficerProfile.objects.filter(official_email__iexact=email_input).select_related('user').first()
+            if po and po.user:
+                user_obj = po.user
+
         lookup_username = user_obj.email if user_obj else email_input
+
 
         # Authenticate with Django auth system using exact DB email string
         request = self.context.get('request') if hasattr(self, 'context') else None

@@ -18,9 +18,6 @@ export const initialStudentRegistrationState = {
   },
   contactVerification: {
     primaryEmailVerified: false,
-    personalEmail: '',
-    personalEmailVerified: false,
-    mobileVerified: false,
     address: {
       country: 'India',
       pincode: '',
@@ -46,21 +43,18 @@ export const initialStudentRegistrationState = {
   },
   previousEducation: {
     class12: {
+      qualType: '10+2',
       board: '',
       schoolName: '',
       yearOfPassing: '',
       percentage: '',
-      maxMarks: '',
-      obtainedMarks: '',
       subjects: []
     },
     class10: {
       board: '',
       schoolName: '',
       yearOfPassing: '',
-      percentage: '',
-      maxMarks: '',
-      obtainedMarks: ''
+      percentage: ''
     },
     additionalQualifications: []
   },
@@ -70,6 +64,6 @@ export const initialStudentRegistrationState = {
     resume: { name: '', size: '', status: 'Pending', type: 'PDF' },
     class10Cert: { name: '', size: '', status: 'Pending', type: 'PDF' },
     class12Cert: { name: '', size: '', status: 'Pending', type: 'PDF' },
-    degreeMarksheet: { name: '', size: 'Fetch from DigiLocker', status: 'Pending', type: 'DigiLocker' }
+    degreeMarksheet: { name: '', size: '', status: 'Pending', type: 'PDF' }
   }
 };

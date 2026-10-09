@@ -16,7 +16,7 @@ export default function RegistrationWizard({ onExitWizard }) {
   // Single StudentRegistrationState object maintained throughout registration
   const [wizardState, setWizardState] = useState(initialStudentRegistrationState);
   const [activeStep, setActiveStep] = useState(1);
-  const [maxReachedStep, setMaxReachedStep] = useState(1);
+  const [maxReachedStep, setMaxReachedStep] = useState(7);
 
   // Toast state
   const [toastInfo, setToastInfo] = useState({ show: false, summary: '' });

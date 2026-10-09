@@ -1,28 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GraduationCap, ArrowRight, ArrowLeft, Plus, Edit2, Trash2, X } from 'lucide-react';
+import api from '../../../services/api';
 
 export default function Step4PreviousEducation({ state, onChange, onNext, onBack }) {
   const [showAddQualModal, setShowAddQualModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingQualId, setEditingQualId] = useState(null);
+  const [deletingQual, setDeletingQual] = useState(null);
 
   const [qualForm, setQualForm] = useState({
     type: 'Diploma',
-    stream: 'Computer Engineering',
-    institute: 'Govt. Polytechnic College, Kochi',
-    year: '2021',
-    percentage: '89.60%'
+    stream: '',
+    institute: '',
+    year: '',
+    percentage: ''
   });
 
   const data = state.previousEducation || {};
   const c12 = data.class12 || {};
   const c10 = data.class10 || {};
+  
   const additionalList = data.additionalQualifications || [];
 
-  const availableSubjects = ['English', 'Physics', 'Chemistry', 'Mathematics', 'Computer Science', 'Biology', 'Electronics'];
+  const availableSubjects = [
+    'English', 'Physics', 'Chemistry', 'Mathematics', 'Computer Science', 
+    'Biology', 'Electronics', 'Accountancy', 'Economics', 'Business Studies'
+  ];
+
+  const selectedSubjects = c12.subjects || [];
+
+  // Lock body scroll when any modal is active
+  useEffect(() => {
+    if (showAddQualModal || showDeleteModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showAddQualModal, showDeleteModal]);
 
   const handleClass12Change = (field, val) => {
     onChange('previousEducation', {
       ...data,
+      additionalQualifications: additionalList,
       class12: { ...c12, [field]: val }
     });
   };
@@ -30,19 +52,18 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
   const handleClass10Change = (field, val) => {
     onChange('previousEducation', {
       ...data,
+      additionalQualifications: additionalList,
       class10: { ...c10, [field]: val }
     });
   };
 
   const handleRemoveSubject = (subToRemove) => {
-    const currentSubs = c12.subjects || ['English', 'Physics', 'Chemistry', 'Mathematics', 'Computer Science'];
-    handleClass12Change('subjects', currentSubs.filter(s => s !== subToRemove));
+    handleClass12Change('subjects', selectedSubjects.filter(s => s !== subToRemove));
   };
 
   const handleAddSubject = (subToAdd) => {
-    const currentSubs = c12.subjects || ['English', 'Physics', 'Chemistry', 'Mathematics', 'Computer Science'];
-    if (!currentSubs.includes(subToAdd)) {
-      handleClass12Change('subjects', [...currentSubs, subToAdd]);
+    if (subToAdd && !selectedSubjects.includes(subToAdd)) {
+      handleClass12Change('subjects', [...selectedSubjects, subToAdd]);
     }
   };
 
@@ -50,10 +71,10 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
     setEditingQualId(null);
     setQualForm({
       type: 'Diploma',
-      stream: 'Computer Engineering',
-      institute: 'Govt. Polytechnic College, Kochi',
-      year: '2021',
-      percentage: '89.60%'
+      stream: '',
+      institute: '',
+      year: '',
+      percentage: ''
     });
     setShowAddQualModal(true);
   };
@@ -62,31 +83,70 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
     setEditingQualId(q.id);
     setQualForm({
       type: q.type || 'Diploma',
-      stream: q.stream || q.institution || 'Computer Engineering',
-      institute: q.institute || q.institution || 'Govt. Polytechnic College, Kochi',
-      year: q.year || '2021',
-      percentage: q.percentage || q.score || '89.60%'
+      stream: q.stream || q.institution || q.board_or_university || '',
+      institute: q.institute || q.institution_name || q.board_or_university || '',
+      year: String(q.year || q.year_of_passing || ''),
+      percentage: String(q.percentage || q.score || '')
     });
     setShowAddQualModal(true);
   };
 
-  const handleRemoveQual = (id) => {
-    onChange('previousEducation', {
-      ...data,
-      additionalQualifications: additionalList.filter(q => q.id !== id)
-    });
+  const handleRequestDeleteQual = (q) => {
+    setDeletingQual(q);
+    setShowDeleteModal(true);
   };
 
-  const handleSaveQualSubmit = (e) => {
-    e.preventDefault();
-    if (editingQualId) {
-      const updated = additionalList.map(q => q.id === editingQualId ? { ...qualForm, id: editingQualId } : q);
-      onChange('previousEducation', { ...data, additionalQualifications: updated });
-    } else {
-      const newQual = { ...qualForm, id: Date.now().toString() };
-      onChange('previousEducation', { ...data, additionalQualifications: [...additionalList, newQual] });
+  const handleConfirmDeleteQual = async () => {
+    if (!deletingQual) return;
+    const targetId = deletingQual.id;
+    
+    const updatedList = additionalList.filter(q => q.id !== targetId);
+    onChange('previousEducation', {
+      ...data,
+      additionalQualifications: updatedList
+    });
+
+    if (targetId && typeof targetId === 'number') {
+      try {
+        await api.delete(`/api/v1/students/previous-education/${targetId}/`);
+      } catch (err) {
+        console.warn("Backend qualification deletion error:", err);
+      }
     }
+
+    setShowDeleteModal(false);
+    setDeletingQual(null);
+  };
+
+  const handleSaveQualSubmit = async (e) => {
+    e.preventDefault();
+    let updatedList;
+    
+    if (editingQualId) {
+      const updatedItem = { ...qualForm, id: editingQualId };
+      updatedList = additionalList.map(q => q.id === editingQualId ? updatedItem : q);
+      onChange('previousEducation', { ...data, additionalQualifications: updatedList });
+
+      if (editingQualId && typeof editingQualId === 'number') {
+        try {
+          await api.put(`/api/v1/students/previous-education/${editingQualId}/`, {
+            institution_name: qualForm.institute,
+            board_or_university: qualForm.stream,
+            year_of_passing: parseInt(qualForm.year) || 2024,
+            percentage: parseFloat(qualForm.percentage.replace('%', '')) || 0.0
+          });
+        } catch (err) {
+          console.warn("Backend qualification update error:", err);
+        }
+      }
+    } else {
+      const newQual = { ...qualForm, id: `qual-${Date.now()}` };
+      updatedList = [...additionalList, newQual];
+      onChange('previousEducation', { ...data, additionalQualifications: updatedList });
+    }
+
     setShowAddQualModal(false);
+    setEditingQualId(null);
   };
 
   const handleSubmit = (e) => {
@@ -94,7 +154,7 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
     onNext();
   };
 
-  const selectedSubjects = c12.subjects || ['English', 'Physics', 'Chemistry', 'Mathematics', 'Computer Science'];
+  const passYears = ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015'];
 
   return (
     <div className="step-container">
@@ -145,15 +205,17 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
             <label className="form-label">Stream / Board <span className="req">*</span></label>
             <select 
               className="form-control"
-              value={c12.board || 'CBSE'}
+              value={c12.board || ''}
               onChange={(e) => handleClass12Change('board', e.target.value)}
               required
             >
+              <option value="">Select board</option>
               <option value="CBSE">CBSE</option>
               <option value="ICSE">ICSE</option>
               <option value="State Board">State Board</option>
               <option value="IB">IB</option>
               <option value="Diploma">Diploma</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
@@ -162,90 +224,44 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
             <input 
               type="text" 
               className="form-control"
-              placeholder="Delhi Public School, Kochi"
-              value={c12.schoolName || 'Delhi Public School, Kochi'}
+              placeholder="Enter school or college name"
+              value={c12.schoolName || ''}
               onChange={(e) => handleClass12Change('schoolName', e.target.value)}
               required
             />
           </div>
         </div>
 
-        <div className="form-grid-3" style={{ marginBottom: '20px' }}>
+        <div className="form-grid-2" style={{ marginBottom: '20px' }}>
           <div className="form-group">
             <label className="form-label">Year of Passing <span className="req">*</span></label>
             <select 
               className="form-control"
-              value={c12.yearOfPassing || '2024'}
+              value={c12.yearOfPassing || ''}
               onChange={(e) => handleClass12Change('yearOfPassing', e.target.value)}
               required
             >
-              {['2024', '2023', '2022', '2021', '2020'].map(y => (
+              <option value="">Select year of passing</option>
+              {passYears.map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Roll Number <span className="req">*</span></label>
-            <input 
-              type="text" 
-              className="form-control"
-              placeholder="23456789"
-              value={c12.rollNumber || '23456789'}
-              onChange={(e) => handleClass12Change('rollNumber', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Board Roll Number (if any)</label>
-            <input 
-              type="text" 
-              className="form-control"
-              placeholder="87654321"
-              value={c12.boardRollNumber || '87654321'}
-              onChange={(e) => handleClass12Change('boardRollNumber', e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="form-grid-3" style={{ marginBottom: '20px' }}>
-          <div className="form-group">
             <label className="form-label">Percentage / Marks <span className="req">*</span></label>
             <div className="percentage-input-group">
               <input 
                 type="text" 
                 className="form-control"
-                placeholder="92.40"
-                value={c12.percentage || '92.40'}
+                placeholder="Enter percentage"
+                value={c12.percentage || ''}
                 onChange={(e) => handleClass12Change('percentage', e.target.value)}
                 required
               />
               <span className="percent-suffix">%</span>
             </div>
             <span className="sub-caption">Enter percentage as per marksheet</span>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Max Marks</label>
-            <input 
-              type="text" 
-              className="form-control"
-              placeholder="500"
-              value={c12.maxMarks || '500'}
-              onChange={(e) => handleClass12Change('maxMarks', e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Obtained Marks</label>
-            <input 
-              type="text" 
-              className="form-control"
-              placeholder="462"
-              value={c12.obtainedMarks || '462'}
-              onChange={(e) => handleClass12Change('obtainedMarks', e.target.value)}
-            />
           </div>
         </div>
 
@@ -281,18 +297,21 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
         <div className="wizard-section-divider"></div>
         <h3 className="wizard-section-title">Class X Details</h3>
 
-        <div className="form-grid-3" style={{ marginBottom: '20px' }}>
+        <div className="form-grid-2" style={{ marginBottom: '20px' }}>
           <div className="form-group">
             <label className="form-label">Board <span className="req">*</span></label>
             <select 
               className="form-control"
-              value={c10.board || 'ICSE'}
+              value={c10.board || ''}
               onChange={(e) => handleClass10Change('board', e.target.value)}
               required
             >
-              <option value="ICSE">ICSE</option>
+              <option value="">Select board</option>
               <option value="CBSE">CBSE</option>
+              <option value="ICSE">ICSE</option>
               <option value="State Board">State Board</option>
+              <option value="IB">IB</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
@@ -301,65 +320,44 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
             <input 
               type="text" 
               className="form-control"
-              placeholder="St. George's High School, Kochi"
-              value={c10.schoolName || "St. George's High School, Kochi"}
+              placeholder="Enter school name"
+              value={c10.schoolName || ''}
               onChange={(e) => handleClass10Change('schoolName', e.target.value)}
               required
             />
           </div>
+        </div>
 
+        <div className="form-grid-2" style={{ marginBottom: '32px' }}>
           <div className="form-group">
             <label className="form-label">Year of Passing <span className="req">*</span></label>
             <select 
               className="form-control"
-              value={c10.yearOfPassing || '2022'}
+              value={c10.yearOfPassing || ''}
               onChange={(e) => handleClass10Change('yearOfPassing', e.target.value)}
               required
             >
-              {['2022', '2021', '2020', '2019'].map(y => (
+              <option value="">Select year of passing</option>
+              {passYears.map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
           </div>
-        </div>
 
-        <div className="form-grid-3" style={{ marginBottom: '32px' }}>
           <div className="form-group">
             <label className="form-label">Percentage / Marks <span className="req">*</span></label>
             <div className="percentage-input-group">
               <input 
                 type="text" 
                 className="form-control"
-                placeholder="94.20"
-                value={c10.percentage || '94.20'}
+                placeholder="Enter percentage"
+                value={c10.percentage || ''}
                 onChange={(e) => handleClass10Change('percentage', e.target.value)}
                 required
               />
               <span className="percent-suffix">%</span>
             </div>
             <span className="sub-caption">Enter percentage as per marksheet</span>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Max Marks</label>
-            <input 
-              type="text" 
-              className="form-control"
-              placeholder="500"
-              value={c10.maxMarks || '500'}
-              onChange={(e) => handleClass10Change('maxMarks', e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Obtained Marks</label>
-            <input 
-              type="text" 
-              className="form-control"
-              placeholder="471"
-              value={c10.obtainedMarks || '471'}
-              onChange={(e) => handleClass10Change('obtainedMarks', e.target.value)}
-            />
           </div>
         </div>
 
@@ -388,47 +386,12 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
 
         {/* Added Qualification Cards List */}
         {additionalList.length === 0 ? (
-          <div className="added-qual-card-row" key="default-diploma">
-            <div className="qual-card-left">
-              <div className="card-icon-tile">
-                <GraduationCap size={20} />
-              </div>
-              <div className="qual-card-grid">
-                <div>
-                  <div className="qual-col-label">Qualification Type</div>
-                  <div className="qual-col-val">Diploma</div>
-                </div>
-                <div>
-                  <div className="qual-col-label">Stream / Branch</div>
-                  <div className="qual-col-val">Computer Engineering</div>
-                </div>
-                <div>
-                  <div className="qual-col-label">Institute Name</div>
-                  <div className="qual-col-val">Govt. Polytechnic College, Kochi</div>
-                </div>
-                <div>
-                  <div className="qual-col-label">Year of Passing</div>
-                  <div className="qual-col-val">2021</div>
-                </div>
-                <div>
-                  <div className="qual-col-label">Percentage / Marks</div>
-                  <div className="qual-col-val">89.60%</div>
-                </div>
-              </div>
+          <div className="empty-experience-box" style={{ marginTop: '12px', marginBottom: '24px' }}>
+            <div className="empty-box-icon">
+              <GraduationCap size={22} color="#4F46E5" />
             </div>
-
-            <div className="qual-card-actions">
-              <button 
-                type="button" 
-                className="icon-action-btn"
-                onClick={() => handleEditQual({ id: 'def', type: 'Diploma', stream: 'Computer Engineering', institute: 'Govt. Polytechnic College, Kochi', year: '2021', percentage: '89.60%' })}
-              >
-                <Edit2 size={15} />
-              </button>
-              <button type="button" className="icon-action-btn danger">
-                <Trash2 size={15} />
-              </button>
-            </div>
+            <div className="empty-box-title">No additional qualifications added.</div>
+            <div className="empty-box-sub">Add any other previous qualification like ITI, Polytechnic, NIOS, Diploma, etc.</div>
           </div>
         ) : (
           additionalList.map((q) => (
@@ -465,7 +428,7 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
                 <button type="button" className="icon-action-btn" onClick={() => handleEditQual(q)}>
                   <Edit2 size={15} />
                 </button>
-                <button type="button" className="icon-action-btn danger" onClick={() => handleRemoveQual(q.id)}>
+                <button type="button" className="icon-action-btn danger" onClick={() => handleRequestDeleteQual(q)}>
                   <Trash2 size={15} />
                 </button>
               </div>
@@ -523,7 +486,7 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
                   <input 
                     type="text" 
                     className="form-control"
-                    placeholder="Computer Engineering"
+                    placeholder="Enter stream / branch"
                     value={qualForm.stream}
                     onChange={(e) => setQualForm({ ...qualForm, stream: e.target.value })}
                     required
@@ -535,7 +498,7 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
                   <input 
                     type="text" 
                     className="form-control"
-                    placeholder="Govt. Polytechnic College, Kochi"
+                    placeholder="Enter institute name"
                     value={qualForm.institute}
                     onChange={(e) => setQualForm({ ...qualForm, institute: e.target.value })}
                     required
@@ -551,7 +514,8 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
                       onChange={(e) => setQualForm({ ...qualForm, year: e.target.value })}
                       required
                     >
-                      {['2024', '2023', '2022', '2021', '2020', '2019'].map(y => (
+                      <option value="">Select year of passing</option>
+                      {passYears.map(y => (
                         <option key={y} value={y}>{y}</option>
                       ))}
                     </select>
@@ -562,7 +526,7 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
                     <input 
                       type="text" 
                       className="form-control"
-                      placeholder="89.60%"
+                      placeholder="Enter percentage"
                       value={qualForm.percentage}
                       onChange={(e) => setQualForm({ ...qualForm, percentage: e.target.value })}
                       required
@@ -584,6 +548,42 @@ export default function Step4PreviousEducation({ state, onChange, onNext, onBack
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingQual && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: '440px' }}>
+            <div className="modal-header">
+              <h3>Delete Qualification</h3>
+              <button className="modal-close-btn" onClick={() => setShowDeleteModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: '14px', color: '#334155', margin: 0, lineHeight: 1.5 }}>
+                Are you sure you want to delete your <b>{deletingQual.type || 'Diploma'}</b> qualification ({deletingQual.stream || deletingQual.institute})? This action cannot be undone.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn-wizard-secondary"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="btn-wizard-primary"
+                style={{ backgroundColor: '#EF4444', borderColor: '#EF4444', color: '#FFFFFF' }}
+                onClick={handleConfirmDeleteQual}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

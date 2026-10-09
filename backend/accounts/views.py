@@ -69,6 +69,15 @@ class PlacementOfficerRegisterView(APIView):
         serializer = PlacementOfficerRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            
+            # Send confirmation email safely (non-blocking for registration flow)
+            try:
+                from applications.email_service import send_placement_officer_registration_email
+                send_placement_officer_registration_email(user)
+            except Exception as e:
+                import logging
+                logging.getLogger('django').error(f"Error triggering placement officer registration email: {e}")
+
             tokens = get_tokens_for_user(user)
             user_data = UserDetailSerializer(user).data
             return Response({

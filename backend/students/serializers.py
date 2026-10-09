@@ -19,6 +19,53 @@ class StudentContactSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'student')
 
+    def validate(self, attrs):
+        state = attrs.get('state') or (self.instance.state if self.instance else None)
+        district = attrs.get('district') or (self.instance.district if self.instance else None)
+
+        STATE_DISTRICT_MAP = {
+            "Kerala": [
+                "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam",
+                "Kottayam", "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta",
+                "Thiruvananthapuram", "Thrissur", "Wayanad"
+            ],
+            "Tamil Nadu": [
+                "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore",
+                "Dharmapuri", "Dindigul", "Erode", "Kanchipuram", "Kanyakumari",
+                "Karur", "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam",
+                "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram",
+                "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", "Theni",
+                "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupathur",
+                "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore",
+                "Viluppuram", "Virudhunagar"
+            ],
+            "Karnataka": [
+                "Bagalkot", "Ballari", "Belagavi", "Bengaluru Rural", "Bengaluru Urban",
+                "Bidar", "Chamarajanagar", "Chikkaballapur", "Chikkamagaluru",
+                "Chitradurga", "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag",
+                "Hassan", "Haveri", "Kalaburagi", "Kodagu", "Kolar", "Koppal",
+                "Mandya", "Mysore", "Raichur", "Ramanagara", "Shivamogga", "Tumakuru",
+                "Udupi", "Uttara Kannada", "Vijayanagara", "Vijayapura", "Yadgir"
+            ],
+            "Maharashtra": [
+                "Ahmednagar", "Akola", "Amravati", "Beed", "Bhandara", "Buldhana",
+                "Chandrapur", "Chhatrapati Sambhaji Nagar", "Dharashiv", "Dhule",
+                "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna", "Kolhapur",
+                "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded",
+                "Nandurbar", "Nashik", "Palghar", "Parbhani", "Pune", "Raigad",
+                "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane",
+                "Wardha", "Washim", "Yavatmal"
+            ]
+        }
+
+        if state and district and state in STATE_DISTRICT_MAP:
+            allowed_districts = STATE_DISTRICT_MAP[state]
+            if district not in allowed_districts:
+                raise serializers.ValidationError({
+                    "district": f"District '{district}' is invalid for state '{state}'."
+                })
+        return attrs
+
 
 class StudentCurrentEducationSerializer(serializers.ModelSerializer):
     program_detail = ProgramSerializer(source='program', read_only=True)

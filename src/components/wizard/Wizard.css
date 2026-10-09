@@ -1489,6 +1489,14 @@
   animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-card > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 @keyframes modalPop {
   0% { opacity: 0; transform: scale(0.95); }
   100% { opacity: 1; transform: scale(1); }
@@ -1521,6 +1529,7 @@
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 .modal-footer {

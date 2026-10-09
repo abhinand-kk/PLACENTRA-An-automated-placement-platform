@@ -6,7 +6,7 @@ export default function WizardSidebar({ activeStep, onSelectStep, maxReachedStep
     { id: 1, title: 'Basic Details', desc: 'Tell us about yourself', icon: <User size={14} /> },
     { id: 2, title: 'Contact Verification', desc: 'Verify your email & mobile', icon: <Mail size={14} /> },
     { id: 3, title: 'Academic Details', desc: 'Your education information', icon: <GraduationCap size={14} /> },
-    { id: 4, title: 'Skills & Projects', desc: 'Your skills and projects', icon: <Code2 size={14} /> },
+    { id: 4, title: 'Previous Education', desc: 'Class X, Class XII and other qualifications', icon: <GraduationCap size={14} /> },
     { id: 5, title: 'Internships & Certifications', desc: 'Experience & achievements', icon: <Briefcase size={14} /> },
     { id: 6, title: 'Documents', desc: 'Upload your documents', icon: <FileText size={14} /> },
     { id: 7, title: 'Review & Submit', desc: 'Review and finish', icon: <CheckCircle2 size={14} /> }

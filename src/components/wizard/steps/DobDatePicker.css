@@ -1,0 +1,270 @@
+/* =========================================================
+   PLACENTRA - CUSTOM STUDENT DOB DATE PICKER STYLES
+   ========================================================= */
+
+.dob-datepicker-wrapper {
+  position: relative;
+  width: 100%;
+  display: inline-block;
+}
+
+.dob-input-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0F172A;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.dob-input-field:hover {
+  border-color: #94A3B8;
+  background-color: #FAFAFA;
+}
+
+.dob-input-field.focused {
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  background-color: #FFFFFF;
+}
+
+.dob-input-field.invalid {
+  border-color: #EF4444 !important;
+  background-color: #FEF2F2 !important;
+}
+
+.dob-input-text {
+  font-weight: 500;
+  color: #0F172A;
+  letter-spacing: 0.3px;
+}
+
+.dob-input-text.placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.dob-input-icon {
+  color: #64748B;
+  flex-shrink: 0;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.dob-input-icon.active {
+  color: #4F46E5;
+}
+
+/* Calendar Popover Dialog */
+.dob-calendar-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  width: 310px;
+  max-width: 92vw;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  box-shadow: 0 14px 35px -5px rgba(15, 23, 42, 0.16), 0 8px 12px -6px rgba(15, 23, 42, 0.08);
+  padding: 14px;
+  box-sizing: border-box;
+  animation: dobFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dobFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.dob-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.dob-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dob-nav-btn:hover {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #C7D2FE;
+}
+
+.dob-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dob-month-select,
+.dob-year-select {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.dob-month-select:hover,
+.dob-year-select:hover {
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+}
+
+.dob-month-select:focus,
+.dob-year-select:focus {
+  border-color: #4F46E5;
+}
+
+/* Weekday Row */
+.dob-weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.dob-weekday-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 0;
+}
+
+/* Days Grid */
+.dob-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.dob-day-cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0F172A;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.dob-day-cell:hover:not(:disabled) {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.dob-day-cell.muted {
+  color: #94A3B8;
+  opacity: 0.6;
+}
+
+.dob-day-cell.today {
+  border-color: #4F46E5;
+  font-weight: 700;
+  color: #4F46E5;
+}
+
+.dob-day-cell.selected {
+  background: #4F46E5 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.35);
+  border-color: #4F46E5 !important;
+}
+
+.dob-day-cell.disabled {
+  color: #CBD5E1 !important;
+  background: transparent !important;
+  cursor: not-allowed !important;
+  opacity: 0.35;
+  text-decoration: line-through;
+  text-decoration-color: rgba(203, 213, 225, 0.5);
+}
+
+/* Footer Action Bar */
+.dob-cal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.dob-action-btn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dob-btn-clear {
+  color: #64748B;
+}
+
+.dob-btn-clear:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.dob-btn-today {
+  color: #4F46E5;
+}
+
+.dob-btn-today:hover:not(:disabled) {
+  background: #EEF2FF;
+}
+
+.dob-btn-today.disabled {
+  color: #94A3B8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}

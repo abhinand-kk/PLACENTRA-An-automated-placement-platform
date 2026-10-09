@@ -16,12 +16,13 @@ export default function Step1OfficerBasicDetails({ state, onChange, onNext }) {
   };
 
   // Validation logic
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const isValidMobile = (phone) => /^\d{10}$/.test(phone);
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
+  const isValidMobile = (phone) => /^\d{10}$/.test((phone || '').trim());
 
   const isFullNameValid = Boolean(data.fullName?.trim());
   const isDesignationValid = Boolean(data.designation?.trim());
-  const isEmailValid = isValidEmail(data.collegeEmail || '');
+  const emailVal = (data.collegeEmail || '').trim();
+  const isEmailValid = isValidEmail(emailVal);
   const isMobileValid = isValidMobile(data.mobileNumber || '');
 
   const isFormValid =
@@ -68,7 +69,7 @@ export default function Step1OfficerBasicDetails({ state, onChange, onNext }) {
                 type="text"
                 className={`form-control ${touched.fullName && !isFullNameValid ? 'invalid' : ''}`}
                 placeholder="e.g. Dr. Rajesh Kumar"
-                value={data.fullName}
+                value={data.fullName || ''}
                 onChange={(e) => handleChange('fullName', e.target.value)}
                 onBlur={() => handleBlur('fullName')}
                 required
@@ -88,7 +89,7 @@ export default function Step1OfficerBasicDetails({ state, onChange, onNext }) {
               type="text"
               className={`form-control ${touched.designation && !isDesignationValid ? 'invalid' : ''}`}
               placeholder="e.g. Head of Training & Placements"
-              value={data.designation}
+              value={data.designation || ''}
               onChange={(e) => handleChange('designation', e.target.value)}
               onBlur={() => handleBlur('designation')}
               required
@@ -99,16 +100,16 @@ export default function Step1OfficerBasicDetails({ state, onChange, onNext }) {
           </div>
         </div>
 
-        {/* Official College Email & Mobile Number */}
+        {/* Placement Officer Email & Mobile Number */}
         <div className="form-grid-2" style={{ marginBottom: '28px' }}>
           <div className="form-group">
-            <label className="form-label">Official College Email <span className="req">*</span></label>
+            <label className="form-label">Placement Officer Email <span className="req">*</span></label>
             <div className="input-with-icon">
               <input 
                 type="email"
                 className={`form-control ${touched.collegeEmail && !isEmailValid ? 'invalid' : ''}`}
-                placeholder="rajesh.kumar@university.edu.in"
-                value={data.collegeEmail}
+                placeholder="officer@example.com"
+                value={data.collegeEmail || ''}
                 onChange={(e) => handleChange('collegeEmail', e.target.value)}
                 onBlur={() => handleBlur('collegeEmail')}
                 required
@@ -117,9 +118,9 @@ export default function Step1OfficerBasicDetails({ state, onChange, onNext }) {
                 <CheckCircle2 size={18} className="valid-icon" color="#10B981" />
               )}
             </div>
-            <span className="form-hint">Please use your official university/college domain email.</span>
+            <span className="form-hint">Use an email address that you can access. This email will be used to sign in to your PLACENTRA Placement Officer account.</span>
             {touched.collegeEmail && !isEmailValid && (
-              <span className="error-text">Please enter a valid official college email</span>
+              <span className="error-text">Please enter a valid email address</span>
             )}
           </div>
 
@@ -197,9 +198,9 @@ export default function Step1OfficerBasicDetails({ state, onChange, onNext }) {
                   <span className="sum-val">{data.designation}</span>
                 </div>
                 <div className="summary-row">
-                  <span className="sum-key">Official College Email</span>
+                  <span className="sum-key">Placement Officer Email</span>
                   <span className="sum-sep">:</span>
-                  <span className="sum-val">{data.collegeEmail}</span>
+                  <span className="sum-val">{data.officerEmail || data.collegeEmail}</span>
                 </div>
                 <div className="summary-row">
                   <span className="sum-key">Mobile Number</span>

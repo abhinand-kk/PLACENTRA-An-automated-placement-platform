@@ -198,7 +198,7 @@ export default function StudentProfileEdit() {
       // 2. Contact details payload
       const contactPayload = {
         primary_email: formData.primaryEmail,
-        personal_email: formData.personalEmail || formData.primaryEmail,
+        personal_email: formData.primaryEmail,
         mobile_number: formData.mobileNumber,
         state: formData.state || 'Kerala',
         district: formData.district || 'Kottayam',
@@ -401,7 +401,7 @@ export default function StudentProfileEdit() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>Primary Email *</label>
                 <input 
@@ -409,16 +409,6 @@ export default function StudentProfileEdit() {
                   required
                   value={formData.primaryEmail} 
                   onChange={(e) => handleChange('primaryEmail', e.target.value)} 
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13.5px', outline: 'none' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>Personal Email</label>
-                <input 
-                  type="email"
-                  value={formData.personalEmail} 
-                  onChange={(e) => handleChange('personalEmail', e.target.value)} 
                   style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13.5px', outline: 'none' }}
                 />
               </div>

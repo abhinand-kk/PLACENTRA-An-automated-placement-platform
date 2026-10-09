@@ -30,6 +30,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
+import ScheduleInterviewModal from './ScheduleInterviewModal';
+import RecruiterInterviewCalendar from './RecruiterInterviewCalendar';
 import './RecruiterDashboard.css';
 
 export default function RecruiterDashboard() {
@@ -39,6 +41,21 @@ export default function RecruiterDashboard() {
   // Navigation & UI States
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+
+  // Schedule Interview Modal States
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [schedulingApp, setSchedulingApp] = useState(null);
+
+  const handleOpenScheduleModal = (app) => {
+    const appStatus = app.application_status || app.status;
+    if (appStatus !== 'Shortlisted' && appStatus !== 'Interview Scheduled') {
+      alert("Only shortlisted candidates can be scheduled for an interview. Please shortlist the candidate first.");
+      return;
+    }
+    setSchedulingApp(app);
+    setShowScheduleModal(true);
+  };
+
 
   // Modal & Form States
   const [showJobModal, setShowJobModal] = useState(false);
@@ -150,6 +167,33 @@ export default function RecruiterDashboard() {
       setShowReviewModal(false);
     } finally {
       setLoadingAppDetail(false);
+    }
+  };
+
+  // Handle Secure Candidate Resume Viewing/Downloading
+  const handleViewResume = async (appId) => {
+    try {
+      const response = await api.get(`/api/v1/applications/${appId}/resume/`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error("Failed to fetch resume:", err);
+      let errorMsg = 'Failed to load resume document.';
+      if (err.response && err.response.data) {
+        if (err.response.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const json = JSON.parse(text);
+            errorMsg = json.error || json.detail || errorMsg;
+          } catch (e) {}
+        } else if (typeof err.response.data === 'object') {
+          errorMsg = err.response.data.error || err.response.data.detail || errorMsg;
+        }
+      }
+      alert(errorMsg);
     }
   };
 
@@ -319,8 +363,21 @@ export default function RecruiterDashboard() {
 
         {/* Global Notification Banner */}
         {actionMessage && (
-          <div className="action-toast-banner">
-            <CheckCircle2 size={18} />
+          <div
+            className="action-toast-banner"
+            style={
+              actionMessage.includes('active') || actionMessage.includes('already scheduled')
+                ? { background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }
+                : actionMessage.includes('could not be sent')
+                ? { background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A' }
+                : {}
+            }
+          >
+            {actionMessage.includes('active') || actionMessage.includes('already scheduled') || actionMessage.includes('could not be sent') ? (
+              <AlertCircle size={18} color={actionMessage.includes('active') ? '#D97706' : '#B45309'} />
+            ) : (
+              <CheckCircle2 size={18} />
+            )}
             <span>{actionMessage}</span>
           </div>
         )}
@@ -555,11 +612,17 @@ export default function RecruiterDashboard() {
                           <tr key={app.id}>
                             <td>
                               <div className="candidate-name-cell">
-                                <strong>{app.student_name || app.student?.full_name || 'Candidate'}</strong>
-                                <span className="sub-text">{app.register_number || 'Student ID'}</span>
+                                <strong>
+                                  {app.student_name ||
+                                    (app.student_detail ? `${app.student_detail.first_name || ''} ${app.student_detail.middle_name || ''} ${app.student_detail.last_name || ''}`.replace(/\s+/g, ' ').trim() : '') ||
+                                    'Name Not Available'}
+                                </strong>
+                                {(app.register_number || app.student_detail?.register_number) ? (
+                                  <span className="sub-text">Reg: {app.register_number || app.student_detail?.register_number}</span>
+                                ) : null}
                               </div>
                             </td>
-                            <td>{app.job_title || app.job?.job_title || 'Position'}</td>
+                            <td>{app.job_title || app.job_detail?.job_title || (typeof app.job === 'object' ? app.job?.job_title : '') || 'Job Title Not Available'}</td>
                             <td>{app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Recent'}</td>
                             <td>
                               <span className={`status-pill pill-${(app.status || app.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`}>
@@ -590,11 +653,12 @@ export default function RecruiterDashboard() {
                                 <button 
                                   className="btn-action-interview" 
                                   title="Schedule Interview"
-                                  onClick={() => handleUpdateApplicantStatus(app.id, 'Interview Scheduled')}
+                                  onClick={() => handleOpenScheduleModal(app)}
                                 >
                                   <Calendar size={14} />
                                   <span>Interview</span>
                                 </button>
+
 
                                 <button 
                                   className="btn-action-select" 
@@ -783,11 +847,17 @@ export default function RecruiterDashboard() {
                         <tr key={app.id}>
                           <td>
                             <div className="candidate-name-cell">
-                              <strong>{app.student_name || app.student?.full_name || 'Candidate'}</strong>
-                              <span className="sub-text">{app.register_number || app.student?.register_number || 'Student ID'}</span>
+                              <strong>
+                                {app.student_name ||
+                                  (app.student_detail ? `${app.student_detail.first_name || ''} ${app.student_detail.middle_name || ''} ${app.student_detail.last_name || ''}`.replace(/\s+/g, ' ').trim() : '') ||
+                                  'Name Not Available'}
+                              </strong>
+                              {(app.register_number || app.student_detail?.register_number) ? (
+                                <span className="sub-text">Reg: {app.register_number || app.student_detail?.register_number}</span>
+                              ) : null}
                             </div>
                           </td>
-                          <td>{app.job_title || app.job?.job_title}</td>
+                          <td>{app.job_title || app.job_detail?.job_title || (typeof app.job === 'object' ? app.job?.job_title : '') || 'Job Title Not Available'}</td>
                           <td>{app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'N/A'}</td>
                           <td>
                             <span className={`status-pill pill-${(app.status || app.application_status || 'Applied').toLowerCase().replace(/\s+/g, '-')}`}>
@@ -813,7 +883,7 @@ export default function RecruiterDashboard() {
                               </button>
                               <button 
                                 className="btn-action-interview" 
-                                onClick={() => handleUpdateApplicantStatus(app.id, 'Interview Scheduled')}
+                                onClick={() => handleOpenScheduleModal(app)}
                               >
                                 Interview
                               </button>
@@ -842,53 +912,9 @@ export default function RecruiterDashboard() {
 
           {/* Interviews Tab */}
           {activeTab === 'interviews' && (
-            <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Scheduled Interviews</h3>
-              </div>
-
-              {upcomingInterviews.length === 0 ? (
-                <div className="empty-state-box">
-                  <Calendar size={36} color="#64748B" />
-                  <p className="empty-state-text">No upcoming interviews.</p>
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="rec-jobs-table">
-                    <thead>
-                      <tr>
-                        <th>Candidate Name</th>
-                        <th>Job Title</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {upcomingInterviews.map((app) => (
-                        <tr key={app.id}>
-                          <td>{app.student_name || 'Candidate'}</td>
-                          <td>{app.job_title || 'Position'}</td>
-                          <td>
-                            <span className="status-pill pill-interview-scheduled">
-                              Interview Scheduled
-                            </span>
-                          </td>
-                          <td>
-                            <button 
-                              className="btn-action-select" 
-                              onClick={() => handleUpdateApplicantStatus(app.id, 'Selected')}
-                            >
-                              Mark Selected
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <RecruiterInterviewCalendar />
           )}
+
 
           {/* Company Profile Tab */}
           {activeTab === 'profile' && (
@@ -1347,15 +1373,15 @@ export default function RecruiterDashboard() {
                       <span className="review-kv-label">Resume</span>
                       <div style={{ marginTop: '4px' }}>
                         {selectedApp.student_detail?.documents?.resume ? (
-                          <a 
-                            href={selectedApp.student_detail.documents.resume.startsWith('http') || selectedApp.student_detail.documents.resume.startsWith('/') ? selectedApp.student_detail.documents.resume : `/media/${selectedApp.student_detail.documents.resume}`} 
-                            target="_blank" 
-                            rel="noreferrer" 
+                          <button 
+                            type="button"
+                            onClick={() => handleViewResume(selectedApp.id)}
                             className="document-download-btn"
+                            style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
                           >
                             <FileText size={15} />
                             <span>View / Download Resume (PDF)</span>
-                          </a>
+                          </button>
                         ) : (
                           <span style={{ color: '#94A3B8', fontSize: '13.5px' }}>Resume not uploaded.</span>
                         )}
@@ -1466,7 +1492,7 @@ export default function RecruiterDashboard() {
                     <button 
                       className="btn-action-interview" 
                       style={{ padding: '8px 16px', fontSize: '13px' }}
-                      onClick={() => handleUpdateApplicantStatus(selectedApp.id, 'Interview Scheduled')}
+                      onClick={() => handleOpenScheduleModal(selectedApp)}
                     >
                       <Calendar size={16} />
                       <span>Interview</span>
@@ -1504,7 +1530,40 @@ export default function RecruiterDashboard() {
           </div>
         </div>
       )}
+
+      {/* Schedule Interview Modal */}
+      {showScheduleModal && schedulingApp && (
+        <ScheduleInterviewModal
+          application={schedulingApp}
+          onClose={(duplicateMsg) => {
+            setShowScheduleModal(false);
+            setSchedulingApp(null);
+            if (duplicateMsg && typeof duplicateMsg === 'string') {
+              setActionMessage(duplicateMsg);
+              setTimeout(() => setActionMessage(''), 7000);
+            }
+          }}
+          onDuplicate={(duplicateMsg) => {
+            setShowScheduleModal(false);
+            setSchedulingApp(null);
+            if (duplicateMsg && typeof duplicateMsg === 'string') {
+              setActionMessage(duplicateMsg);
+              setTimeout(() => setActionMessage(''), 7000);
+            }
+          }}
+          onSuccess={({ message }) => {
+            setShowScheduleModal(false);
+            setSchedulingApp(null);
+            if (message && typeof message === 'string') {
+              setActionMessage(message);
+              setTimeout(() => setActionMessage(''), 7000);
+            }
+            fetchRecruiterDashboardData();
+          }}
+        />
+      )}
     </div>
   );
 }
+
 

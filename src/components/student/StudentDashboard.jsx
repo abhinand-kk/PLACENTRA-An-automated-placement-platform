@@ -59,6 +59,7 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
   const [drives, setDrives] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [scheduledInterviews, setScheduledInterviews] = useState([]);
 
   // Fetch all student data on mount
   useEffect(() => {
@@ -73,7 +74,8 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
           appsRes,
           drivesRes,
           notifsRes,
-          unreadRes
+          unreadRes,
+          interviewsRes
         ] = await Promise.allSettled([
           api.get('/api/v1/students/profile/'),
           api.get('/api/v1/students/current-education/'),
@@ -82,7 +84,8 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
           api.get('/api/v1/applications/my-applications/'),
           api.get('/api/v1/placement-drives/student/'),
           api.get('/api/v1/notifications/'),
-          api.get('/api/v1/notifications/unread-count/')
+          api.get('/api/v1/notifications/unread-count/'),
+          api.get('/api/v1/interviews/my-interviews/')
         ]);
 
         if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
@@ -93,6 +96,7 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
         if (drivesRes.status === 'fulfilled') setDrives(drivesRes.value.data.results || drivesRes.value.data || []);
         if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
         if (unreadRes.status === 'fulfilled') setUnreadCount(unreadRes.value.data.unread_count || 0);
+        if (interviewsRes.status === 'fulfilled') setScheduledInterviews(interviewsRes.value.data.results || interviewsRes.value.data || []);
       } catch (err) {
         console.warn("Student data fetch error:", err);
       } finally {
@@ -102,6 +106,7 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
 
     fetchStudentDashboardData();
   }, []);
+
 
   const handleLogout = async () => {
     await logout();
@@ -490,6 +495,55 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
                     </div>
                   )}
                 </div>
+
+                {/* Scheduled Candidate Interviews Panel */}
+                <div className="dashboard-card-panel" style={{ gridColumn: 'span 2' }}>
+                  <div className="panel-header">
+                    <h3>My Scheduled Interviews</h3>
+                    <span className="badge-tag badge-open" style={{ background: '#DBEAFE', color: '#1E40AF', padding: '4px 10px', borderRadius: '12px', fontWeight: 700, fontSize: '12px' }}>
+                      {scheduledInterviews.length} Scheduled
+                    </span>
+                  </div>
+
+                  {scheduledInterviews.length === 0 ? (
+                    <div className="empty-state-box">
+                      <Calendar size={28} color="#64748B" />
+                      <p>No interviews scheduled yet. Once you are shortlisted by an employer, your Technical / HR interview schedule will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="list-stack">
+                      {scheduledInterviews.map((item) => (
+                        <div key={item.id} className="list-item-card" style={{ gap: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '14px 18px' }}>
+                          <div className="item-main-info" style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                              <span className={`status-pill ${item.interview_type?.includes('Technical') ? 'pill-open' : 'pill-ongoing'}`} style={{ fontSize: '12px', fontWeight: 700 }}>
+                                {item.interview_type}
+                              </span>
+                              <span className="status-pill pill-completed" style={{ fontSize: '12px' }}>
+                                {item.status}
+                              </span>
+                            </div>
+                            <h4 style={{ margin: '4px 0', fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>
+                              {item.job_title} at <span style={{ color: '#2563EB' }}>{item.company_name}</span>
+                            </h4>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: '#475569' }}>
+                              📅 <strong>{item.interview_date}</strong> at <strong>{item.interview_time}</strong> ({item.duration_minutes} mins) • 📍 Mode: <strong>{item.mode}</strong>
+                            </p>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#1E293B', wordBreak: 'break-all' }}>
+                              🔗 <strong>Venue / Link:</strong> {item.location_or_link || 'To be shared'}
+                            </p>
+                            {item.instructions && (
+                              <p style={{ margin: '6px 0 0 0', fontSize: '12.5px', color: '#64748B', background: '#FFFFFF', padding: '6px 10px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                                💡 <strong>Instructions:</strong> {item.instructions}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
             </>
           )}

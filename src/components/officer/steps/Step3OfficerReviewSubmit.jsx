@@ -50,16 +50,19 @@ export default function Step3OfficerReviewSubmit({ state, onJumpToStep, onBack, 
     }
 
     try {
-      const email = (basic.collegeEmail || 'officer@university.edu.in').trim().toLowerCase();
-      const username = (email.split('@')[0] || 'officer').toLowerCase();
+      const officerEmail = (basic.officerEmail || basic.collegeEmail || 'officer@university.edu.in').trim().toLowerCase();
+      const collegeEmail = (inst.placementEmail || inst.collegeEmail || officerEmail).trim().toLowerCase();
+      const username = (officerEmail.split('@')[0] || 'officer').toLowerCase();
 
       const payload = {
         username: username,
-        email: email,
+        email: officerEmail,
         password: password,
         full_name: basic.fullName || 'Placement Officer',
         designation: basic.designation || 'Head of Placements',
-        official_email: email,
+        official_email: officerEmail,
+        college_email: collegeEmail,
+        placement_email: collegeEmail,
         mobile_number: basic.mobileNumber || '9876543210',
         institution_name: inst.collegeName || 'Model Engineering College'
       };
@@ -159,9 +162,9 @@ export default function Step3OfficerReviewSubmit({ state, onJumpToStep, onBack, 
               <span className="kv-val">{basic.designation || 'Head of Training & Placements'}</span>
             </div>
             <div className="kv-row">
-              <span className="kv-key">Official Email</span>
+              <span className="kv-key">Placement Officer Email</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{basic.collegeEmail || 'rajesh.kumar@university.edu.in'}</span>
+              <span className="kv-val">{basic.officerEmail || basic.collegeEmail || 'officer@university.edu.in'}</span>
             </div>
             <div className="kv-row">
               <span className="kv-key">Mobile Number</span>
@@ -220,9 +223,9 @@ export default function Step3OfficerReviewSubmit({ state, onJumpToStep, onBack, 
               <span className="kv-val">{inst.pincode || '682021'}</span>
             </div>
             <div className="kv-row">
-              <span className="kv-key">Placement Cell Email</span>
+              <span className="kv-key">College Email</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{inst.placementEmail || 'placement@college.edu.in'}</span>
+              <span className="kv-val">{inst.placementEmail || inst.collegeEmail || 'college@example.edu'}</span>
             </div>
             <div className="kv-row">
               <span className="kv-key">Placement Cell Contact Number</span>

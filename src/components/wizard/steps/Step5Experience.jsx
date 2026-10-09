@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Briefcase, ArrowRight, ArrowLeft, Plus, Edit2, Trash2, Info, Calendar, MapPin, Code2, CheckCircle2, X, Check } from 'lucide-react';
 
 export default function Step5Experience({ state, onChange, onNext, onBack }) {
@@ -7,19 +7,30 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
   const [selectedSummaryExp, setSelectedSummaryExp] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
-  const [companySearch, setCompanySearch] = useState('M Squared Software and Services Pvt Ltd');
+  useEffect(() => {
+    if (showAddModal || showSummaryModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showAddModal, showSummaryModal]);
+
+  const [companySearch, setCompanySearch] = useState('');
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
 
   const [form, setForm] = useState({
     type: 'Internship',
-    company: 'M Squared Software and Services Pvt Ltd',
-    jobTitle: 'Web Developer Intern',
-    location: 'Trivandrum, Kerala',
-    startDate: '2026-06-18',
-    endDate: '2026-07-27',
+    company: '',
+    jobTitle: '',
+    location: '',
+    startDate: '',
+    endDate: '',
     isCurrent: false,
-    description: 'Worked on developing responsive web applications using HTML, CSS, JavaScript and Django.',
-    skills: ['HTML', 'CSS', 'JavaScript', 'Django', 'Git', 'REST API']
+    description: '',
+    skills: []
   });
 
   const list = state.experiences || [];
@@ -50,34 +61,35 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
 
   const handleOpenAddModal = () => {
     setEditingId(null);
-    setCompanySearch('M Squared Software and Services Pvt Ltd');
+    setCompanySearch('');
     setForm({
       type: 'Internship',
-      company: 'M Squared Software and Services Pvt Ltd',
-      jobTitle: 'Web Developer Intern',
-      location: 'Trivandrum, Kerala',
-      startDate: '2026-06-18',
-      endDate: '2026-07-27',
+      company: '',
+      jobTitle: '',
+      location: '',
+      startDate: '',
+      endDate: '',
       isCurrent: false,
-      description: 'Worked on developing responsive web applications using HTML, CSS, JavaScript and Django.',
-      skills: ['HTML', 'CSS', 'JavaScript', 'Django', 'Git', 'REST API']
+      description: '',
+      skills: []
     });
     setShowAddModal(true);
   };
 
   const handleEdit = (exp) => {
     setEditingId(exp.id);
-    setCompanySearch(exp.company);
+    const comp = exp.company || exp.companyName || '';
+    setCompanySearch(comp);
     setForm({
-      type: exp.type || 'Internship',
-      company: exp.company || '',
-      jobTitle: exp.jobTitle || '',
+      type: exp.type || exp.employmentType || 'Internship',
+      company: comp,
+      jobTitle: exp.jobTitle || exp.designation || '',
       location: exp.location || '',
-      startDate: exp.startDate || '2026-06-18',
-      endDate: exp.endDate || '2026-07-27',
+      startDate: exp.startDate || exp.start_date || '',
+      endDate: exp.endDate || exp.end_date || '',
       isCurrent: Boolean(exp.isCurrent),
       description: exp.description || exp.summary || '',
-      skills: exp.skills || ['HTML', 'CSS', 'JavaScript', 'Django', 'Git', 'REST API']
+      skills: exp.skills || []
     });
     setShowAddModal(true);
   };
@@ -108,34 +120,34 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
       alert("End date cannot be earlier than start date.");
       return;
     }
+    
+    const finalCompany = companySearch || form.company || 'Company';
+    const savedItem = {
+      ...form,
+      company: finalCompany
+    };
+
     let updatedList;
     if (editingId) {
-      updatedList = list.map(item => item.id === editingId ? { ...form, id: editingId } : item);
+      updatedList = list.map(item => item.id === editingId ? { ...savedItem, id: editingId } : item);
     } else {
-      const newExp = { ...form, id: Date.now().toString() };
+      const newExp = { ...savedItem, id: `exp-${Date.now()}` };
       updatedList = [...list, newExp];
-      setSelectedSummaryExp(newExp);
     }
+
     onChange('experiences', updatedList);
+    setSelectedSummaryExp(savedItem);
     setShowAddModal(false);
     setShowSummaryModal(true);
   };
 
-  const displayList = list.length === 0 ? [
-    {
-      id: 'default-1',
-      company: 'M Squared Software and Services Pvt Ltd',
-      jobTitle: 'Web Developer Intern',
-      type: 'Internship',
-      startDate: '2026-06-18',
-      endDate: '2026-07-27',
-      isCurrent: false,
-      location: 'Trivandrum, Kerala',
-      domain: 'Computer Science - Software - IT',
-      description: 'Worked on developing responsive web applications using HTML, CSS, JavaScript and Django.',
-      skills: ['HTML', 'CSS', 'JavaScript', 'Django', 'Git', 'REST API']
-    }
-  ] : list;
+  const formatDateRange = (item) => {
+    const s = item.startDate || item.start_date;
+    const e = item.isCurrent ? 'Present' : (item.endDate || item.end_date);
+    if (s && e) return `${s} - ${e}`;
+    if (s) return `${s}`;
+    return 'Duration not specified';
+  };
 
   return (
     <div className="step-container">
@@ -172,66 +184,73 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
       <h3 className="wizard-section-title">Your Experiences</h3>
 
       {/* Experience Cards Stack */}
-      {displayList.map((item) => (
-        <div className="experience-summary-card" key={item.id}>
-          <div className="exp-card-main-header">
-            {/* Company Logo Tile */}
-            <div className="company-logo-badge">
-              <span>M²</span>
-            </div>
-
-            {/* Title & Metadata */}
-            <div className="exp-card-title-wrap">
-              <div className="company-name-row">
-                <span className="company-name-text">{item.company}</span>
-              </div>
-              <div className="job-title-row">
-                <span className="job-title-text">{item.jobTitle}</span>
-                <span className="internship-badge">{item.type || 'Internship'}</span>
-              </div>
-              <div className="exp-meta-row">
-                <span>📅 Jun 2026 - Jul 2026 (2 Months)</span>
-                <span className="meta-sep">|</span>
-                <span>📍 {item.location || 'Trivandrum, Kerala'}</span>
-                <span className="meta-sep">|</span>
-                <span>👨‍💻 {item.domain || 'Computer Science - Software - IT'}</span>
-              </div>
-            </div>
-
-            {/* Action Icons */}
-            <div className="exp-card-actions">
-              <button type="button" className="icon-action-btn" onClick={() => handleEdit(item)}>
-                <Edit2 size={15} />
-              </button>
-              <button type="button" className="icon-action-btn danger" onClick={() => handleRemove(item.id)}>
-                <Trash2 size={15} />
-              </button>
-            </div>
+      {list.length === 0 ? (
+        <div className="empty-experience-box" style={{ marginTop: '12px', marginBottom: '24px' }}>
+          <div className="empty-box-icon">
+            <Briefcase size={22} color="#4F46E5" />
           </div>
+          <div className="empty-box-title">No experiences added yet.</div>
+          <div className="empty-box-sub">Click "+ Add Experience" above to add your internships, part-time jobs, freelance work or any relevant experience.</div>
+        </div>
+      ) : (
+        list.map((item) => (
+          <div className="experience-summary-card" key={item.id}>
+            <div className="exp-card-main-header">
+              {/* Company Logo Tile */}
+              <div className="company-logo-badge">
+                <span>{(item.company || item.companyName || 'C').charAt(0).toUpperCase()}</span>
+              </div>
 
-          <p className="exp-description-text">
-            {item.description || item.summary}
-          </p>
+              {/* Title & Metadata */}
+              <div className="exp-card-title-wrap">
+                <div className="company-name-row">
+                  <span className="company-name-text">{item.company || item.companyName}</span>
+                </div>
+                <div className="job-title-row">
+                  <span className="job-title-text">{item.jobTitle || item.designation}</span>
+                  <span className="internship-badge">{item.type || item.employmentType || 'Internship'}</span>
+                </div>
+                <div className="exp-meta-row">
+                  <span>📅 {formatDateRange(item)}</span>
+                  {item.location && (
+                    <>
+                      <span className="meta-sep">|</span>
+                      <span>📍 {item.location}</span>
+                    </>
+                  )}
+                </div>
+              </div>
 
-          <div className="exp-skills-row">
-            <span className="skills-label">Skills:</span>
-            <div className="skills-tags-wrap">
-              {(item.skills || ['HTML', 'CSS', 'JavaScript', 'Django', 'Git', 'REST API']).map((sk, idx) => (
-                <span key={idx} className="skill-pill-tag">{sk}</span>
-              ))}
+              {/* Action Icons */}
+              <div className="exp-card-actions">
+                <button type="button" className="icon-action-btn" onClick={() => handleEdit(item)}>
+                  <Edit2 size={15} />
+                </button>
+                <button type="button" className="icon-action-btn danger" onClick={() => handleRemove(item.id)}>
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      ))}
 
-      {/* Empty State Banner */}
-      <div className="empty-experience-box">
-        <div className="empty-box-icon">
-          <Briefcase size={22} color="#4F46E5" />
-        </div>
-        <div className="empty-box-title">Add more experiences to make your profile stronger.</div>
-        <div className="empty-box-sub">Add internships, part-time jobs, freelance work or any relevant experience.</div>
-      </div>
+            {item.description && (
+              <p className="exp-description-text">
+                {item.description}
+              </p>
+            )}
+
+            {item.skills && item.skills.length > 0 && (
+              <div className="exp-skills-row">
+                <span className="skills-label">Skills:</span>
+                <div className="skills-tags-wrap">
+                  {item.skills.map((sk, idx) => (
+                    <span key={idx} className="skill-pill-tag">{sk}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))
+      )}
 
       {/* Footer Actions */}
       <div className="wizard-footer-actions">
@@ -298,7 +317,7 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                     )}
                   </div>
 
-                  {showCompanyDropdown && (
+                  {showCompanyDropdown && companySearch && filteredCompanies.length > 0 && (
                     <div className="searchable-dropdown-list">
                       {filteredCompanies.map((c, idx) => (
                         <div 
@@ -322,7 +341,7 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                   <input 
                     type="text" 
                     className="form-control"
-                    placeholder="Web Developer Intern"
+                    placeholder="Enter job title (e.g. Web Developer Intern)"
                     value={form.jobTitle}
                     onChange={(e) => setForm({ ...form, jobTitle: e.target.value })}
                     required
@@ -334,7 +353,7 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                   <input 
                     type="text" 
                     className="form-control"
-                    placeholder="Trivandrum, Kerala"
+                    placeholder="Enter location (e.g. Trivandrum, Kerala)"
                     value={form.location}
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
                     required
@@ -381,7 +400,7 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                   <textarea 
                     className="form-control"
                     rows="3"
-                    placeholder="Worked on developing responsive web applications using HTML, CSS, JavaScript and Django."
+                    placeholder="Describe your roles, responsibilities and key achievements."
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     maxLength="500"
@@ -452,7 +471,7 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
               <div className="experience-summary-card" style={{ border: 'none', padding: '0', margin: '0' }}>
                 <div className="exp-card-main-header">
                   <div className="company-logo-badge">
-                    <span>M²</span>
+                    <span>{(selectedSummaryExp.company || 'C').charAt(0).toUpperCase()}</span>
                   </div>
                   <div className="exp-card-title-wrap">
                     <div className="company-name-row">
@@ -463,25 +482,33 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                       <span className="internship-badge">{selectedSummaryExp.type}</span>
                     </div>
                     <div className="exp-meta-row">
-                      <span>📅 Jun 2026 - Jul 2026 (2 Months)</span>
-                      <span className="meta-sep">|</span>
-                      <span>📍 {selectedSummaryExp.location}</span>
+                      <span>📅 {formatDateRange(selectedSummaryExp)}</span>
+                      {selectedSummaryExp.location && (
+                        <>
+                          <span className="meta-sep">|</span>
+                          <span>📍 {selectedSummaryExp.location}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <p className="exp-description-text" style={{ marginTop: '14px' }}>
-                  {selectedSummaryExp.description}
-                </p>
+                {selectedSummaryExp.description && (
+                  <p className="exp-description-text" style={{ marginTop: '14px' }}>
+                    {selectedSummaryExp.description}
+                  </p>
+                )}
 
-                <div className="exp-skills-row" style={{ marginTop: '14px' }}>
-                  <span className="skills-label">Skills:</span>
-                  <div className="skills-tags-wrap">
-                    {(selectedSummaryExp.skills || []).map((sk, idx) => (
-                      <span key={idx} className="skill-pill-tag">{sk}</span>
-                    ))}
+                {selectedSummaryExp.skills && selectedSummaryExp.skills.length > 0 && (
+                  <div className="exp-skills-row" style={{ marginTop: '14px' }}>
+                    <span className="skills-label">Skills:</span>
+                    <div className="skills-tags-wrap">
+                      {selectedSummaryExp.skills.map((sk, idx) => (
+                        <span key={idx} className="skill-pill-tag">{sk}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
             <div className="modal-footer">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, User, CheckCircle2, ArrowRight, ArrowLeft, AlertCircle, X } from 'lucide-react';
 import api from '../../../services/api';
+import { INDIAN_STATES, getDistrictsForState } from '../../../constants/locationData';
 
 export default function Step2ContactVerification({ state, onChange, onNext, onBack }) {
   // Target type: 'primary_email' | 'personal_email' | 'mobile'
@@ -43,6 +44,23 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
     setCurrent: true
   });
 
+  const handleStateChange = (newState) => {
+    setAddressForm(prev => ({
+      ...prev,
+      state: newState,
+      district: '', // Reset district when state changes
+      city: ''      // Reset city when state changes
+    }));
+  };
+
+  const handleDistrictChange = (newDistrict) => {
+    setAddressForm(prev => ({
+      ...prev,
+      district: newDistrict,
+      city: ''      // Reset city when district changes
+    }));
+  };
+
   // Countdown timer for OTP resend (60 seconds)
   useEffect(() => {
     let timer;
@@ -69,7 +87,6 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
   // Get contact value based on target
   const getContactValue = (target) => {
     if (target === 'primary_email') return basic.primaryEmail || 'student@placentra.edu';
-    if (target === 'personal_email') return data.personalEmail || basic.primaryEmail || 'student@placentra.edu';
     if (target === 'mobile') return basic.mobileNumber || '9876543210';
     return '';
   };
@@ -97,8 +114,8 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
     return val;
   };
 
-  // 1. Send / Retry OTP Request to Backend
-  const handleOpenOtpModal = async (target) => {
+  // 1. Send / Retry OTP Request to Backend (Email OTP only)
+  const handleOpenOtpModal = async (target = 'primary_email') => {
     if (isSendingOtp) return;
     const contactValue = getContactValue(target);
     setActiveOtpTarget(target);
@@ -219,13 +236,7 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
       });
 
       if (res.data?.is_verified) {
-        if (activeOtpTarget === 'primary_email') {
-          onChange('contactVerification', { ...data, primaryEmailVerified: true });
-        } else if (activeOtpTarget === 'personal_email') {
-          onChange('contactVerification', { ...data, personalEmailVerified: true });
-        } else if (activeOtpTarget === 'mobile') {
-          onChange('contactVerification', { ...data, mobileVerified: true });
-        }
+        onChange('contactVerification', { ...data, primaryEmailVerified: true });
         setActiveOtpTarget(null);
       }
     } catch (err) {
@@ -236,12 +247,11 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
     }
   };
 
-  // 3. Change Contact Handler (Primary Email, Personal Email, Mobile)
+  // 3. Change Contact Handler (Email, Mobile)
   const handleOpenChangeModal = (target) => {
     setShowChangeModal(target);
     setChangeError('');
     if (target === 'primary_email') setChangeInputValue(basic.primaryEmail || '');
-    else if (target === 'personal_email') setChangeInputValue(data.personalEmail || basic.primaryEmail || '');
     else if (target === 'mobile') setChangeInputValue(basic.mobileNumber || '');
   };
 
@@ -251,7 +261,7 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
 
     const value = changeInputValue.trim();
 
-    if (showChangeModal.includes('email')) {
+    if (showChangeModal === 'primary_email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
         setChangeError('Please enter a valid email address.');
@@ -266,30 +276,23 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
     }
 
     try {
-      // Check duplicate contact via API
-      const res = await api.post('/api/v1/auth/otp/check-contact/', {
-        target_type: showChangeModal,
-        contact_value: value
-      });
+      if (showChangeModal === 'primary_email') {
+        const res = await api.post('/api/v1/auth/otp/check-contact/', {
+          target_type: 'primary_email',
+          contact_value: value
+        });
 
-      if (res.data?.available) {
-        if (showChangeModal === 'primary_email') {
+        if (res.data?.available) {
           onChange('basicDetails', { ...basic, primaryEmail: value });
           onChange('contactVerification', { ...data, primaryEmailVerified: false });
-        } else if (showChangeModal === 'personal_email') {
-          onChange('contactVerification', { ...data, personalEmail: value, personalEmailVerified: false });
-        } else if (showChangeModal === 'mobile') {
-          onChange('basicDetails', { ...basic, mobileNumber: value });
-          onChange('contactVerification', { ...data, mobileVerified: false });
+          setShowChangeModal(null);
+          setTimeout(() => {
+            handleOpenOtpModal('primary_email');
+          }, 150);
         }
-
-        const target = showChangeModal;
+      } else if (showChangeModal === 'mobile') {
+        onChange('basicDetails', { ...basic, mobileNumber: value });
         setShowChangeModal(null);
-
-        // Trigger OTP modal for newly changed contact
-        setTimeout(() => {
-          handleOpenOtpModal(target);
-        }, 150);
       }
     } catch (err) {
       setChangeError(err?.response?.data?.error || 'This contact detail is unavailable or already registered.');
@@ -316,9 +319,7 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
   // Validation rules for Save & Proceed button
   const hasAddress = Boolean(data.address?.addressLine?.trim() && data.address?.pincode?.trim());
   const isPrimaryEmailVerified = Boolean(data.primaryEmailVerified);
-  const isMobileVerified = Boolean(data.mobileVerified);
 
-  // In development mode, verification is not mandatory for completing registration
   const isFormValid = hasAddress;
 
   const handleProceedClick = (e) => {
@@ -341,25 +342,25 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
         </div>
       </div>
 
-      {/* Notice Banner for Pending Verifications */}
-      {(!isPrimaryEmailVerified || !isMobileVerified) && (
+      {/* Notice Banner for Pending Email Verification */}
+      {!isPrimaryEmailVerified && (
         <div className="wizard-alert alert-amber" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <AlertCircle size={18} className="flex-shrink-0" />
-          <span>You can verify your email and mobile later from your profile.</span>
+          <span>You can verify your email address via OTP below or later from your profile.</span>
         </div>
       )}
 
       <form onSubmit={handleProceedClick}>
         {/* Verification Cards Stack */}
         <div className="verify-cards-stack">
-          {/* Card 1: Primary Email Address */}
+          {/* Card 1: Email Address */}
           <div className="verify-card-item">
             <div className="card-left-group">
               <div className="card-icon-tile">
                 <Mail size={20} />
               </div>
               <div className="card-info-wrap">
-                <label className="card-label">Verify Primary Email Address <span className="req">*</span></label>
+                <label className="card-label">Verify Email Address <span className="req">*</span></label>
                 <div className="card-value">{basic.primaryEmail || 'student@placentra.edu'}</div>
               </div>
             </div>
@@ -388,68 +389,19 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
             </div>
           </div>
 
-          {/* Card 2: Personal Email Address */}
-          <div className="verify-card-item">
-            <div className="card-left-group">
-              <div className="card-icon-tile">
-                <User size={20} />
-              </div>
-              <div className="card-info-wrap">
-                <label className="card-label">Verify Personal Email Address <span className="req">*</span></label>
-                <div className="card-value">{data.personalEmail || basic.primaryEmail || 'student@placentra.edu'}</div>
-              </div>
-            </div>
-
-            <div className="card-right-group">
-              {data.personalEmailVerified ? (
-                <span className="badge-verified">
-                  Verified <CheckCircle2 size={14} />
-                </span>
-              ) : (
-                <button 
-                  type="button" 
-                  className="btn-card-verify"
-                  onClick={() => handleOpenOtpModal('personal_email')}
-                >
-                  Verify Email
-                </button>
-              )}
-              <button 
-                type="button" 
-                className="btn-card-action"
-                onClick={() => handleOpenChangeModal('personal_email')}
-              >
-                Change Email
-              </button>
-            </div>
-          </div>
-
-          {/* Card 3: Verify Mobile Number */}
+          {/* Card 2: Mobile Number */}
           <div className="verify-card-item">
             <div className="card-left-group">
               <div className="card-icon-tile">
                 <Phone size={20} />
               </div>
               <div className="card-info-wrap">
-                <label className="card-label">Verify Mobile Number <span className="req">*</span></label>
+                <label className="card-label">Mobile Number <span className="req">*</span></label>
                 <div className="card-value">+91 {basic.mobileNumber || '9876543210'}</div>
               </div>
             </div>
 
             <div className="card-right-group">
-              {data.mobileVerified ? (
-                <span className="badge-verified">
-                  Verified <CheckCircle2 size={14} />
-                </span>
-              ) : (
-                <button 
-                  type="button" 
-                  className="btn-card-verify"
-                  onClick={() => handleOpenOtpModal('mobile')}
-                >
-                  Verify Mobile
-                </button>
-              )}
               <button 
                 type="button" 
                 className="btn-card-action"
@@ -460,7 +412,7 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
             </div>
           </div>
 
-          {/* Card 4: Permanent Address */}
+          {/* Card 3: Permanent Address */}
           <div className="verify-card-item address-card-item">
             <div className="card-left-group" style={{ alignItems: 'flex-start' }}>
               <div className="card-icon-tile" style={{ marginTop: '2px' }}>
@@ -739,14 +691,13 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
                     <select 
                       className="form-control"
                       value={addressForm.state}
-                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                      onChange={(e) => handleStateChange(e.target.value)}
                       required
                     >
                       <option value="">Select State</option>
-                      <option value="Kerala">Kerala</option>
-                      <option value="Tamil Nadu">Tamil Nadu</option>
-                      <option value="Karnataka">Karnataka</option>
-                      <option value="Maharashtra">Maharashtra</option>
+                      {INDIAN_STATES.map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -755,14 +706,14 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
                     <select 
                       className="form-control"
                       value={addressForm.district}
-                      onChange={(e) => setAddressForm({ ...addressForm, district: e.target.value })}
+                      onChange={(e) => handleDistrictChange(e.target.value)}
+                      disabled={!addressForm.state}
                       required
                     >
-                      <option value="">Select District</option>
-                      <option value="Kottayam">Kottayam</option>
-                      <option value="Ernakulam">Ernakulam</option>
-                      <option value="Trivandrum">Trivandrum</option>
-                      <option value="Idukki">Idukki</option>
+                      <option value="">{addressForm.state ? "Select District" : "Select State First"}</option>
+                      {getDistrictsForState(addressForm.state).map((dist) => (
+                        <option key={dist} value={dist}>{dist}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

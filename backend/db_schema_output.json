@@ -1,0 +1,3888 @@
+{
+    "accounts_otpverification": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "target_type",
+                "type": "character varying",
+                "max_length": 30,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "contact_value",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "otp",
+                "type": "character varying",
+                "max_length": 6,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "attempts",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "max_attempts",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_verified",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "expires_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "accounts_otpverification_pkey",
+                "def": "CREATE UNIQUE INDEX accounts_otpverification_pkey ON public.accounts_otpverification USING btree (id)"
+            }
+        ]
+    },
+    "accounts_user": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "password",
+                "type": "character varying",
+                "max_length": 128,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "last_login",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "is_superuser",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "first_name",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "last_name",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_staff",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_active",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "date_joined",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "role",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_verified",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "email",
+                "name": "accounts_user_email_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "accounts_user_pkey",
+                "def": "CREATE UNIQUE INDEX accounts_user_pkey ON public.accounts_user USING btree (id)"
+            },
+            {
+                "name": "accounts_user_email_key",
+                "def": "CREATE UNIQUE INDEX accounts_user_email_key ON public.accounts_user USING btree (email)"
+            },
+            {
+                "name": "accounts_user_email_b2644a56_like",
+                "def": "CREATE INDEX accounts_user_email_b2644a56_like ON public.accounts_user USING btree (email varchar_pattern_ops)"
+            }
+        ]
+    },
+    "accounts_user_groups": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "group_id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            },
+            {
+                "column": "group_id",
+                "references_table": "auth_group",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "user_id",
+                "name": "accounts_user_groups_user_id_group_id_59c0b32f_uniq"
+            },
+            {
+                "column": "group_id",
+                "name": "accounts_user_groups_user_id_group_id_59c0b32f_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "accounts_user_groups_pkey",
+                "def": "CREATE UNIQUE INDEX accounts_user_groups_pkey ON public.accounts_user_groups USING btree (id)"
+            },
+            {
+                "name": "accounts_user_groups_user_id_group_id_59c0b32f_uniq",
+                "def": "CREATE UNIQUE INDEX accounts_user_groups_user_id_group_id_59c0b32f_uniq ON public.accounts_user_groups USING btree (user_id, group_id)"
+            },
+            {
+                "name": "accounts_user_groups_user_id_52b62117",
+                "def": "CREATE INDEX accounts_user_groups_user_id_52b62117 ON public.accounts_user_groups USING btree (user_id)"
+            },
+            {
+                "name": "accounts_user_groups_group_id_bd11a704",
+                "def": "CREATE INDEX accounts_user_groups_group_id_bd11a704 ON public.accounts_user_groups USING btree (group_id)"
+            }
+        ]
+    },
+    "accounts_user_user_permissions": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "permission_id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            },
+            {
+                "column": "permission_id",
+                "references_table": "auth_permission",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "user_id",
+                "name": "accounts_user_user_permi_user_id_permission_id_2ab516c2_uniq"
+            },
+            {
+                "column": "permission_id",
+                "name": "accounts_user_user_permi_user_id_permission_id_2ab516c2_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "accounts_user_user_permissions_pkey",
+                "def": "CREATE UNIQUE INDEX accounts_user_user_permissions_pkey ON public.accounts_user_user_permissions USING btree (id)"
+            },
+            {
+                "name": "accounts_user_user_permi_user_id_permission_id_2ab516c2_uniq",
+                "def": "CREATE UNIQUE INDEX accounts_user_user_permi_user_id_permission_id_2ab516c2_uniq ON public.accounts_user_user_permissions USING btree (user_id, permission_id)"
+            },
+            {
+                "name": "accounts_user_user_permissions_user_id_e4f0a161",
+                "def": "CREATE INDEX accounts_user_user_permissions_user_id_e4f0a161 ON public.accounts_user_user_permissions USING btree (user_id)"
+            },
+            {
+                "name": "accounts_user_user_permissions_permission_id_113bb443",
+                "def": "CREATE INDEX accounts_user_user_permissions_permission_id_113bb443 ON public.accounts_user_user_permissions USING btree (permission_id)"
+            }
+        ]
+    },
+    "applications_application": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "application_status",
+                "type": "character varying",
+                "max_length": 30,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "applied_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "job_id",
+                "references_table": "jobs_job",
+                "references_column": "id"
+            },
+            {
+                "column": "student_id",
+                "references_table": "students_studentprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "student_id",
+                "name": "applications_application_student_id_job_id_eb68634c_uniq"
+            },
+            {
+                "column": "job_id",
+                "name": "applications_application_student_id_job_id_eb68634c_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "applications_application_pkey",
+                "def": "CREATE UNIQUE INDEX applications_application_pkey ON public.applications_application USING btree (id)"
+            },
+            {
+                "name": "applications_application_student_id_job_id_eb68634c_uniq",
+                "def": "CREATE UNIQUE INDEX applications_application_student_id_job_id_eb68634c_uniq ON public.applications_application USING btree (student_id, job_id)"
+            },
+            {
+                "name": "applications_application_job_id_c031177c",
+                "def": "CREATE INDEX applications_application_job_id_c031177c ON public.applications_application USING btree (job_id)"
+            },
+            {
+                "name": "applications_application_student_id_0d954db1",
+                "def": "CREATE INDEX applications_application_student_id_0d954db1 ON public.applications_application USING btree (student_id)"
+            }
+        ]
+    },
+    "applications_interview": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "interview_type",
+                "type": "character varying",
+                "max_length": 30,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "interview_date",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "interview_time",
+                "type": "time without time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "duration_minutes",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "mode",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "location_or_link",
+                "type": "character varying",
+                "max_length": 500,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "instructions",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "status",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "application_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "application_id",
+                "references_table": "applications_application",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "applications_interview_pkey",
+                "def": "CREATE UNIQUE INDEX applications_interview_pkey ON public.applications_interview USING btree (id)"
+            },
+            {
+                "name": "applications_interview_application_id_e04b2b00",
+                "def": "CREATE INDEX applications_interview_application_id_e04b2b00 ON public.applications_interview USING btree (application_id)"
+            },
+            {
+                "name": "application_intervi_2bfc54_idx",
+                "def": "CREATE INDEX application_intervi_2bfc54_idx ON public.applications_interview USING btree (interview_date, interview_time)"
+            },
+            {
+                "name": "application_applica_d799d2_idx",
+                "def": "CREATE INDEX application_applica_d799d2_idx ON public.applications_interview USING btree (application_id, interview_type)"
+            }
+        ]
+    },
+    "auth_group": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "auth_group_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "auth_group_pkey",
+                "def": "CREATE UNIQUE INDEX auth_group_pkey ON public.auth_group USING btree (id)"
+            },
+            {
+                "name": "auth_group_name_key",
+                "def": "CREATE UNIQUE INDEX auth_group_name_key ON public.auth_group USING btree (name)"
+            },
+            {
+                "name": "auth_group_name_a6ea08ec_like",
+                "def": "CREATE INDEX auth_group_name_a6ea08ec_like ON public.auth_group USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "auth_group_permissions": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "group_id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "permission_id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "group_id",
+                "references_table": "auth_group",
+                "references_column": "id"
+            },
+            {
+                "column": "permission_id",
+                "references_table": "auth_permission",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "group_id",
+                "name": "auth_group_permissions_group_id_permission_id_0cd325b0_uniq"
+            },
+            {
+                "column": "permission_id",
+                "name": "auth_group_permissions_group_id_permission_id_0cd325b0_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "auth_group_permissions_pkey",
+                "def": "CREATE UNIQUE INDEX auth_group_permissions_pkey ON public.auth_group_permissions USING btree (id)"
+            },
+            {
+                "name": "auth_group_permissions_group_id_permission_id_0cd325b0_uniq",
+                "def": "CREATE UNIQUE INDEX auth_group_permissions_group_id_permission_id_0cd325b0_uniq ON public.auth_group_permissions USING btree (group_id, permission_id)"
+            },
+            {
+                "name": "auth_group_permissions_group_id_b120cbf9",
+                "def": "CREATE INDEX auth_group_permissions_group_id_b120cbf9 ON public.auth_group_permissions USING btree (group_id)"
+            },
+            {
+                "name": "auth_group_permissions_permission_id_84c5c92e",
+                "def": "CREATE INDEX auth_group_permissions_permission_id_84c5c92e ON public.auth_group_permissions USING btree (permission_id)"
+            }
+        ]
+    },
+    "auth_permission": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "content_type_id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "codename",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "content_type_id",
+                "references_table": "django_content_type",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "content_type_id",
+                "name": "auth_permission_content_type_id_codename_01ab375a_uniq"
+            },
+            {
+                "column": "codename",
+                "name": "auth_permission_content_type_id_codename_01ab375a_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "auth_permission_pkey",
+                "def": "CREATE UNIQUE INDEX auth_permission_pkey ON public.auth_permission USING btree (id)"
+            },
+            {
+                "name": "auth_permission_content_type_id_codename_01ab375a_uniq",
+                "def": "CREATE UNIQUE INDEX auth_permission_content_type_id_codename_01ab375a_uniq ON public.auth_permission USING btree (content_type_id, codename)"
+            },
+            {
+                "name": "auth_permission_content_type_id_2f476e4b",
+                "def": "CREATE INDEX auth_permission_content_type_id_2f476e4b ON public.auth_permission USING btree (content_type_id)"
+            }
+        ]
+    },
+    "django_admin_log": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "action_time",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "object_id",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "object_repr",
+                "type": "character varying",
+                "max_length": 200,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "action_flag",
+                "type": "smallint",
+                "max_length": null,
+                "precision": 16,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "change_message",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "content_type_id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "content_type_id",
+                "references_table": "django_content_type",
+                "references_column": "id"
+            },
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "django_admin_log_pkey",
+                "def": "CREATE UNIQUE INDEX django_admin_log_pkey ON public.django_admin_log USING btree (id)"
+            },
+            {
+                "name": "django_admin_log_content_type_id_c4bce8eb",
+                "def": "CREATE INDEX django_admin_log_content_type_id_c4bce8eb ON public.django_admin_log USING btree (content_type_id)"
+            },
+            {
+                "name": "django_admin_log_user_id_c564eba6",
+                "def": "CREATE INDEX django_admin_log_user_id_c564eba6 ON public.django_admin_log USING btree (user_id)"
+            }
+        ]
+    },
+    "django_content_type": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "app_label",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "model",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "app_label",
+                "name": "django_content_type_app_label_model_76bd3d3b_uniq"
+            },
+            {
+                "column": "model",
+                "name": "django_content_type_app_label_model_76bd3d3b_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "django_content_type_pkey",
+                "def": "CREATE UNIQUE INDEX django_content_type_pkey ON public.django_content_type USING btree (id)"
+            },
+            {
+                "name": "django_content_type_app_label_model_76bd3d3b_uniq",
+                "def": "CREATE UNIQUE INDEX django_content_type_app_label_model_76bd3d3b_uniq ON public.django_content_type USING btree (app_label, model)"
+            }
+        ]
+    },
+    "django_migrations": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "app",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "applied",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "django_migrations_pkey",
+                "def": "CREATE UNIQUE INDEX django_migrations_pkey ON public.django_migrations USING btree (id)"
+            }
+        ]
+    },
+    "django_session": {
+        "columns": [
+            {
+                "name": "session_key",
+                "type": "character varying",
+                "max_length": 40,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "session_data",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "expire_date",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "session_key"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "django_session_pkey",
+                "def": "CREATE UNIQUE INDEX django_session_pkey ON public.django_session USING btree (session_key)"
+            },
+            {
+                "name": "django_session_session_key_c0390e0f_like",
+                "def": "CREATE INDEX django_session_session_key_c0390e0f_like ON public.django_session USING btree (session_key varchar_pattern_ops)"
+            },
+            {
+                "name": "django_session_expire_date_a5c62663",
+                "def": "CREATE INDEX django_session_expire_date_a5c62663 ON public.django_session USING btree (expire_date)"
+            }
+        ]
+    },
+    "institutions_institution": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "institution_name",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "affiliated_university",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "address",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "district",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "state",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "pincode",
+                "type": "character varying",
+                "max_length": 10,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "website",
+                "type": "character varying",
+                "max_length": 200,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "placement_email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "placement_phone",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_active",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "institution_type_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "YES",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "institution_type_id",
+                "references_table": "master_data_institutiontype",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "institutions_institution_pkey",
+                "def": "CREATE UNIQUE INDEX institutions_institution_pkey ON public.institutions_institution USING btree (id)"
+            },
+            {
+                "name": "institutions_institution_institution_type_id_d0bba513",
+                "def": "CREATE INDEX institutions_institution_institution_type_id_d0bba513 ON public.institutions_institution USING btree (institution_type_id)"
+            }
+        ]
+    },
+    "jobs_job": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_title",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_description",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "minimum_cgpa",
+                "type": "numeric",
+                "max_length": null,
+                "precision": 4,
+                "scale": 2,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "maximum_active_backlogs",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "expected_hiring_month",
+                "type": "character varying",
+                "max_length": 50,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "application_deadline",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "expected_students",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "package_lpa",
+                "type": "numeric",
+                "max_length": null,
+                "precision": 5,
+                "scale": 2,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "campus_visit_required",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "location",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "status",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "employment_type_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "hiring_type_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiter_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "work_mode_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "employment_type_id",
+                "references_table": "master_data_employmenttype",
+                "references_column": "id"
+            },
+            {
+                "column": "hiring_type_id",
+                "references_table": "master_data_hiringtype",
+                "references_column": "id"
+            },
+            {
+                "column": "recruiter_id",
+                "references_table": "recruiters_recruiterprofile",
+                "references_column": "id"
+            },
+            {
+                "column": "work_mode_id",
+                "references_table": "master_data_workmode",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "jobs_job_pkey",
+                "def": "CREATE UNIQUE INDEX jobs_job_pkey ON public.jobs_job USING btree (id)"
+            },
+            {
+                "name": "jobs_job_employment_type_id_178b602e",
+                "def": "CREATE INDEX jobs_job_employment_type_id_178b602e ON public.jobs_job USING btree (employment_type_id)"
+            },
+            {
+                "name": "jobs_job_hiring_type_id_25f1b602",
+                "def": "CREATE INDEX jobs_job_hiring_type_id_25f1b602 ON public.jobs_job USING btree (hiring_type_id)"
+            },
+            {
+                "name": "jobs_job_recruiter_id_ada1c7a6",
+                "def": "CREATE INDEX jobs_job_recruiter_id_ada1c7a6 ON public.jobs_job USING btree (recruiter_id)"
+            },
+            {
+                "name": "jobs_job_work_mode_id_2d20aaff",
+                "def": "CREATE INDEX jobs_job_work_mode_id_2d20aaff ON public.jobs_job USING btree (work_mode_id)"
+            }
+        ]
+    },
+    "jobs_job_eligible_branches": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "branch_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "job_id",
+                "references_table": "jobs_job",
+                "references_column": "id"
+            },
+            {
+                "column": "branch_id",
+                "references_table": "master_data_branch",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "job_id",
+                "name": "jobs_job_eligible_branches_job_id_branch_id_a90b9c77_uniq"
+            },
+            {
+                "column": "branch_id",
+                "name": "jobs_job_eligible_branches_job_id_branch_id_a90b9c77_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "jobs_job_eligible_branches_pkey",
+                "def": "CREATE UNIQUE INDEX jobs_job_eligible_branches_pkey ON public.jobs_job_eligible_branches USING btree (id)"
+            },
+            {
+                "name": "jobs_job_eligible_branches_job_id_branch_id_a90b9c77_uniq",
+                "def": "CREATE UNIQUE INDEX jobs_job_eligible_branches_job_id_branch_id_a90b9c77_uniq ON public.jobs_job_eligible_branches USING btree (job_id, branch_id)"
+            },
+            {
+                "name": "jobs_job_eligible_branches_job_id_dba918eb",
+                "def": "CREATE INDEX jobs_job_eligible_branches_job_id_dba918eb ON public.jobs_job_eligible_branches USING btree (job_id)"
+            },
+            {
+                "name": "jobs_job_eligible_branches_branch_id_d5d43b0c",
+                "def": "CREATE INDEX jobs_job_eligible_branches_branch_id_d5d43b0c ON public.jobs_job_eligible_branches USING btree (branch_id)"
+            }
+        ]
+    },
+    "jobs_job_eligible_programs": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "program_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "job_id",
+                "references_table": "jobs_job",
+                "references_column": "id"
+            },
+            {
+                "column": "program_id",
+                "references_table": "master_data_program",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "job_id",
+                "name": "jobs_job_eligible_programs_job_id_program_id_02a4a92f_uniq"
+            },
+            {
+                "column": "program_id",
+                "name": "jobs_job_eligible_programs_job_id_program_id_02a4a92f_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "jobs_job_eligible_programs_pkey",
+                "def": "CREATE UNIQUE INDEX jobs_job_eligible_programs_pkey ON public.jobs_job_eligible_programs USING btree (id)"
+            },
+            {
+                "name": "jobs_job_eligible_programs_job_id_program_id_02a4a92f_uniq",
+                "def": "CREATE UNIQUE INDEX jobs_job_eligible_programs_job_id_program_id_02a4a92f_uniq ON public.jobs_job_eligible_programs USING btree (job_id, program_id)"
+            },
+            {
+                "name": "jobs_job_eligible_programs_job_id_41785a55",
+                "def": "CREATE INDEX jobs_job_eligible_programs_job_id_41785a55 ON public.jobs_job_eligible_programs USING btree (job_id)"
+            },
+            {
+                "name": "jobs_job_eligible_programs_program_id_effe6402",
+                "def": "CREATE INDEX jobs_job_eligible_programs_program_id_effe6402 ON public.jobs_job_eligible_programs USING btree (program_id)"
+            }
+        ]
+    },
+    "jobs_job_target_job_roles": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "targetjobrole_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "job_id",
+                "references_table": "jobs_job",
+                "references_column": "id"
+            },
+            {
+                "column": "targetjobrole_id",
+                "references_table": "master_data_targetjobrole",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "job_id",
+                "name": "jobs_job_target_job_roles_job_id_targetjobrole_id_4a684a34_uniq"
+            },
+            {
+                "column": "targetjobrole_id",
+                "name": "jobs_job_target_job_roles_job_id_targetjobrole_id_4a684a34_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "jobs_job_target_job_roles_pkey",
+                "def": "CREATE UNIQUE INDEX jobs_job_target_job_roles_pkey ON public.jobs_job_target_job_roles USING btree (id)"
+            },
+            {
+                "name": "jobs_job_target_job_roles_job_id_targetjobrole_id_4a684a34_uniq",
+                "def": "CREATE UNIQUE INDEX jobs_job_target_job_roles_job_id_targetjobrole_id_4a684a34_uniq ON public.jobs_job_target_job_roles USING btree (job_id, targetjobrole_id)"
+            },
+            {
+                "name": "jobs_job_target_job_roles_job_id_10c845ab",
+                "def": "CREATE INDEX jobs_job_target_job_roles_job_id_10c845ab ON public.jobs_job_target_job_roles USING btree (job_id)"
+            },
+            {
+                "name": "jobs_job_target_job_roles_targetjobrole_id_a443ca9b",
+                "def": "CREATE INDEX jobs_job_target_job_roles_targetjobrole_id_a443ca9b ON public.jobs_job_target_job_roles USING btree (targetjobrole_id)"
+            }
+        ]
+    },
+    "master_data_branch": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "program_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "program_id",
+                "references_table": "master_data_program",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "program_id",
+                "name": "master_data_branch_program_id_name_bbe83365_uniq"
+            },
+            {
+                "column": "name",
+                "name": "master_data_branch_program_id_name_bbe83365_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_branch_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_branch_pkey ON public.master_data_branch USING btree (id)"
+            },
+            {
+                "name": "master_data_branch_program_id_name_bbe83365_uniq",
+                "def": "CREATE UNIQUE INDEX master_data_branch_program_id_name_bbe83365_uniq ON public.master_data_branch USING btree (program_id, name)"
+            },
+            {
+                "name": "master_data_branch_program_id_f2470470",
+                "def": "CREATE INDEX master_data_branch_program_id_f2470470 ON public.master_data_branch USING btree (program_id)"
+            }
+        ]
+    },
+    "master_data_employmenttype": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_employmenttype_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_employmenttype_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_employmenttype_pkey ON public.master_data_employmenttype USING btree (id)"
+            },
+            {
+                "name": "master_data_employmenttype_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_employmenttype_name_key ON public.master_data_employmenttype USING btree (name)"
+            },
+            {
+                "name": "master_data_employmenttype_name_fc7f6c1e_like",
+                "def": "CREATE INDEX master_data_employmenttype_name_fc7f6c1e_like ON public.master_data_employmenttype USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "master_data_hiringtype": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_hiringtype_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_hiringtype_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_hiringtype_pkey ON public.master_data_hiringtype USING btree (id)"
+            },
+            {
+                "name": "master_data_hiringtype_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_hiringtype_name_key ON public.master_data_hiringtype USING btree (name)"
+            },
+            {
+                "name": "master_data_hiringtype_name_a5c21a88_like",
+                "def": "CREATE INDEX master_data_hiringtype_name_a5c21a88_like ON public.master_data_hiringtype USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "master_data_institutiontype": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_institutiontype_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_institutiontype_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_institutiontype_pkey ON public.master_data_institutiontype USING btree (id)"
+            },
+            {
+                "name": "master_data_institutiontype_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_institutiontype_name_key ON public.master_data_institutiontype USING btree (name)"
+            },
+            {
+                "name": "master_data_institutiontype_name_c6ee4ed9_like",
+                "def": "CREATE INDEX master_data_institutiontype_name_c6ee4ed9_like ON public.master_data_institutiontype USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "master_data_program": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_program_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_program_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_program_pkey ON public.master_data_program USING btree (id)"
+            },
+            {
+                "name": "master_data_program_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_program_name_key ON public.master_data_program USING btree (name)"
+            },
+            {
+                "name": "master_data_program_name_6eec4f0d_like",
+                "def": "CREATE INDEX master_data_program_name_6eec4f0d_like ON public.master_data_program USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "master_data_qualificationtype": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_qualificationtype_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_qualificationtype_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_qualificationtype_pkey ON public.master_data_qualificationtype USING btree (id)"
+            },
+            {
+                "name": "master_data_qualificationtype_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_qualificationtype_name_key ON public.master_data_qualificationtype USING btree (name)"
+            },
+            {
+                "name": "master_data_qualificationtype_name_45825a90_like",
+                "def": "CREATE INDEX master_data_qualificationtype_name_45825a90_like ON public.master_data_qualificationtype USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "master_data_targetjobrole": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_targetjobrole_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_targetjobrole_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_targetjobrole_pkey ON public.master_data_targetjobrole USING btree (id)"
+            },
+            {
+                "name": "master_data_targetjobrole_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_targetjobrole_name_key ON public.master_data_targetjobrole USING btree (name)"
+            },
+            {
+                "name": "master_data_targetjobrole_name_fc60967f_like",
+                "def": "CREATE INDEX master_data_targetjobrole_name_fc60967f_like ON public.master_data_targetjobrole USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "master_data_workmode": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [],
+        "unique_constraints": [
+            {
+                "column": "name",
+                "name": "master_data_workmode_name_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "master_data_workmode_pkey",
+                "def": "CREATE UNIQUE INDEX master_data_workmode_pkey ON public.master_data_workmode USING btree (id)"
+            },
+            {
+                "name": "master_data_workmode_name_key",
+                "def": "CREATE UNIQUE INDEX master_data_workmode_name_key ON public.master_data_workmode USING btree (name)"
+            },
+            {
+                "name": "master_data_workmode_name_2e7e2d14_like",
+                "def": "CREATE INDEX master_data_workmode_name_2e7e2d14_like ON public.master_data_workmode USING btree (name varchar_pattern_ops)"
+            }
+        ]
+    },
+    "notifications_notification": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "title",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "message",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "notification_type",
+                "type": "character varying",
+                "max_length": 50,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_read",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "notifications_notification_pkey",
+                "def": "CREATE UNIQUE INDEX notifications_notification_pkey ON public.notifications_notification USING btree (id)"
+            },
+            {
+                "name": "notifications_notification_user_id_b5e8c0ff",
+                "def": "CREATE INDEX notifications_notification_user_id_b5e8c0ff ON public.notifications_notification USING btree (user_id)"
+            }
+        ]
+    },
+    "placement_drives_placementdrive": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "drive_title",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "drive_date",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "drive_time",
+                "type": "time without time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "venue",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "status",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "institution_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "job_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiter_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "institution_id",
+                "references_table": "institutions_institution",
+                "references_column": "id"
+            },
+            {
+                "column": "job_id",
+                "references_table": "jobs_job",
+                "references_column": "id"
+            },
+            {
+                "column": "recruiter_id",
+                "references_table": "recruiters_recruiterprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "placement_drives_placementdrive_pkey",
+                "def": "CREATE UNIQUE INDEX placement_drives_placementdrive_pkey ON public.placement_drives_placementdrive USING btree (id)"
+            },
+            {
+                "name": "placement_drives_placementdrive_institution_id_b9e6f16c",
+                "def": "CREATE INDEX placement_drives_placementdrive_institution_id_b9e6f16c ON public.placement_drives_placementdrive USING btree (institution_id)"
+            },
+            {
+                "name": "placement_drives_placementdrive_job_id_f87dcff3",
+                "def": "CREATE INDEX placement_drives_placementdrive_job_id_f87dcff3 ON public.placement_drives_placementdrive USING btree (job_id)"
+            },
+            {
+                "name": "placement_drives_placementdrive_recruiter_id_c62dc1f5",
+                "def": "CREATE INDEX placement_drives_placementdrive_recruiter_id_c62dc1f5 ON public.placement_drives_placementdrive USING btree (recruiter_id)"
+            }
+        ]
+    },
+    "placement_officers_institutiondetails": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_strength",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "eligible_final_year_students",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "placement_cell_email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "placement_cell_phone",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "placement_season",
+                "type": "character varying",
+                "max_length": 50,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "placement_policy",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "placement_officer_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "placement_officer_id",
+                "references_table": "placement_officers_placementofficerprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "placement_officer_id",
+                "name": "placement_officers_institutiondetails_placement_officer_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "placement_officers_institutiondetails_pkey",
+                "def": "CREATE UNIQUE INDEX placement_officers_institutiondetails_pkey ON public.placement_officers_institutiondetails USING btree (id)"
+            },
+            {
+                "name": "placement_officers_institutiondetails_placement_officer_id_key",
+                "def": "CREATE UNIQUE INDEX placement_officers_institutiondetails_placement_officer_id_key ON public.placement_officers_institutiondetails USING btree (placement_officer_id)"
+            }
+        ]
+    },
+    "placement_officers_placementofficerprofile": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "full_name",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "designation",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "official_email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "mobile_number",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_verified",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "institution_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "institution_id",
+                "references_table": "institutions_institution",
+                "references_column": "id"
+            },
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "institution_id",
+                "name": "placement_officers_placementofficerprofile_institution_id_key"
+            },
+            {
+                "column": "user_id",
+                "name": "placement_officers_placementofficerprofile_user_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "placement_officers_placementofficerprofile_pkey",
+                "def": "CREATE UNIQUE INDEX placement_officers_placementofficerprofile_pkey ON public.placement_officers_placementofficerprofile USING btree (id)"
+            },
+            {
+                "name": "placement_officers_placementofficerprofile_institution_id_key",
+                "def": "CREATE UNIQUE INDEX placement_officers_placementofficerprofile_institution_id_key ON public.placement_officers_placementofficerprofile USING btree (institution_id)"
+            },
+            {
+                "name": "placement_officers_placementofficerprofile_user_id_key",
+                "def": "CREATE UNIQUE INDEX placement_officers_placementofficerprofile_user_id_key ON public.placement_officers_placementofficerprofile USING btree (user_id)"
+            }
+        ]
+    },
+    "recruiters_recruiterhiringpreference": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "minimum_cgpa",
+                "type": "numeric",
+                "max_length": null,
+                "precision": 4,
+                "scale": 2,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "maximum_active_backlogs",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "expected_hiring_month",
+                "type": "character varying",
+                "max_length": 50,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "expected_students",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "package_lpa",
+                "type": "numeric",
+                "max_length": null,
+                "precision": 5,
+                "scale": 2,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "campus_visit_required",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "additional_requirements",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "hiring_type_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "work_mode_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiter_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "hiring_type_id",
+                "references_table": "master_data_hiringtype",
+                "references_column": "id"
+            },
+            {
+                "column": "work_mode_id",
+                "references_table": "master_data_workmode",
+                "references_column": "id"
+            },
+            {
+                "column": "recruiter_id",
+                "references_table": "recruiters_recruiterprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "recruiter_id",
+                "name": "recruiters_recruiterhiringpreference_recruiter_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "recruiters_recruiterhiringpreference_pkey",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiringpreference_pkey ON public.recruiters_recruiterhiringpreference USING btree (id)"
+            },
+            {
+                "name": "recruiters_recruiterhiringpreference_recruiter_id_key",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiringpreference_recruiter_id_key ON public.recruiters_recruiterhiringpreference USING btree (recruiter_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiringpreference_hiring_type_id_b497fcc7",
+                "def": "CREATE INDEX recruiters_recruiterhiringpreference_hiring_type_id_b497fcc7 ON public.recruiters_recruiterhiringpreference USING btree (hiring_type_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiringpreference_work_mode_id_694aa23d",
+                "def": "CREATE INDEX recruiters_recruiterhiringpreference_work_mode_id_694aa23d ON public.recruiters_recruiterhiringpreference USING btree (work_mode_id)"
+            }
+        ]
+    },
+    "recruiters_recruiterhiringpreference_eligible_branches": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiterhiringpreference_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "branch_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "recruiterhiringpreference_id",
+                "references_table": "recruiters_recruiterhiringpreference",
+                "references_column": "id"
+            },
+            {
+                "column": "branch_id",
+                "references_table": "master_data_branch",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "recruiterhiringpreference_id",
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_4952eb47_uniq"
+            },
+            {
+                "column": "branch_id",
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_4952eb47_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "recruiters_recruiterhiringpreference_eligible_branches_pkey",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiringpreference_eligible_branches_pkey ON public.recruiters_recruiterhiringpreference_eligible_branches USING btree (id)"
+            },
+            {
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_4952eb47_uniq",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiri_recruiterhiringpreferenc_4952eb47_uniq ON public.recruiters_recruiterhiringpreference_eligible_branches USING btree (recruiterhiringpreference_id, branch_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiring_recruiterhiringpreference__371d9873",
+                "def": "CREATE INDEX recruiters_recruiterhiring_recruiterhiringpreference__371d9873 ON public.recruiters_recruiterhiringpreference_eligible_branches USING btree (recruiterhiringpreference_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiring_branch_id_3657fff0",
+                "def": "CREATE INDEX recruiters_recruiterhiring_branch_id_3657fff0 ON public.recruiters_recruiterhiringpreference_eligible_branches USING btree (branch_id)"
+            }
+        ]
+    },
+    "recruiters_recruiterhiringpreference_eligible_programs": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiterhiringpreference_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "program_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "recruiterhiringpreference_id",
+                "references_table": "recruiters_recruiterhiringpreference",
+                "references_column": "id"
+            },
+            {
+                "column": "program_id",
+                "references_table": "master_data_program",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "recruiterhiringpreference_id",
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_d92eea0b_uniq"
+            },
+            {
+                "column": "program_id",
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_d92eea0b_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "recruiters_recruiterhiringpreference_eligible_programs_pkey",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiringpreference_eligible_programs_pkey ON public.recruiters_recruiterhiringpreference_eligible_programs USING btree (id)"
+            },
+            {
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_d92eea0b_uniq",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiri_recruiterhiringpreferenc_d92eea0b_uniq ON public.recruiters_recruiterhiringpreference_eligible_programs USING btree (recruiterhiringpreference_id, program_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiring_recruiterhiringpreference__9be97b26",
+                "def": "CREATE INDEX recruiters_recruiterhiring_recruiterhiringpreference__9be97b26 ON public.recruiters_recruiterhiringpreference_eligible_programs USING btree (recruiterhiringpreference_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiring_program_id_dddcf66a",
+                "def": "CREATE INDEX recruiters_recruiterhiring_program_id_dddcf66a ON public.recruiters_recruiterhiringpreference_eligible_programs USING btree (program_id)"
+            }
+        ]
+    },
+    "recruiters_recruiterhiringpreference_target_job_roles": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiterhiringpreference_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "targetjobrole_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "recruiterhiringpreference_id",
+                "references_table": "recruiters_recruiterhiringpreference",
+                "references_column": "id"
+            },
+            {
+                "column": "targetjobrole_id",
+                "references_table": "master_data_targetjobrole",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "recruiterhiringpreference_id",
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_09874cc4_uniq"
+            },
+            {
+                "column": "targetjobrole_id",
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_09874cc4_uniq"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "recruiters_recruiterhiringpreference_target_job_roles_pkey",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiringpreference_target_job_roles_pkey ON public.recruiters_recruiterhiringpreference_target_job_roles USING btree (id)"
+            },
+            {
+                "name": "recruiters_recruiterhiri_recruiterhiringpreferenc_09874cc4_uniq",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterhiri_recruiterhiringpreferenc_09874cc4_uniq ON public.recruiters_recruiterhiringpreference_target_job_roles USING btree (recruiterhiringpreference_id, targetjobrole_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiring_recruiterhiringpreference__d166d92e",
+                "def": "CREATE INDEX recruiters_recruiterhiring_recruiterhiringpreference__d166d92e ON public.recruiters_recruiterhiringpreference_target_job_roles USING btree (recruiterhiringpreference_id)"
+            },
+            {
+                "name": "recruiters_recruiterhiring_targetjobrole_id_eb39cc66",
+                "def": "CREATE INDEX recruiters_recruiterhiring_targetjobrole_id_eb39cc66 ON public.recruiters_recruiterhiringpreference_target_job_roles USING btree (targetjobrole_id)"
+            }
+        ]
+    },
+    "recruiters_recruiterprofile": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "company_name",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "recruiter_name",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "designation",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "official_email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "mobile_number",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "hiring_volume",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "is_verified",
+                "type": "boolean",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "approval_status",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "user_id",
+                "name": "recruiters_recruiterprofile_user_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "recruiters_recruiterprofile_pkey",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterprofile_pkey ON public.recruiters_recruiterprofile USING btree (id)"
+            },
+            {
+                "name": "recruiters_recruiterprofile_user_id_key",
+                "def": "CREATE UNIQUE INDEX recruiters_recruiterprofile_user_id_key ON public.recruiters_recruiterprofile USING btree (user_id)"
+            }
+        ]
+    },
+    "students_studentcontact": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "primary_email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "personal_email",
+                "type": "character varying",
+                "max_length": 254,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "mobile_number",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "country",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "state",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "district",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "city",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "pincode",
+                "type": "character varying",
+                "max_length": 10,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "permanent_address",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "student_id",
+                "references_table": "students_studentprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "student_id",
+                "name": "students_studentcontact_student_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "students_studentcontact_pkey",
+                "def": "CREATE UNIQUE INDEX students_studentcontact_pkey ON public.students_studentcontact USING btree (id)"
+            },
+            {
+                "name": "students_studentcontact_student_id_key",
+                "def": "CREATE UNIQUE INDEX students_studentcontact_student_id_key ON public.students_studentcontact USING btree (student_id)"
+            }
+        ]
+    },
+    "students_studentcurrenteducation": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "field_of_study",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "start_date",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "end_date",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "batch",
+                "type": "character varying",
+                "max_length": 50,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "semester",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "cgpa",
+                "type": "numeric",
+                "max_length": null,
+                "precision": 4,
+                "scale": 2,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "active_backlogs",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "branch_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "program_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "branch_id",
+                "references_table": "master_data_branch",
+                "references_column": "id"
+            },
+            {
+                "column": "program_id",
+                "references_table": "master_data_program",
+                "references_column": "id"
+            },
+            {
+                "column": "student_id",
+                "references_table": "students_studentprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "student_id",
+                "name": "students_studentcurrenteducation_student_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "students_studentcurrenteducation_pkey",
+                "def": "CREATE UNIQUE INDEX students_studentcurrenteducation_pkey ON public.students_studentcurrenteducation USING btree (id)"
+            },
+            {
+                "name": "students_studentcurrenteducation_student_id_key",
+                "def": "CREATE UNIQUE INDEX students_studentcurrenteducation_student_id_key ON public.students_studentcurrenteducation USING btree (student_id)"
+            },
+            {
+                "name": "students_studentcurrenteducation_branch_id_016111a7",
+                "def": "CREATE INDEX students_studentcurrenteducation_branch_id_016111a7 ON public.students_studentcurrenteducation USING btree (branch_id)"
+            },
+            {
+                "name": "students_studentcurrenteducation_program_id_1805f817",
+                "def": "CREATE INDEX students_studentcurrenteducation_program_id_1805f817 ON public.students_studentcurrenteducation USING btree (program_id)"
+            }
+        ]
+    },
+    "students_studentdocument": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "resume",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "class10_certificate",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "class12_certificate",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "degree_marksheet",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "uploaded_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "student_id",
+                "references_table": "students_studentprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "student_id",
+                "name": "students_studentdocument_student_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "students_studentdocument_pkey",
+                "def": "CREATE UNIQUE INDEX students_studentdocument_pkey ON public.students_studentdocument USING btree (id)"
+            },
+            {
+                "name": "students_studentdocument_student_id_key",
+                "def": "CREATE UNIQUE INDEX students_studentdocument_student_id_key ON public.students_studentdocument USING btree (student_id)"
+            }
+        ]
+    },
+    "students_studentexperience": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "company_name",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "designation",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "location",
+                "type": "character varying",
+                "max_length": 150,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "start_date",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "end_date",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "description",
+                "type": "text",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "employment_type_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "employment_type_id",
+                "references_table": "master_data_employmenttype",
+                "references_column": "id"
+            },
+            {
+                "column": "student_id",
+                "references_table": "students_studentprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "students_studentexperience_pkey",
+                "def": "CREATE UNIQUE INDEX students_studentexperience_pkey ON public.students_studentexperience USING btree (id)"
+            },
+            {
+                "name": "students_studentexperience_employment_type_id_464ecbbd",
+                "def": "CREATE INDEX students_studentexperience_employment_type_id_464ecbbd ON public.students_studentexperience USING btree (employment_type_id)"
+            },
+            {
+                "name": "students_studentexperience_student_id_3fddb05e",
+                "def": "CREATE INDEX students_studentexperience_student_id_3fddb05e ON public.students_studentexperience USING btree (student_id)"
+            }
+        ]
+    },
+    "students_studentpreviouseducation": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "institution_name",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "board_or_university",
+                "type": "character varying",
+                "max_length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "year_of_passing",
+                "type": "integer",
+                "max_length": null,
+                "precision": 32,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "percentage",
+                "type": "numeric",
+                "max_length": null,
+                "precision": 5,
+                "scale": 2,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "qualification_type_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "student_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "qualification_type_id",
+                "references_table": "master_data_qualificationtype",
+                "references_column": "id"
+            },
+            {
+                "column": "student_id",
+                "references_table": "students_studentprofile",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "students_studentpreviouseducation_pkey",
+                "def": "CREATE UNIQUE INDEX students_studentpreviouseducation_pkey ON public.students_studentpreviouseducation USING btree (id)"
+            },
+            {
+                "name": "students_studentprevioused_qualification_type_id_9e2dce99",
+                "def": "CREATE INDEX students_studentprevioused_qualification_type_id_9e2dce99 ON public.students_studentpreviouseducation USING btree (qualification_type_id)"
+            },
+            {
+                "name": "students_studentpreviouseducation_student_id_f8769469",
+                "def": "CREATE INDEX students_studentpreviouseducation_student_id_f8769469 ON public.students_studentpreviouseducation USING btree (student_id)"
+            }
+        ]
+    },
+    "students_studentprofile": {
+        "columns": [
+            {
+                "name": "id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "register_number",
+                "type": "character varying",
+                "max_length": 50,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "first_name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "middle_name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "last_name",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "gender",
+                "type": "character varying",
+                "max_length": 20,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "date_of_birth",
+                "type": "date",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "blood_group",
+                "type": "character varying",
+                "max_length": 10,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "profile_photo",
+                "type": "character varying",
+                "max_length": 100,
+                "precision": null,
+                "scale": null,
+                "nullable": "YES",
+                "default": null
+            },
+            {
+                "name": "profile_completion",
+                "type": "smallint",
+                "max_length": null,
+                "precision": 16,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "created_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "updated_at",
+                "type": "timestamp with time zone",
+                "max_length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "institution_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            },
+            {
+                "name": "user_id",
+                "type": "bigint",
+                "max_length": null,
+                "precision": 64,
+                "scale": 0,
+                "nullable": "NO",
+                "default": null
+            }
+        ],
+        "primary_keys": [
+            "id"
+        ],
+        "foreign_keys": [
+            {
+                "column": "institution_id",
+                "references_table": "institutions_institution",
+                "references_column": "id"
+            },
+            {
+                "column": "user_id",
+                "references_table": "accounts_user",
+                "references_column": "id"
+            }
+        ],
+        "unique_constraints": [
+            {
+                "column": "register_number",
+                "name": "students_studentprofile_register_number_key"
+            },
+            {
+                "column": "user_id",
+                "name": "students_studentprofile_user_id_key"
+            }
+        ],
+        "check_constraints": [],
+        "indexes": [
+            {
+                "name": "students_studentprofile_pkey",
+                "def": "CREATE UNIQUE INDEX students_studentprofile_pkey ON public.students_studentprofile USING btree (id)"
+            },
+            {
+                "name": "students_studentprofile_register_number_key",
+                "def": "CREATE UNIQUE INDEX students_studentprofile_register_number_key ON public.students_studentprofile USING btree (register_number)"
+            },
+            {
+                "name": "students_studentprofile_user_id_key",
+                "def": "CREATE UNIQUE INDEX students_studentprofile_user_id_key ON public.students_studentprofile USING btree (user_id)"
+            },
+            {
+                "name": "students_studentprofile_register_number_62d913d8_like",
+                "def": "CREATE INDEX students_studentprofile_register_number_62d913d8_like ON public.students_studentprofile USING btree (register_number varchar_pattern_ops)"
+            },
+            {
+                "name": "students_studentprofile_institution_id_ac1e1ccb",
+                "def": "CREATE INDEX students_studentprofile_institution_id_ac1e1ccb ON public.students_studentprofile USING btree (institution_id)"
+            }
+        ]
+    }
+}

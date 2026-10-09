@@ -205,16 +205,16 @@ export default function Step2OfficerInstitutionDetails({ state, onChange, onNext
           </div>
         </div>
 
-        {/* Placement Cell Email & Contact Number */}
+        {/* College Email & Contact Number */}
         <div className="form-grid-2" style={{ marginBottom: '22px' }}>
           <div className="form-group">
-            <label className="form-label">Placement Cell Email <span className="req">*</span></label>
+            <label className="form-label">College Email <span className="req">*</span></label>
             <div className="input-with-icon">
               <input 
                 type="email"
                 className={`form-control ${touched.placementEmail && !isPlacementEmailValid ? 'invalid' : ''}`}
-                placeholder="placement@college.edu.in"
-                value={data.placementEmail}
+                placeholder="college@example.edu"
+                value={data.placementEmail || ''}
                 onChange={(e) => handleChange('placementEmail', e.target.value)}
                 onBlur={() => handleBlur('placementEmail')}
                 required
@@ -224,7 +224,7 @@ export default function Step2OfficerInstitutionDetails({ state, onChange, onNext
               )}
             </div>
             {touched.placementEmail && !isPlacementEmailValid && (
-              <span className="error-text">Please enter a valid placement cell email</span>
+              <span className="error-text">Please enter a valid college email</span>
             )}
           </div>
 

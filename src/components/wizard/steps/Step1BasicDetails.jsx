@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, ArrowRight, CheckCircle2, AlertCircle, Calendar, ChevronDown, Edit3, X } from 'lucide-react';
 
+import DobDatePicker from './DobDatePicker';
+
 export default function Step1BasicDetails({ state, onChange, onNext }) {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [touched, setTouched] = useState({});
@@ -224,17 +226,13 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
           {/* DOB */}
           <div className="form-group">
             <label className="form-label">Date of Birth <span className="req">*</span></label>
-            <div className="input-with-icon">
-              <input 
-                type="date" 
-                className={`form-control ${touched.dob && !isDobValid ? 'invalid' : ''}`} 
-                value={data.dob}
-                max={new Date().toISOString().split('T')[0]}
-                onChange={(e) => handleChange('dob', e.target.value)}
-                onBlur={() => handleBlur('dob')}
-                required
-              />
-            </div>
+            <DobDatePicker 
+              value={data.dob}
+              onChange={(val) => handleChange('dob', val)}
+              onBlur={() => handleBlur('dob')}
+              invalid={touched.dob && !isDobValid}
+              required
+            />
             {touched.dob && !isDobValid && (
               <span className="error-text">{dobErrorMessage}</span>
             )}
@@ -467,16 +465,16 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
           </div>
         </div>
 
-        {/* Primary Email Address & Mobile Number */}
+        {/* Email Address & Mobile Number */}
         <div className="form-grid-2" style={{ marginBottom: '22px' }}>
-          {/* Primary Email */}
+          {/* Email Address */}
           <div className="form-group">
-            <label className="form-label">Primary Email Address <span className="req">*</span></label>
+            <label className="form-label">Email Address <span className="req">*</span></label>
             <div className="input-with-icon">
               <input 
                 type="email" 
                 className={`form-control ${touched.primaryEmail && !isEmailValid ? 'invalid' : ''}`} 
-                placeholder="kkabhinand05@gmail.com"
+                placeholder="abhinandkk2027@mca.ajce.in"
                 value={data.primaryEmail}
                 onChange={(e) => handleChange('primaryEmail', e.target.value)}
                 onBlur={() => handleBlur('primaryEmail')}
@@ -486,7 +484,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                 <CheckCircle2 size={18} className="valid-icon" color="#10B981" />
               )}
             </div>
-            <span className="form-hint">This email will be used for all communications.</span>
+            <span className="form-hint">This email will be used for all communications and login identity.</span>
             {touched.primaryEmail && !isEmailValid && (
               <span className="error-text">Please enter a valid lowercase email address.</span>
             )}
@@ -607,7 +605,7 @@ export default function Step1BasicDetails({ state, onChange, onNext }) {
                   <span className="sum-val">{data.admissionYear}</span>
                 </div>
                 <div className="summary-row">
-                  <span className="sum-key">Primary Email</span>
+                  <span className="sum-key">Email Address</span>
                   <span className="sum-sep">:</span>
                   <span className="sum-val">{data.primaryEmail}</span>
                 </div>
