@@ -20,6 +20,45 @@ class UserSerializer(serializers.ModelSerializer):
         return value.lower()
 
 
+def resolve_institution(institution_name=None, defaults=None):
+    """
+    Safely resolves or creates an Institution record, preventing duplicates caused by
+    casing differences, whitespace, or naming variations (e.g. 'Autonomous').
+    """
+    if not institution_name or not str(institution_name).strip():
+        institution_name = "Amal Jyothi College of Engineering"
+    clean_name = str(institution_name).strip()
+
+    # 1. Exact case-insensitive match
+    inst = Institution.objects.filter(institution_name__iexact=clean_name).first()
+    if inst:
+        return inst
+
+    # 2. Normalized match removing suffixes like 'Autonomous' or punctuation
+    norm_name = clean_name.replace('Autonomous', '').replace('autonomous', '').strip()
+    if norm_name:
+        inst = Institution.objects.filter(institution_name__iexact=norm_name).first()
+        if inst:
+            return inst
+        inst = Institution.objects.filter(institution_name__icontains=norm_name).first()
+        if inst:
+            return inst
+
+    # 3. Create if truly distinct
+    default_vals = {
+        'address': 'Main Campus',
+        'district': 'Default',
+        'state': 'Default',
+        'pincode': '000000',
+        'placement_email': 'placement@college.edu',
+        'placement_phone': '0000000000'
+    }
+    if defaults:
+        default_vals.update(defaults)
+
+    return Institution.objects.create(institution_name=clean_name, **default_vals)
+
+
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
     register_number = serializers.CharField(write_only=True)
@@ -176,22 +215,12 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         institution = None
         if institution_id:
             institution = Institution.objects.filter(pk=institution_id).first()
-        if not institution and current_education and isinstance(current_education, dict) and current_education.get('institutionName'):
-            inst_name = current_education.get('institutionName')
-            institution, _ = Institution.objects.get_or_create(
-                institution_name=inst_name,
-                defaults={
-                    'address': 'Main Campus',
-                    'district': 'Default',
-                    'state': 'Default',
-                    'pincode': '000000',
-                    'placement_email': validated_data['email'],
-                    'placement_phone': '0000000000'
-                }
-            )
         if not institution:
-            institution, _ = Institution.objects.get_or_create(
-                institution_name="Amal Jyothi College of Engineering",
+            inst_name = None
+            if current_education and isinstance(current_education, dict):
+                inst_name = current_education.get('institutionName')
+            institution = resolve_institution(
+                inst_name or "Amal Jyothi College of Engineering",
                 defaults={
                     'address': 'Kanjirappally',
                     'district': 'Kottayam',
@@ -582,8 +611,8 @@ class PlacementOfficerRegistrationSerializer(serializers.ModelSerializer):
             role=User.Role.PLACEMENT_OFFICER
         )
 
-        institution, _ = Institution.objects.get_or_create(
-            institution_name=institution_name,
+        institution = resolve_institution(
+            institution_name,
             defaults={
                 'address': 'Campus Address',
                 'district': 'Default',

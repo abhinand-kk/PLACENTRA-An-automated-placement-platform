@@ -12,15 +12,19 @@ class ApplicationSerializer(serializers.ModelSerializer):
     job_title = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     interviews = serializers.SerializerMethodField()
+    offer_letter_url = serializers.SerializerMethodField()
+    offer_letter_available = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
         fields = (
             'id', 'student', 'student_detail', 'job', 'job_detail',
             'student_name', 'register_number', 'job_title', 'status',
-            'application_status', 'applied_at', 'updated_at', 'interviews'
+            'application_status', 'offer_letter_sent', 'offer_letter_sent_at',
+            'offer_letter_url', 'offer_letter_available',
+            'applied_at', 'updated_at', 'interviews'
         )
-        read_only_fields = ('id', 'student', 'applied_at', 'updated_at')
+        read_only_fields = ('id', 'student', 'offer_letter_sent', 'offer_letter_sent_at', 'applied_at', 'updated_at')
 
     def get_student_name(self, obj):
         if obj.student:
@@ -56,6 +60,14 @@ class ApplicationSerializer(serializers.ModelSerializer):
             }
             for i in items
         ]
+
+    def get_offer_letter_url(self, obj):
+        if obj.application_status == Application.ApplicationStatus.SELECTED:
+            return f"/api/v1/applications/{obj.id}/offer-letter/"
+        return None
+
+    def get_offer_letter_available(self, obj):
+        return obj.application_status == Application.ApplicationStatus.SELECTED
 
     def validate(self, attrs):
         student = self.context.get('student') or attrs.get('student')

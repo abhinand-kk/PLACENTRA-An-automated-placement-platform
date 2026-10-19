@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Landmark, 
   GraduationCap, 
   Building2, 
   Briefcase, 
@@ -13,10 +12,6 @@ import {
   LogOut, 
   PlusCircle, 
   CheckCircle2, 
-  Users, 
-  FileCheck, 
-  Percent, 
-  Shield, 
   Sparkles,
   Search,
   FileText,
@@ -25,16 +20,11 @@ import {
   X,
   AlertCircle,
   Clock,
-  UserCheck,
-  CheckCircle,
-  Filter,
-  Video,
-  MapPin,
   ExternalLink,
-  Award,
-  XCircle,
-  ArrowUpRight,
-  Download
+  Download,
+  Check,
+  CheckCheck,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -87,15 +77,19 @@ export default function OfficerDashboard() {
   const [officerStats, setOfficerStats] = useState(null);
   const [students, setStudents] = useState([]);
   const [drives, setDrives] = useState([]);
-  const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [interviews, setInterviews] = useState([]);
   const [activities, setActivities] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [loginActivity, setLoginActivity] = useState([]);
   const [officerRecruiters, setOfficerRecruiters] = useState([]);
   const [officerJobs, setOfficerJobs] = useState([]);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Notification & Report Interactive States
+  const [notificationFilter, setNotificationFilter] = useState('all'); // 'all' | 'unread'
+  const [markingReadId, setMarkingReadId] = useState(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [reportTimeFilter, setReportTimeFilter] = useState('all'); // 'all' | 'year' | '90days' | '30days'
 
   // Modal States
   const [showRecruiterModal, setShowRecruiterModal] = useState(false);
@@ -125,12 +119,10 @@ export default function OfficerDashboard() {
         dashRes,
         studentsRes,
         drivesRes,
-        jobsRes,
         appsRes,
         interviewsRes,
         activitiesRes,
         notifsRes,
-        loginActRes,
         officerRecruitersRes,
         officerJobsRes
       ] = await Promise.allSettled([
@@ -139,12 +131,10 @@ export default function OfficerDashboard() {
         api.get('/api/v1/placement-officers/dashboard/'),
         api.get('/api/v1/placement-officers/students/'),
         api.get('/api/v1/placement-drives/my-institution/'),
-        api.get('/api/v1/jobs/'),
         api.get('/api/v1/applications/'),
         api.get('/api/v1/interviews/'),
         api.get('/api/v1/placement-officers/activity/'),
         api.get('/api/v1/notifications/'),
-        api.get('/api/v1/placement-officers/students/login-activity/'),
         api.get('/api/v1/placement-officers/recruiters/'),
         api.get('/api/v1/placement-officers/jobs/')
       ]);
@@ -154,18 +144,40 @@ export default function OfficerDashboard() {
       if (dashRes.status === 'fulfilled') setOfficerStats(dashRes.value.data);
       if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value.data.results || studentsRes.value.data || []);
       if (drivesRes.status === 'fulfilled') setDrives(drivesRes.value.data.results || drivesRes.value.data || []);
-      if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data.results || jobsRes.value.data || []);
       if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data.results || appsRes.value.data || []);
       if (interviewsRes.status === 'fulfilled') setInterviews(interviewsRes.value.data.results || interviewsRes.value.data || []);
       if (activitiesRes.status === 'fulfilled') setActivities(activitiesRes.value.data.results || activitiesRes.value.data || []);
       if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
-      if (loginActRes.status === 'fulfilled') setLoginActivity(loginActRes.value.data.results || loginActRes.value.data || []);
       if (officerRecruitersRes.status === 'fulfilled') setOfficerRecruiters(officerRecruitersRes.value.data.results || officerRecruitersRes.value.data || []);
       if (officerJobsRes.status === 'fulfilled') setOfficerJobs(officerJobsRes.value.data.results || officerJobsRes.value.data || []);
     } catch (err) {
       console.warn("Placement officer data fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkNotificationRead = async (notifId) => {
+    setMarkingReadId(notifId);
+    try {
+      await api.patch(`/api/v1/notifications/${notifId}/read/`);
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    } finally {
+      setMarkingReadId(null);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    setMarkingAllRead(true);
+    try {
+      await api.patch('/api/v1/notifications/read-all/');
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    } finally {
+      setMarkingAllRead(false);
     }
   };
 
@@ -310,31 +322,6 @@ export default function OfficerDashboard() {
     return 'Good evening';
   };
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'students', label: 'Students', icon: GraduationCap },
-    { id: 'recruiters', label: 'Recruiters & Companies', icon: Building2 },
-    { id: 'jobs', label: 'Job Opportunities', icon: Briefcase },
-    { id: 'drives', label: 'Placement Drives', icon: Calendar },
-    { id: 'applications', label: 'Applications', icon: FileText },
-    { id: 'interviews', label: 'Interview Monitoring', icon: Clock },
-    { id: 'placements', label: 'Placements', icon: CheckCircle2 },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
-
-  if (loading) {
-    return (
-      <div className="officer-dashboard-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div className="empty-state-box" style={{ border: 'none', background: 'transparent' }}>
-          <Sparkles size={28} className="spin-gear-icon" color="#10B981" />
-          <p>Loading Placement Cell Workspace...</p>
-        </div>
-      </div>
-    );
-  }
-
   const institutionName = institution?.institution_name || profile?.institution_detail?.institution_name || 'Campus Institution';
   const officerName = profile?.full_name || user?.username || 'Placement Officer';
 
@@ -346,7 +333,12 @@ export default function OfficerDashboard() {
   const interviewsScheduledCount = officerStats?.interviews_scheduled ?? interviews.filter(i => i.status !== 'Cancelled').length;
   const techInterviewsCount = officerStats?.technical_interviews_count ?? interviews.filter(i => i.interview_type === 'Technical Interview' && i.status !== 'Cancelled').length;
   const hrInterviewsCount = officerStats?.hr_interviews_count ?? interviews.filter(i => i.interview_type === 'HR Interview' && i.status !== 'Cancelled').length;
-  const placedStudentsCount = officerStats?.selected_students ?? applications.filter(a => (a.status || a.application_status) === 'Selected').length;
+  // Application selections / total offers issued
+  const totalOffersCount = officerStats?.selected_students ?? applications.filter(a => (a.status || a.application_status) === 'Selected').length;
+  // Unique placed students (candidates with at least one selection offer)
+  const uniquePlacedCount = students.length > 0
+    ? students.filter(s => s.placement_status === 'Placed' || (s.selected_count && s.selected_count > 0)).length
+    : totalOffersCount;
   const rejectedStudentsCount = officerStats?.rejected_students ?? applications.filter(a => (a.status || a.application_status) === 'Rejected').length;
   
   const recruitersCount = officerStats?.total_recruiters ?? officerRecruiters.length;
@@ -355,6 +347,252 @@ export default function OfficerDashboard() {
   const activeJobsCount = officerStats?.active_jobs ?? officerJobs.filter(j => j.status === 'Open').length;
   const pendingJobCount = officerStats?.pending_job_approvals ?? officerJobs.filter(j => j.status === 'Pending Approval').length;
   const upcomingDrivesCount = officerStats?.upcoming_placement_drives ?? drives.filter(d => d.status === 'Upcoming').length;
+  const unreadNotifsCount = notifications.filter(n => !n.is_read).length;
+
+  // Filtered Notifications
+  const filteredNotifications = notifications.filter(n => {
+    if (notificationFilter === 'unread') return !n.is_read;
+    return true;
+  });
+
+  // Grouped Navigation for Sidebar
+  const navGroups = [
+    {
+      title: 'Overview',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }
+      ]
+    },
+    {
+      title: 'Candidate Management',
+      items: [
+        { id: 'students', label: 'Students', icon: GraduationCap },
+        { id: 'applications', label: 'Applications', icon: FileText },
+        { id: 'placements', label: 'Placements', icon: CheckCircle2 }
+      ]
+    },
+    {
+      title: 'Recruitment Management',
+      items: [
+        { 
+          id: 'recruiters', 
+          label: 'Recruiters & Companies', 
+          icon: Building2,
+          badge: pendingRecruiterCount > 0 ? pendingRecruiterCount : null
+        },
+        { 
+          id: 'jobs', 
+          label: 'Job Opportunities', 
+          icon: Briefcase,
+          badge: pendingJobCount > 0 ? pendingJobCount : null
+        },
+        { id: 'drives', label: 'Placement Drives', icon: Calendar },
+        { id: 'interviews', label: 'Interview Monitoring', icon: Clock }
+      ]
+    },
+    {
+      title: 'Insights',
+      items: [
+        { id: 'reports', label: 'Reports', icon: BarChart3 }
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { 
+          id: 'notifications', 
+          label: 'Notifications', 
+          icon: Bell,
+          badge: unreadNotifsCount > 0 ? unreadNotifsCount : null,
+          badgeGreen: true
+        },
+        { id: 'settings', label: 'Settings', icon: Settings }
+      ]
+    }
+  ];
+
+  // CSV Export utility (RFC 4180 compliant client-side Blob generation)
+  const exportToCsv = (filename, headers, rows) => {
+    const escapeCell = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+    
+    const csvContent = [
+      headers.map(escapeCell).join(','),
+      ...rows.map(row => row.map(escapeCell).join(','))
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Department / Program-wise analysis from registered student profile records
+  const departmentStats = useMemo(() => {
+    if (!students || students.length === 0) return [];
+    const map = {};
+    students.forEach(st => {
+      const prog = st.program && st.program !== 'N/A' ? st.program : 'General';
+      const br = st.branch && st.branch !== 'N/A' ? st.branch : 'All Branches';
+      const key = `${prog}__${br}`;
+      if (!map[key]) {
+        map[key] = {
+          program: prog,
+          branch: br,
+          total: 0,
+          placed: 0,
+          seeking: 0,
+          applications: 0
+        };
+      }
+      map[key].total += 1;
+      if (st.placement_status === 'Placed' || (st.selected_count && st.selected_count > 0)) {
+        map[key].placed += 1;
+      } else {
+        map[key].seeking += 1;
+      }
+      map[key].applications += (st.applications_count || 0);
+    });
+
+    return Object.values(map).map(item => ({
+      ...item,
+      placementRate: item.total > 0 ? ((item.placed / item.total) * 100).toFixed(1) : '0.0'
+    })).sort((a, b) => b.total - a.total);
+  }, [students]);
+
+  // Employer / Company recruitment outcomes from officerRecruiters
+  const companyStats = useMemo(() => {
+    if (!officerRecruiters || officerRecruiters.length === 0) return [];
+    return officerRecruiters.map(r => ({
+      id: r.id,
+      company_name: r.company_name || 'Partner Employer',
+      recruiter_name: r.recruiter_name || 'N/A',
+      approval_status: r.approval_status || 'Pending',
+      jobs_count: r.posted_jobs_count || 0,
+      applications_count: r.applications_count || 0,
+      shortlisted_count: r.shortlisted_count || 0,
+      interviews_count: r.interviews_count || 0,
+      selected_count: r.selected_count || 0
+    })).sort((a, b) => (b.selected_count - a.selected_count) || (b.applications_count - a.applications_count));
+  }, [officerRecruiters]);
+
+  // Salary package stats calculated from officerJobs and applications
+  const packageStats = useMemo(() => {
+    const packages = [];
+    if (officerJobs && officerJobs.length > 0) {
+      officerJobs.forEach(j => {
+        if (j.package_lpa && Number(j.package_lpa) > 0) {
+          packages.push({
+            job_title: j.job_title,
+            company_name: j.company_name,
+            package_lpa: Number(j.package_lpa)
+          });
+        }
+      });
+    }
+    if (applications && applications.length > 0) {
+      applications.forEach(app => {
+        const pkg = app.job_detail?.package_lpa;
+        const comp = app.company_name || app.job_detail?.recruiter_detail?.company_name || 'Employer';
+        const role = app.job_title || app.job_detail?.job_title;
+        if (pkg && Number(pkg) > 0 && !packages.some(p => p.job_title === role && p.company_name === comp)) {
+          packages.push({
+            job_title: role,
+            company_name: comp,
+            package_lpa: Number(pkg)
+          });
+        }
+      });
+    }
+
+    if (packages.length === 0) {
+      return { hasData: false, max: 0, min: 0, avg: '0.00', list: [] };
+    }
+
+    const values = packages.map(p => p.package_lpa);
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const avg = (values.reduce((sum, v) => sum + v, 0) / values.length).toFixed(2);
+
+    return {
+      hasData: true,
+      max,
+      min,
+      avg,
+      list: packages.sort((a, b) => b.package_lpa - a.package_lpa)
+    };
+  }, [officerJobs, applications]);
+
+  // Handlers for CSV Downloads
+  const handleExportInstitutionalCSV = () => {
+    const headers = ['Metric', 'Value', 'Context / Calculation'];
+    const placementRateStr = regStudentsCount > 0 ? ((uniquePlacedCount / regStudentsCount) * 100).toFixed(1) + '%' : '0.0%';
+    const rows = [
+      ['Institution Name', institutionName, 'Campus Placement Cell'],
+      ['Total Registered Students', regStudentsCount, 'Campus registered candidates'],
+      ['Students Applied', studentsAppliedCount, 'Candidates who submitted at least one application'],
+      ['Total Applications', totalAppsCount, 'Total job applications submitted'],
+      ['Shortlisted Applications', shortlistedAppsCount, 'Applications reaching shortlist/interview/selection'],
+      ['Total Interviews Scheduled', interviewsScheduledCount, 'Total non-cancelled interview rounds'],
+      ['Technical Interviews', techInterviewsCount, 'Scheduled technical rounds'],
+      ['HR Interviews', hrInterviewsCount, 'Scheduled HR rounds'],
+      ['Selected Candidates (Placed)', uniquePlacedCount, 'Unique students with at least one job selection'],
+      ['Total Job Selection Offers', totalOffersCount, 'Total candidate application selections across all roles'],
+      ['Rejected Applications', rejectedStudentsCount, 'Applications not progressing to offer'],
+      ['Placement Rate', placementRateStr, 'Unique placed candidates ÷ Total registered students'],
+      ['Active Approved Companies', approvedCompaniesCount, 'Verified and approved employers'],
+      ['Active Campus Jobs', activeJobsCount, 'Current open campus job postings'],
+      ['Scheduled Drives', upcomingDrivesCount, 'Upcoming campus placement drives']
+    ];
+    exportToCsv('Campus_Placement_Institutional_Report.csv', headers, rows);
+  };
+
+  const handleExportDepartmentCSV = () => {
+    const headers = ['Program / Degree', 'Branch / Specialization', 'Total Registered', 'Placed Students', 'Seeking Students', 'Placement Rate (%)'];
+    const rows = departmentStats.map(d => [
+      d.program,
+      d.branch,
+      d.total,
+      d.placed,
+      d.seeking,
+      `${d.placementRate}%`
+    ]);
+    exportToCsv('Campus_Placement_Department_Summary.csv', headers, rows);
+  };
+
+  const handleExportCompanyCSV = () => {
+    const headers = ['Company Name', 'Recruiter Contact', 'Approval Status', 'Jobs Posted', 'Applications Received', 'Candidates Shortlisted', 'Interviews Scheduled', 'Offers Confirmed'];
+    const rows = companyStats.map(c => [
+      c.company_name,
+      c.recruiter_name,
+      c.approval_status,
+      c.jobs_count,
+      c.applications_count,
+      c.shortlisted_count,
+      c.interviews_count,
+      c.selected_count
+    ]);
+    exportToCsv('Campus_Placement_Company_Outcomes.csv', headers, rows);
+  };
+
+  if (loading) {
+    return (
+      <div className="officer-dashboard-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="empty-state-box" style={{ border: 'none', background: 'transparent' }}>
+          <Sparkles size={28} className="spin-gear-icon" color="#10B981" />
+          <p>Loading Placement Cell Workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Filtered Lists
   const filteredStudents = students.filter(student => {
@@ -418,29 +656,39 @@ export default function OfficerDashboard() {
     <div className="officer-dashboard-layout">
       {/* Sidebar Navigation */}
       <aside className="officer-sidebar">
-        <div>
-          <div className="officer-sidebar-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-            <div className="brand-icon-amber" style={{ background: 'transparent', boxShadow: 'none' }}>
-              <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
-            </div>
-            <span className="brand-title-text">PLACENTRA</span>
+        <div className="officer-sidebar-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+          <div className="brand-icon-amber" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <img src="/placentra-logo.png" alt="PLACENTRA Logo" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
           </div>
+          <span className="brand-title-text">PLACENTRA</span>
+        </div>
 
+        <div className="officer-sidebar-nav-wrap">
           <nav className="officer-nav-menu">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  className={`nav-item-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+            {navGroups.map((group) => (
+              <div key={group.title} className="nav-group-section">
+                <div className="nav-group-title">{group.title}</div>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      className={`nav-item-btn ${isActive ? 'active' : ''}`}
+                      onClick={() => setActiveTab(item.id)}
+                    >
+                      <Icon size={18} />
+                      <span>{item.label}</span>
+                      {item.badge != null && (
+                        <span className={`nav-item-badge ${item.badgeGreen ? 'badge-green' : ''}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </div>
 
@@ -462,10 +710,12 @@ export default function OfficerDashboard() {
           </div>
 
           <div className="header-actions">
-            <button className="btn-create-drive-header" onClick={() => setShowDriveModal(true)}>
-              <PlusCircle size={18} />
-              <span>+ Create Placement Drive</span>
-            </button>
+            {(activeTab === 'dashboard' || activeTab === 'drives') && (
+              <button className="btn-create-drive-header" onClick={() => setShowDriveModal(true)}>
+                <PlusCircle size={18} />
+                <span>Create Placement Drive</span>
+              </button>
+            )}
             <div className="officer-avatar-circle" title={institutionName}>
               {institutionName ? institutionName[0].toUpperCase() : 'I'}
             </div>
@@ -498,8 +748,14 @@ export default function OfficerDashboard() {
                       <Building2 size={22} />
                     </div>
                   </div>
-                  <span className="off-stat-val">{approvedCompaniesCount} / {recruitersCount}</span>
-                  <span className="off-stat-sub">{pendingRecruiterCount} Pending Approvals</span>
+                  <span className="off-stat-val">{approvedCompaniesCount} <span style={{ fontSize: '18px', fontWeight: 600, color: '#64748B' }}>/ {recruitersCount}</span></span>
+                  <span className="off-stat-sub">
+                    {pendingRecruiterCount > 0 ? (
+                      <span style={{ color: '#D97706', fontWeight: 700 }}>{pendingRecruiterCount} Pending Approvals</span>
+                    ) : (
+                      'All accounts approved'
+                    )}
+                  </span>
                 </div>
 
                 {/* 3. Active Placement Drives */}
@@ -522,94 +778,80 @@ export default function OfficerDashboard() {
                       <CheckCircle2 size={22} />
                     </div>
                   </div>
-                  <span className="off-stat-val">{placedStudentsCount}</span>
-                  <span className="off-stat-sub">Hired with confirmed offers</span>
+                  <span className="off-stat-val">{uniquePlacedCount}</span>
+                  <span className="off-stat-sub">
+                    {totalOffersCount > uniquePlacedCount 
+                      ? `${totalOffersCount} total selection offers`
+                      : 'Candidates with job selections'}
+                  </span>
                 </div>
               </div>
 
-              {/* Placement Overview Summary Card */}
-              <div className="dashboard-card-panel">
-                <div className="panel-header">
-                  <h3>Campus Placement Overview</h3>
-                  <span className="overview-badge">{institutionName}</span>
+              {/* Action-Oriented Pending Verification & Approvals Section */}
+              {(pendingRecruiterCount > 0 || pendingJobCount > 0) ? (
+                <div className="pending-approvals-panel">
+                  <div className="pending-panel-header">
+                    <div className="pending-panel-title">
+                      <AlertCircle size={18} color="#D97706" />
+                      <span>Action Items Requiring Officer Review</span>
+                    </div>
+                    <span className="pending-count-badge">
+                      {(pendingRecruiterCount || 0) + (pendingJobCount || 0)} Pending
+                    </span>
+                  </div>
+                  <div className="pending-items-grid">
+                    {pendingRecruiterCount > 0 && (
+                      <div className="pending-item-card">
+                        <div className="pending-item-info">
+                          <div className="pending-item-title">
+                            <Building2 size={16} color="#D97706" />
+                            <span>Recruiter Approvals Pending</span>
+                          </div>
+                          <p className="pending-item-desc">
+                            <strong>{pendingRecruiterCount}</strong> company registration{pendingRecruiterCount === 1 ? '' : 's'} awaiting verification.
+                          </p>
+                        </div>
+                        <button 
+                          className="btn-pending-action"
+                          onClick={() => {
+                            setRecruiterStatusFilter('Pending');
+                            setActiveTab('recruiters');
+                          }}
+                        >
+                          Review Recruiters
+                        </button>
+                      </div>
+                    )}
+                    {pendingJobCount > 0 && (
+                      <div className="pending-item-card">
+                        <div className="pending-item-info">
+                          <div className="pending-item-title">
+                            <Briefcase size={16} color="#D97706" />
+                            <span>Job Postings Awaiting Approval</span>
+                          </div>
+                          <p className="pending-item-desc">
+                            <strong>{pendingJobCount}</strong> campus job opportunity{pendingJobCount === 1 ? '' : 'ies'} awaiting authorization.
+                          </p>
+                        </div>
+                        <button 
+                          className="btn-pending-action"
+                          onClick={() => {
+                            setJobStatusFilter('Pending Approval');
+                            setActiveTab('jobs');
+                          }}
+                        >
+                          Review Jobs
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="placement-overview-grid">
-                  <div className="overview-metric">
-                    <span className="metric-val">{regStudentsCount}</span>
-                    <span className="metric-lbl">Total Registered</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val">{studentsAppliedCount}</span>
-                    <span className="metric-lbl">Students Applied</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val">{totalAppsCount}</span>
-                    <span className="metric-lbl">Total Applications</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val">{shortlistedAppsCount}</span>
-                    <span className="metric-lbl">Shortlisted</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val">{interviewsScheduledCount}</span>
-                    <span className="metric-lbl">Interviews Scheduled</span>
-                  </div>
+              ) : (
+                <div className="pending-status-clean-bar">
+                  <CheckCircle2 size={18} color="#10B981" />
+                  <span>All recruiter registrations and job postings are reviewed and up to date.</span>
                 </div>
-
-                <div className="placement-overview-grid" style={{ marginTop: '16px' }}>
-                  <div className="overview-metric">
-                    <span className="metric-val" style={{ color: '#7C3AED' }}>{techInterviewsCount}</span>
-                    <span className="metric-lbl">Technical Interviews</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val" style={{ color: '#047857' }}>{hrInterviewsCount}</span>
-                    <span className="metric-lbl">HR Interviews</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val" style={{ color: '#16A34A' }}>{placedStudentsCount}</span>
-                    <span className="metric-lbl">Selected / Placed</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val" style={{ color: '#DC2626' }}>{rejectedStudentsCount}</span>
-                    <span className="metric-lbl">Rejected</span>
-                  </div>
-                  <div className="overview-metric">
-                    <span className="metric-val" style={{ color: '#D97706' }}>{pendingJobCount}</span>
-                    <span className="metric-lbl">Pending Job Approvals</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions Card */}
-              <div className="quick-actions-card">
-                <h4 className="quick-actions-title">Placement Cell Quick Actions</h4>
-                <div className="quick-actions-grid">
-                  <button className="btn-quick-action" onClick={() => setShowDriveModal(true)}>
-                    <PlusCircle size={16} />
-                    <span>Create Drive</span>
-                  </button>
-                  <button className="btn-quick-action" onClick={() => setActiveTab('students')}>
-                    <GraduationCap size={16} />
-                    <span>View Students</span>
-                  </button>
-                  <button className="btn-quick-action" onClick={() => setActiveTab('recruiters')}>
-                    <Building2 size={16} />
-                    <span>View Recruiters</span>
-                  </button>
-                  <button className="btn-quick-action" onClick={() => setActiveTab('jobs')}>
-                    <Briefcase size={16} />
-                    <span>View Jobs</span>
-                  </button>
-                  <button className="btn-quick-action" onClick={() => setActiveTab('applications')}>
-                    <FileText size={16} />
-                    <span>View Applications</span>
-                  </button>
-                  <button className="btn-quick-action" onClick={() => setActiveTab('interviews')}>
-                    <Clock size={16} />
-                    <span>View Interviews</span>
-                  </button>
-                </div>
-              </div>
+              )}
 
               {/* Campus Recruitment Pipeline */}
               <div className="dashboard-card-panel">
@@ -639,8 +881,8 @@ export default function OfficerDashboard() {
                   </div>
                   <ChevronRight size={20} className="pipeline-arrow" />
                   <div className="pipeline-step step-success">
-                    <div className="step-count">{placedStudentsCount}</div>
-                    <div className="step-name">Selected & Placed</div>
+                    <div className="step-count">{totalOffersCount}</div>
+                    <div className="step-name">Selected (Offers)</div>
                   </div>
                 </div>
               </div>
@@ -649,38 +891,37 @@ export default function OfficerDashboard() {
               <div className="dashboard-card-panel">
                 <div className="panel-header">
                   <h3>Recent Placement Activity</h3>
-                  <span className="overview-badge">Real Database Log</span>
+                  <span className="overview-badge" style={{ background: '#F1F5F9', color: '#475569', borderColor: '#CBD5E1' }}>
+                    Recent Activity
+                  </span>
                 </div>
                 {activities.length === 0 ? (
-                  <div className="empty-state-box">
-                    <Clock size={36} color="#64748B" />
-                    <p className="empty-state-text">No recent placement activity recorded in database.</p>
+                  <div className="empty-state-box compact">
+                    <Clock size={32} color="#94A3B8" />
+                    <p className="empty-state-text">No placement activity recorded yet.</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {activities.map(act => (
                       <div 
                         key={act.id} 
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '12px 16px',
-                          background: '#F8FAFC',
-                          borderRadius: '8px',
-                          border: '1px solid #E2E8F0'
-                        }}
+                        className="activity-item-compact"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                           <div style={{
                             width: '8px',
                             height: '8px',
                             borderRadius: '50%',
-                            background: act.type === 'selection' ? '#10B981' : act.type === 'interview' ? '#F59E0B' : act.type === 'shortlist' ? '#8B5CF6' : '#3B82F6'
+                            flexShrink: 0,
+                            background: act.type === 'selection' ? '#10B981' : act.type === 'interview' ? '#F59E0B' : act.type === 'shortlist' ? '#8B5CF6' : act.type === 'rejection' ? '#EF4444' : '#3B82F6'
                           }} />
-                          <span style={{ fontSize: '14px', color: '#0F172A', fontWeight: 500 }}>{act.text}</span>
+                          <span style={{ fontSize: '13.5px', color: '#0F172A', fontWeight: 500 }}>{act.text}</span>
                         </div>
-                        {act.date && <span style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', marginLeft: '12px' }}>{act.date}</span>}
+                        {act.date && (
+                          <span style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', marginLeft: '12px', flexShrink: 0 }}>
+                            {act.date}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -699,12 +940,12 @@ export default function OfficerDashboard() {
                 </div>
 
                 {drives.length === 0 ? (
-                  <div className="empty-state-box">
-                    <Calendar size={36} color="#64748B" />
-                    <p className="empty-state-text">No upcoming placement drives scheduled.</p>
+                  <div className="empty-state-box compact">
+                    <Calendar size={32} color="#94A3B8" />
+                    <p className="empty-state-text">No upcoming placement drives scheduled for this campus.</p>
                     <button className="btn-create-first-drive" onClick={() => setShowDriveModal(true)}>
-                      <PlusCircle size={16} />
-                      <span>Create Placement Drive</span>
+                      <PlusCircle size={15} />
+                      <span>Schedule Placement Drive</span>
                     </button>
                   </div>
                 ) : (
@@ -735,9 +976,9 @@ export default function OfficerDashboard() {
                               </span>
                             </td>
                             <td>
-                              <button className="btn-table-action" onClick={() => setActiveTab('drives')}>
-                                <Eye size={14} />
-                                <span>View Details</span>
+                              <button className="btn-table-action" onClick={() => setActiveTab('drives')} title="Manage in Placement Drives">
+                                <ExternalLink size={14} />
+                                <span>Manage Drive</span>
                               </button>
                             </td>
                           </tr>
@@ -1390,8 +1631,10 @@ export default function OfficerDashboard() {
           {activeTab === 'placements' && (
             <div className="dashboard-card-panel">
               <div className="panel-header">
-                <h3>Successful Student Placements & Confirmed Offers</h3>
-                <span className="overview-badge">{placedStudentsCount} Placed Candidates</span>
+                <h3>Campus Student Placement Selections</h3>
+                <span className="overview-badge">
+                  {uniquePlacedCount} Placed Candidates {totalOffersCount > uniquePlacedCount ? `(${totalOffersCount} Offers)` : ''}
+                </span>
               </div>
               {applications.filter(a => (a.status || a.application_status) === 'Selected').length === 0 ? (
                 <div className="empty-state-box">
@@ -1435,47 +1678,282 @@ export default function OfficerDashboard() {
 
           {/* Reports Tab */}
           {activeTab === 'reports' && (
-            <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Institutional Placement Reports & Statistics</h3>
+            <div className="reports-page-wrapper">
+              {/* Header and Toolbar */}
+              <div className="reports-toolbar">
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    Institutional Placement Analytics & Reports
+                  </h3>
+                  <span style={{ fontSize: '13px', color: '#64748B' }}>
+                    Authoritative campus metrics verified for {institutionName}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div className="reports-time-filter">
+                    <span className="reports-filter-label">Filter:</span>
+                    {['all', 'year', '90days', '30days'].map(f => (
+                      <button
+                        key={f}
+                        className={`notif-filter-btn ${reportTimeFilter === f ? 'active' : ''}`}
+                        onClick={() => setReportTimeFilter(f)}
+                      >
+                        {f === 'all' ? 'All Time' : f === 'year' ? 'This Year' : f === '90days' ? 'Last 90 Days' : 'Last 30 Days'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    className="btn-export-csv"
+                    onClick={handleExportInstitutionalCSV}
+                    title="Export institutional placement summary to CSV"
+                  >
+                    <Download size={15} />
+                    <span>Export Summary CSV</span>
+                  </button>
+                </div>
               </div>
-              <div className="company-info-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                <div className="info-item">
-                  <span className="info-label">Total Registered Students</span>
-                  <span className="info-val">{regStudentsCount} Candidates</span>
+
+              {/* Executive KPI Summary Cards */}
+              <div className="reports-kpi-grid">
+                <div className="report-kpi-card">
+                  <div className="report-kpi-header">
+                    <span className="report-kpi-label">Registered Candidates</span>
+                    <GraduationCap size={18} color="#3B82F6" />
+                  </div>
+                  <span className="report-kpi-val">{regStudentsCount}</span>
+                  <span className="report-kpi-sub">Total student profiles</span>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Students Who Applied</span>
-                  <span className="info-val">{studentsAppliedCount} Candidates</span>
+
+                <div className="report-kpi-card">
+                  <div className="report-kpi-header">
+                    <span className="report-kpi-label">Active Applicants</span>
+                    <FileText size={18} color="#6366F1" />
+                  </div>
+                  <span className="report-kpi-val">{studentsAppliedCount}</span>
+                  <span className="report-kpi-sub">{totalAppsCount} applications submitted</span>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Total Applications</span>
-                  <span className="info-val">{totalAppsCount} Submissions</span>
+
+                <div className="report-kpi-card kpi-accent">
+                  <div className="report-kpi-header">
+                    <span className="report-kpi-label">Selected Candidates</span>
+                    <CheckCircle2 size={18} color="#10B981" />
+                  </div>
+                  <span className="report-kpi-val">{uniquePlacedCount}</span>
+                  <span className="report-kpi-sub">
+                    {totalOffersCount > uniquePlacedCount 
+                      ? `${totalOffersCount} total selection offers`
+                      : 'Candidates with job selections'}
+                  </span>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Shortlisted Candidates</span>
-                  <span className="info-val">{shortlistedAppsCount} Candidates</span>
+
+                <div className="report-kpi-card kpi-accent">
+                  <div className="report-kpi-header">
+                    <span className="report-kpi-label">Placement Rate</span>
+                    <TrendingUp size={18} color="#059669" />
+                  </div>
+                  <span className="report-kpi-val">
+                    {regStudentsCount > 0 ? ((uniquePlacedCount / regStudentsCount) * 100).toFixed(1) + '%' : '0.0%'}
+                  </span>
+                  <span className="report-kpi-sub">
+                    Placed Candidates ÷ Registered ({uniquePlacedCount}/{regStudentsCount || 0})
+                  </span>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Technical Interviews Scheduled</span>
-                  <span className="info-val">{techInterviewsCount} Rounds</span>
+              </div>
+
+              {/* Department & Program-Wise Placement Performance */}
+              <div className="reports-section-wrapper">
+                <div className="reports-section-header">
+                  <div className="reports-section-title-group">
+                    <h4>Department & Program Placement Breakdown</h4>
+                    <p>Aggregated from verified candidate profiles and confirmed selections.</p>
+                  </div>
+                  {departmentStats.length > 0 && (
+                    <button 
+                      className="btn-export-csv"
+                      onClick={handleExportDepartmentCSV}
+                      title="Download Department-wise Breakdown CSV"
+                    >
+                      <Download size={14} />
+                      <span>Export Department CSV</span>
+                    </button>
+                  )}
                 </div>
-                <div className="info-item">
-                  <span className="info-label">HR Interviews Scheduled</span>
-                  <span className="info-val">{hrInterviewsCount} Rounds</span>
+
+                {departmentStats.length === 0 ? (
+                  <div className="empty-state-box compact">
+                    <GraduationCap size={32} color="#94A3B8" />
+                    <p className="empty-state-text">No departmental candidate data available to aggregate.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="officer-table">
+                      <thead>
+                        <tr>
+                          <th>Program / Degree</th>
+                          <th>Branch / Specialization</th>
+                          <th>Registered Candidates</th>
+                          <th>Placed Offers</th>
+                          <th>Seeking Placement</th>
+                          <th>Placement Progress</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {departmentStats.map((item, idx) => (
+                          <tr key={`${item.program}-${item.branch}-${idx}`}>
+                            <td className="title-text">{item.program}</td>
+                            <td>{item.branch}</td>
+                            <td><strong>{item.total}</strong></td>
+                            <td><span style={{ color: '#059669', fontWeight: 700 }}>{item.placed}</span></td>
+                            <td><span style={{ color: '#D97706', fontWeight: 600 }}>{item.seeking}</span></td>
+                            <td>
+                              <div className="progress-cell-wrap">
+                                <div className="progress-track">
+                                  <div 
+                                    className="progress-fill" 
+                                    style={{ width: `${Math.min(Number(item.placementRate), 100)}%` }} 
+                                  />
+                                </div>
+                                <span className="progress-pct-text">{item.placementRate}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Employer / Company Recruitment Outcomes */}
+              <div className="reports-section-wrapper">
+                <div className="reports-section-header">
+                  <div className="reports-section-title-group">
+                    <h4>Employer Recruitment Outcomes</h4>
+                    <p>Hiring activity, application volumes, and student selections by recruiting organization.</p>
+                  </div>
+                  {companyStats.length > 0 && (
+                    <button 
+                      className="btn-export-csv"
+                      onClick={handleExportCompanyCSV}
+                      title="Download Employer Outcomes CSV"
+                    >
+                      <Download size={14} />
+                      <span>Export Employer CSV</span>
+                    </button>
+                  )}
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Confirmed Placements</span>
-                  <span className="info-val">{placedStudentsCount} Students</span>
+
+                {companyStats.length === 0 ? (
+                  <div className="empty-state-box compact">
+                    <Building2 size={32} color="#94A3B8" />
+                    <p className="empty-state-text">No recruiting partners registered yet.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="officer-table">
+                      <thead>
+                        <tr>
+                          <th>Recruiting Organization</th>
+                          <th>Official Representative</th>
+                          <th>Approval Status</th>
+                          <th>Jobs Posted</th>
+                          <th>Applications Received</th>
+                          <th>Shortlisted</th>
+                          <th>Interviews</th>
+                          <th>Confirmed Selections</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {companyStats.map((comp) => (
+                          <tr key={comp.id}>
+                            <td className="title-text">{comp.company_name}</td>
+                            <td>{comp.recruiter_name}</td>
+                            <td>
+                              <span className={`status-pill ${comp.approval_status === 'Approved' ? 'pill-completed' : comp.approval_status === 'Pending' ? 'pill-upcoming' : 'pill-rejected'}`}>
+                                {comp.approval_status}
+                              </span>
+                            </td>
+                            <td><strong>{comp.jobs_count}</strong></td>
+                            <td>{comp.applications_count}</td>
+                            <td>{comp.shortlisted_count}</td>
+                            <td>{comp.interviews_count}</td>
+                            <td>
+                              <span style={{ color: comp.selected_count > 0 ? '#059669' : '#64748B', fontWeight: 700 }}>
+                                {comp.selected_count}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Salary Package Analysis */}
+              <div className="reports-section-wrapper">
+                <div className="reports-section-header">
+                  <div className="reports-section-title-group">
+                    <h4>Salary & Compensation Analysis (LPA)</h4>
+                    <p>Annual package metrics computed from approved campus job postings and offer records.</p>
+                  </div>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Rejected Applications</span>
-                  <span className="info-val">{rejectedStudentsCount} Applications</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Partner Employers</span>
-                  <span className="info-val">{approvedCompaniesCount} Approved Companies</span>
-                </div>
+
+                {packageStats.hasData ? (
+                  <>
+                    <div className="packages-grid">
+                      <div className="package-kpi-card">
+                        <span className="package-kpi-title">Highest Package Offered</span>
+                        <span className="package-kpi-val" style={{ color: '#047857' }}>{packageStats.max} LPA</span>
+                        <span className="package-kpi-sub">Maximum annual compensation</span>
+                      </div>
+                      <div className="package-kpi-card">
+                        <span className="package-kpi-title">Average Package</span>
+                        <span className="package-kpi-val" style={{ color: '#2563EB' }}>{packageStats.avg} LPA</span>
+                        <span className="package-kpi-sub">Across documented job roles</span>
+                      </div>
+                      <div className="package-kpi-card">
+                        <span className="package-kpi-title">Minimum Package</span>
+                        <span className="package-kpi-val" style={{ color: '#475569' }}>{packageStats.min} LPA</span>
+                        <span className="package-kpi-sub">Base threshold package</span>
+                      </div>
+                      <div className="package-kpi-card">
+                        <span className="package-kpi-title">Package-Disclosed Roles</span>
+                        <span className="package-kpi-val">{packageStats.list.length}</span>
+                        <span className="package-kpi-sub">Roles with package specified</span>
+                      </div>
+                    </div>
+
+                    <div className="table-responsive">
+                      <table className="officer-table">
+                        <thead>
+                          <tr>
+                            <th>Job Role Title</th>
+                            <th>Hiring Organization</th>
+                            <th>Offered Package (LPA)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {packageStats.list.slice(0, 8).map((p, pIdx) => (
+                            <tr key={pIdx}>
+                              <td className="title-text">{p.job_title}</td>
+                              <td>{p.company_name}</td>
+                              <td><strong>{p.package_lpa} LPA</strong></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-state-box compact" style={{ border: '1px dashed #CBD5E1' }}>
+                    <Briefcase size={28} color="#94A3B8" />
+                    <p className="empty-state-text" style={{ fontSize: '13.5px' }}>
+                      No salary packages have been specified on job postings yet. Package analytics will automatically compute once employers disclose package figures (LPA).
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1483,19 +1961,111 @@ export default function OfficerDashboard() {
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
             <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>Placement Cell Notifications</h3>
+              <div className="notifications-header-row">
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    Placement Cell Notifications
+                  </h3>
+                  <span style={{ fontSize: '13px', color: '#64748B' }}>
+                    System alerts and communication log for {officerName}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="notifications-filter-pills">
+                    <button
+                      className={`notif-filter-btn ${notificationFilter === 'all' ? 'active' : ''}`}
+                      onClick={() => setNotificationFilter('all')}
+                    >
+                      All ({notifications.length})
+                    </button>
+                    <button
+                      className={`notif-filter-btn ${notificationFilter === 'unread' ? 'active' : ''}`}
+                      onClick={() => setNotificationFilter('unread')}
+                    >
+                      Unread ({unreadNotifsCount})
+                    </button>
+                  </div>
+
+                  {unreadNotifsCount > 0 && (
+                    <button
+                      className="btn-mark-all-read"
+                      onClick={handleMarkAllNotificationsRead}
+                      disabled={markingAllRead}
+                      title="Mark all notifications as read"
+                    >
+                      <CheckCheck size={15} />
+                      <span>{markingAllRead ? 'Updating...' : 'Mark All as Read'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              {notifications.length === 0 ? (
-                <div className="empty-state-box">
-                  <Bell size={36} color="#64748B" />
-                  <p className="empty-state-text">No notifications available.</p>
+
+              {filteredNotifications.length === 0 ? (
+                <div className="empty-state-box compact">
+                  <Bell size={32} color="#94A3B8" />
+                  <p className="empty-state-text">
+                    {notificationFilter === 'unread' 
+                      ? 'You have caught up with all notifications.'
+                      : 'No notifications available for your account.'}
+                  </p>
                 </div>
               ) : (
-                <div>
-                  {notifications.map((n) => (
-                    <div key={n.id} style={{ padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <strong>{n.title}</strong>: {n.message}
+                <div className="notifications-list">
+                  {filteredNotifications.map((n) => (
+                    <div 
+                      key={n.id} 
+                      className={`notification-card ${!n.is_read ? 'unread' : ''}`}
+                    >
+                      <div className="notif-card-header">
+                        <div className="notif-title-group">
+                          {!n.is_read && (
+                            <span 
+                              style={{ 
+                                width: '8px', 
+                                height: '8px', 
+                                borderRadius: '50%', 
+                                background: '#10B981', 
+                                display: 'inline-block',
+                                flexShrink: 0
+                              }} 
+                            />
+                          )}
+                          <span className="notif-title">{n.title}</span>
+                          <span className="notif-type-tag">
+                            {n.notification_type || 'General'}
+                          </span>
+                        </div>
+
+                        <div className="notif-card-meta">
+                          <span className="notif-time">
+                            {n.created_at ? new Date(n.created_at).toLocaleString(undefined, {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : ''}
+                          </span>
+                          {!n.is_read ? (
+                            <button
+                              className="btn-mark-read"
+                              onClick={() => handleMarkNotificationRead(n.id)}
+                              disabled={markingReadId === n.id}
+                              title="Mark as read"
+                            >
+                              <Check size={13} />
+                              <span>{markingReadId === n.id ? 'Saving...' : 'Mark as read'}</span>
+                            </button>
+                          ) : (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11.5px', color: '#94A3B8' }}>
+                              <CheckCheck size={13} color="#94A3B8" /> Read
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="notif-message">{n.message}</p>
                     </div>
                   ))}
                 </div>
@@ -1511,7 +2081,7 @@ export default function OfficerDashboard() {
                   <div>
                     <h3>Placement Cell Account & Security Settings</h3>
                     <p style={{ fontSize: '13.5px', color: '#64748B', margin: '4px 0 0 0' }}>
-                      Manage your placement officer account credentials, institution details, and cell security.
+                      Verified placement officer credentials and institutional profile details.
                     </p>
                   </div>
                 </div>
@@ -1535,11 +2105,6 @@ export default function OfficerDashboard() {
                   <div className="info-item">
                     <span className="info-label">Mobile Contact</span>
                     <span className="info-val">{profile?.mobile_number || 'N/A'}</span>
-                  </div>
-
-                  <div className="info-item">
-                    <span className="info-label">Account Role</span>
-                    <span className="info-val">Placement Officer</span>
                   </div>
 
                   <div className="info-item">

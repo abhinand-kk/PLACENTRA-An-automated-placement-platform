@@ -144,6 +144,20 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
     }
   };
 
+  const handleDownloadOfferLetter = async (appId) => {
+    try {
+      const response = await api.get(`/api/v1/applications/${appId}/offer-letter/`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error("Failed to download offer letter:", err);
+      alert("Offer letter could not be retrieved at this time.");
+    }
+  };
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'profile', label: 'Profile', icon: User },
@@ -983,9 +997,34 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
                               {appDate}
                             </td>
                             <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                              <span className={`badge-tag ${getStatusBadgeClass(appStatus)}`} style={{ padding: '6px 14px' }}>
-                                {appStatus}
-                              </span>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                                <span className={`badge-tag ${getStatusBadgeClass(appStatus)}`} style={{ padding: '6px 14px' }}>
+                                  {appStatus}
+                                </span>
+                                {(appStatus === 'Selected' || app.application_status === 'Selected') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadOfferLetter(app.id)}
+                                    style={{
+                                      padding: '5px 12px',
+                                      fontSize: '12px',
+                                      background: '#ECFDF5',
+                                      color: '#047857',
+                                      border: '1px solid #A7F3D0',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    title="View / Download Candidate Provisional Offer Letter PDF"
+                                  >
+                                    <FileText size={13} />
+                                    <span>Offer Letter</span>
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

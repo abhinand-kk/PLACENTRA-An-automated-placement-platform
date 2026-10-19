@@ -141,16 +141,75 @@ export default function RecruiterDashboard() {
   const handleUpdateApplicantStatus = async (applicationId, newStatus) => {
     try {
       setActionMessage('');
-      await api.patch(`/api/v1/applications/${applicationId}/status/`, { status: newStatus });
-      setActionMessage(`Candidate status updated to ${newStatus}`);
+      const res = await api.patch(`/api/v1/applications/${applicationId}/status/`, { status: newStatus });
+      if (newStatus === 'Selected') {
+        if (res.data?.email_sent) {
+          setActionMessage(`Candidate marked as Selected! Offer letter email delivered to ${res.data?.recipient_email || 'the student'}.`);
+        } else if (res.data?.email_sent === false) {
+          setActionMessage(`Candidate marked as Selected, but offer letter email delivery failed. You can retry sending from the review modal.`);
+        } else {
+          setActionMessage(`Candidate status updated to Selected.`);
+        }
+      } else {
+        setActionMessage(`Candidate status updated to ${newStatus}`);
+      }
       if (selectedApp && selectedApp.id === applicationId) {
-        setSelectedApp(prev => prev ? { ...prev, application_status: newStatus } : null);
+        setSelectedApp(prev => prev ? { ...prev, ...res.data, application_status: newStatus } : null);
       }
       fetchRecruiterDashboardData();
-      setTimeout(() => setActionMessage(''), 4000);
+      setTimeout(() => setActionMessage(''), 5000);
     } catch (err) {
       console.error("Failed to update status:", err);
-      setActionMessage('Failed to update candidate status.');
+      setActionMessage(err.response?.data?.error || 'Failed to update candidate status.');
+      setTimeout(() => setActionMessage(''), 5000);
+    }
+  };
+
+  // Handle Secure Candidate Offer Letter Viewing/Downloading
+  const handleDownloadOfferLetter = async (appId) => {
+    try {
+      const response = await api.get(`/api/v1/applications/${appId}/offer-letter/`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error("Failed to fetch offer letter:", err);
+      let errorMsg = 'Failed to generate or load offer letter document.';
+      if (err.response && err.response.data) {
+        if (err.response.data instanceof Blob) {
+          try {
+            const text = await err.response.data.text();
+            const json = JSON.parse(text);
+            errorMsg = json.error || json.detail || errorMsg;
+          } catch (e) {
+            console.warn("Could not parse error blob", e);
+          }
+        } else if (typeof err.response.data === 'object') {
+          errorMsg = err.response.data.error || err.response.data.detail || errorMsg;
+        }
+      }
+      alert(errorMsg);
+    }
+  };
+
+  // Handle Resending Selection Offer Letter Email
+  const handleResendOfferEmail = async (appId) => {
+    try {
+      setActionMessage('Sending offer letter email...');
+      const res = await api.post(`/api/v1/applications/${appId}/resend-offer-email/`);
+      setActionMessage(res.data?.message || 'Offer letter email sent successfully!');
+      if (selectedApp && selectedApp.id === appId) {
+        setSelectedApp(prev => prev ? { ...prev, offer_letter_sent: true } : null);
+      }
+      fetchRecruiterDashboardData();
+      setTimeout(() => setActionMessage(''), 5000);
+    } catch (err) {
+      console.error("Failed to resend offer email:", err);
+      const msg = err.response?.data?.error || 'Failed to send offer letter email.';
+      setActionMessage(msg);
+      setTimeout(() => setActionMessage(''), 5000);
     }
   };
 
@@ -669,6 +728,17 @@ export default function RecruiterDashboard() {
                                   <span>Select</span>
                                 </button>
 
+                                {(app.status === 'Selected' || app.application_status === 'Selected') && (
+                                  <button 
+                                    className="btn-action-view" 
+                                    title="View / Download Candidate Offer Letter PDF"
+                                    onClick={() => handleDownloadOfferLetter(app.id)}
+                                  >
+                                    <FileText size={14} />
+                                    <span>Offer Letter</span>
+                                  </button>
+                                )}
+
                                 <button 
                                   className="btn-action-reject" 
                                   title="Reject Candidate"
@@ -893,6 +963,15 @@ export default function RecruiterDashboard() {
                               >
                                 Select
                               </button>
+                              {(app.status === 'Selected' || app.application_status === 'Selected') && (
+                                <button 
+                                  className="btn-action-view" 
+                                  title="View / Download Candidate Offer Letter PDF"
+                                  onClick={() => handleDownloadOfferLetter(app.id)}
+                                >
+                                  Offer Letter
+                                </button>
+                              )}
                               <button 
                                 className="btn-action-reject" 
                                 onClick={() => handleUpdateApplicantStatus(app.id, 'Rejected')}
@@ -1476,6 +1555,58 @@ export default function RecruiterDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {/* Candidate Selection & Offer Letter Status Banner */}
+                {selectedApp.application_status === 'Selected' && (
+                  <div style={{
+                    margin: '16px 24px 0 24px',
+                    padding: '14px 18px',
+                    borderRadius: '8px',
+                    background: selectedApp.offer_letter_sent ? '#F0FDF4' : '#FFFBEB',
+                    border: `1px solid ${selectedApp.offer_letter_sent ? '#BBF7D0' : '#FDE68A'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <CheckCircle2 size={20} color={selectedApp.offer_letter_sent ? '#16A34A' : '#D97706'} />
+                      <div>
+                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: selectedApp.offer_letter_sent ? '#15803D' : '#B45309' }}>
+                          {selectedApp.offer_letter_sent ? 'Candidate Selected & Offer Letter Delivered' : 'Candidate Selected (Offer Email Pending / Unsent)'}
+                        </div>
+                        <div style={{ fontSize: '12.5px', color: '#64748B' }}>
+                          {selectedApp.offer_letter_sent
+                            ? 'Official provisional offer letter PDF delivered via email.'
+                            : 'Status is persisted as Selected. You can deliver or retry sending the offer letter email.'}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn-action-view"
+                        style={{ padding: '6px 14px', fontSize: '12.5px', borderRadius: '6px' }}
+                        title="Download official candidate offer letter PDF"
+                        onClick={() => handleDownloadOfferLetter(selectedApp.id)}
+                      >
+                        <FileText size={14} />
+                        <span>View Offer PDF</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-action-select"
+                        style={{ padding: '6px 14px', fontSize: '12.5px', borderRadius: '6px' }}
+                        title="Deliver offer letter via email"
+                        onClick={() => handleResendOfferEmail(selectedApp.id)}
+                      >
+                        <Sparkles size={14} />
+                        <span>{selectedApp.offer_letter_sent ? 'Resend Email' : 'Send Offer Email'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Footer Decision Buttons */}
                 <div className="candidate-modal-footer">

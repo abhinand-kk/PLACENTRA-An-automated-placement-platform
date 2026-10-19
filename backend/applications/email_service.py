@@ -290,6 +290,200 @@ def send_interview_notification_email(interview):
         return False
 
 
+def send_selection_offer_email(application):
+    """
+    Sends candidate selection and provisional offer notification email with attached
+    Candidate Selection & Provisional Offer Letter PDF, and creates an in-app notification.
+    Handles exceptions gracefully to prevent breaking recruiter workflow.
+    Returns a tuple (email_sent: bool, recipient_or_error: str).
+    """
+    try:
+        student = application.student
+        job = application.job
+        recruiter = getattr(job, 'recruiter', None)
+        user = getattr(student, 'user', None)
+        contact = getattr(student, 'contact', None)
+
+        recipients = []
+        if user and user.email and user.email.strip():
+            recipients.append(user.email.strip())
+        if contact and contact.primary_email and contact.primary_email.strip() and contact.primary_email.strip() not in recipients:
+            recipients.append(contact.primary_email.strip())
+        if contact and contact.personal_email and contact.personal_email.strip() and contact.personal_email.strip() not in recipients:
+            recipients.append(contact.personal_email.strip())
+
+        if not recipients:
+            logger.warning(f"Selection offer email skipped: No candidate email found for application ID {application.id}")
+            return False, "No registered candidate email found."
+
+        student_name = f"{student.first_name} {student.last_name}".strip()
+        company_name = recruiter.company_name if recruiter else "Recruiting Organization"
+        job_title = job.job_title
+
+        # Authoritative offer terms
+        package_str = f"{job.package_lpa} LPA" if (job.package_lpa and job.package_lpa > 0) else None
+        work_mode_str = getattr(job.work_mode, 'name', None) if getattr(job, 'work_mode', None) else None
+        location_str = job.location if job.location else None
+        emp_type_str = getattr(job.employment_type, 'name', None) if getattr(job, 'employment_type', None) else None
+        expected_timeline = job.expected_hiring_month if job.expected_hiring_month else None
+
+        subject = f"Congratulations! Selection & Offer Letter – {job_title} at {company_name} | PLACENTRA"
+
+        # Construct Offer Details Rows
+        rows_html = f"""
+            <tr><td style="padding: 6px 0; color: #64748b; font-weight: 600; width: 160px;">Position Offered:</td><td style="padding: 6px 0; color: #0f172a; font-weight: 700;">{job_title}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Organization:</td><td style="padding: 6px 0; color: #0f172a; font-weight: 700;">{company_name}</td></tr>
+        """
+        if package_str:
+            rows_html += f"""<tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Annual CTC / Package:</td><td style="padding: 6px 0; color: #059669; font-weight: 700;">{package_str}</td></tr>"""
+        if work_mode_str:
+            rows_html += f"""<tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Work Mode:</td><td style="padding: 6px 0; color: #0f172a;">{work_mode_str}</td></tr>"""
+        if location_str:
+            rows_html += f"""<tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Location:</td><td style="padding: 6px 0; color: #0f172a;">{location_str}</td></tr>"""
+        if emp_type_str:
+            rows_html += f"""<tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Employment Type:</td><td style="padding: 6px 0; color: #0f172a;">{emp_type_str}</td></tr>"""
+        if expected_timeline:
+            rows_html += f"""<tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Expected Joining:</td><td style="padding: 6px 0; color: #0f172a;">{expected_timeline}</td></tr>"""
+        rows_html += """<tr><td style="padding: 6px 0; color: #64748b; font-weight: 600;">Status:</td><td style="padding: 6px 0; color: #16a34a; font-weight: 700;">Selected &amp; Offered</td></tr>"""
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1f2937; background-color: #f3f4f6; margin: 0; padding: 20px; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }}
+                .header {{ background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #ffffff; padding: 24px 30px; text-align: center; }}
+                .header h1 {{ margin: 0; font-size: 22px; letter-spacing: 0.5px; }}
+                .header p {{ margin: 5px 0 0 0; opacity: 0.9; font-size: 13px; }}
+                .content {{ padding: 30px; }}
+                .status-badge {{ display: inline-block; background: #dcfce7; color: #15803d; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; margin: 10px 0; border: 1px solid #bbf7d0; }}
+                .offer-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin: 20px 0; }}
+                .notice-box {{ background: #eff6ff; border-left: 4px solid #2563eb; padding: 16px 20px; margin: 20px 0; border-radius: 0 6px 6px 0; }}
+                .footer {{ background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 16px 30px; font-size: 12px; color: #6b7280; text-align: center; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>PLACENTRA</h1>
+                    <p>Campus Placement &amp; Recruitment Platform</p>
+                </div>
+                <div class="content">
+                    <p>Dear <b>{student_name}</b>,</p>
+                    <p>Congratulations! We are delighted to inform you that you have been officially <b>SELECTED</b> for the position of <b>{job_title}</b> at <b>{company_name}</b> following the campus recruitment evaluation process.</p>
+                    
+                    <div style="text-align: center;">
+                        <span class="status-badge">&#127881; CANDIDATE SELECTED &amp; OFFERED</span>
+                    </div>
+
+                    <div class="offer-card">
+                        <div style="font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+                            Placement Offer Summary
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13.5px;">
+                            {rows_html}
+                        </table>
+                    </div>
+
+                    <div class="notice-box">
+                        <p style="margin: 0; font-size: 13.5px; color: #1e3a8a;">
+                            <b>Attached Document:</b><br/>
+                            Attached to this email is your official <b>Candidate Selection &amp; Provisional Offer Letter (PDF)</b>. Please download, review the details carefully, and retain a copy for your official placement records.
+                        </p>
+                    </div>
+
+                    <p style="font-size: 13.5px; color: #374151;">
+                        <b>Next Steps:</b> Detailed corporate onboarding instructions, pre-employment documentation, and reporting guidelines will be coordinated by <b>{company_name}</b> HR and the Campus Placement Office.
+                    </p>
+
+                    <p style="margin-top:20px;">Warm regards,<br><b>PLACENTRA Placement Cell</b><br><span style="font-size: 12px; color: #64748b;">Campus Placement &amp; Recruitment Platform</span></p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated notification from PLACENTRA. Please do not reply directly to this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain Text Fallback
+        text_lines = [
+            f"Dear {student_name},",
+            "",
+            f"Congratulations! We are delighted to inform you that you have been officially SELECTED for the position of {job_title} at {company_name} through PLACENTRA Campus Placement.",
+            "",
+            "Offer Details:",
+            f"- Position: {job_title}",
+            f"- Organization: {company_name}",
+        ]
+        if package_str:
+            text_lines.append(f"- Annual CTC / Package: {package_str}")
+        if work_mode_str:
+            text_lines.append(f"- Work Mode: {work_mode_str}")
+        if location_str:
+            text_lines.append(f"- Location: {location_str}")
+        if emp_type_str:
+            text_lines.append(f"- Employment Type: {emp_type_str}")
+        if expected_timeline:
+            text_lines.append(f"- Expected Joining: {expected_timeline}")
+        text_lines.extend([
+            "- Status: Selected & Offered",
+            "",
+            "Attached to this email is your official Candidate Selection & Provisional Offer Letter (PDF).",
+            "",
+            f"Next Steps: Detailed onboarding instructions and reporting guidelines will be communicated by {company_name} HR and the Campus Placement Office.",
+            "",
+            "Warm regards,",
+            "PLACENTRA Placement Cell",
+            "Campus Placement & Recruitment Platform"
+        ])
+        text_content = "\n".join(text_lines)
+
+        # Generate Selection Offer PDF Attachment
+        from .pdf_generator import generate_selection_offer_pdf
+        pdf_bytes = generate_selection_offer_pdf(application)
+        sanitized_name = re.sub(r'[^a-zA-Z0-9_]', '_', f"{student.first_name}_{student.last_name}")
+        pdf_filename = f"{sanitized_name}_Selection_Offer_Letter.pdf"
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'placentraeducation@gmail.com')
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=from_email,
+            to=recipients
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.attach(pdf_filename, pdf_bytes, "application/pdf")
+
+        email_sent = False
+        try:
+            email.send(fail_silently=False)
+            email_sent = True
+            logger.info(f"Selection offer email sent successfully to {recipients} for application ID {application.id}")
+        except Exception as mail_err:
+            logger.exception(f"SMTP failure while sending selection offer email to {recipients}: {mail_err}")
+
+        # Create In-App Notification for Student
+        if user:
+            try:
+                Notification.objects.create(
+                    user=user,
+                    title=f"Selected & Offered — {job_title}",
+                    message=f"Congratulations! You have been selected for {job_title} at {company_name}. Your Selection & Provisional Offer Letter has been delivered to your email ({recipients[0]}). [Application #{application.id}]",
+                    notification_type="Application"
+                )
+            except Exception as notif_err:
+                logger.exception(f"Error creating in-app notification: {notif_err}")
+
+        return email_sent, (recipients[0] if email_sent else "Email delivery failed.")
+
+    except Exception as e:
+        logger.exception(f"Error processing selection offer notification for application ID {getattr(application, 'id', 'Unknown')}: {e}")
+        return False, str(e)
+
+
 def send_placement_officer_registration_email(user):
     """
     Sends a professional account-creation confirmation email to the newly registered

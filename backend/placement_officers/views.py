@@ -1,7 +1,7 @@
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 
 from .models import PlacementOfficerProfile, InstitutionDetails
@@ -17,6 +17,15 @@ def get_officer_profile(user):
     if not hasattr(user, 'placement_officer_profile'):
         return None
     return user.placement_officer_profile
+
+
+def get_institution_filter(inst, prefix=''):
+    """
+    Returns a Q object matching the institution either by FK or case-insensitive name match.
+    """
+    inst_field = f"{prefix}institution" if prefix else "institution"
+    name_field = f"{prefix}institution__institution_name__iexact" if prefix else "institution__institution_name__iexact"
+    return Q(**{inst_field: inst}) | Q(**{name_field: inst.institution_name})
 
 
 class PlacementOfficerProfileView(APIView):
@@ -102,12 +111,12 @@ class PlacementOfficerDashboardView(APIView):
                 'upcoming_placement_drives': 0
             }, status=status.HTTP_200_OK)
 
-        students = StudentProfile.objects.filter(institution=inst)
+        students = StudentProfile.objects.filter(get_institution_filter(inst)).distinct()
         total_registered_students = students.count()
         avg_completion = students.aggregate(Avg('profile_completion'))['profile_completion__avg']
         profile_completion_percentage = round(avg_completion) if avg_completion is not None else 0
 
-        inst_applications = Application.objects.filter(student__institution=inst)
+        inst_applications = Application.objects.filter(get_institution_filter(inst, prefix='student__')).distinct()
         total_applications = inst_applications.count()
         students_applied = inst_applications.values('student').distinct().count()
 
@@ -122,7 +131,7 @@ class PlacementOfficerDashboardView(APIView):
         selected_students = inst_applications.filter(application_status=Application.ApplicationStatus.SELECTED).count()
         rejected_students = inst_applications.filter(application_status=Application.ApplicationStatus.REJECTED).count()
 
-        inst_interviews = Interview.objects.filter(application__student__institution=inst)
+        inst_interviews = Interview.objects.filter(get_institution_filter(inst, prefix='application__student__')).distinct()
         interviews_scheduled = inst_interviews.exclude(status=Interview.InterviewStatus.CANCELLED).count()
         technical_interviews_count = inst_interviews.filter(
             interview_type=Interview.InterviewType.TECHNICAL
@@ -140,9 +149,9 @@ class PlacementOfficerDashboardView(APIView):
         pending_job_approvals = Job.objects.filter(status=Job.Status.PENDING_APPROVAL).count()
 
         upcoming_drives = PlacementDrive.objects.filter(
-            institution=inst,
+            get_institution_filter(inst),
             status=PlacementDrive.DriveStatus.UPCOMING
-        ).count()
+        ).distinct().count()
 
         data = {
             'total_registered_students': total_registered_students,
@@ -180,7 +189,7 @@ class PlacementOfficerStudentListView(APIView):
 
         students = StudentProfile.objects.select_related(
             'user', 'institution', 'current_education', 'current_education__program', 'current_education__branch'
-        ).filter(institution=profile.institution)
+        ).filter(get_institution_filter(profile.institution)).distinct()
 
         data = []
         for s in students:
@@ -239,8 +248,8 @@ class PlacementOfficerStudentDetailView(APIView):
             StudentProfile.objects.select_related(
                 'user', 'institution', 'current_education', 'current_education__program', 'current_education__branch', 'contact', 'documents'
             ),
-            pk=pk,
-            institution=profile.institution
+            get_institution_filter(profile.institution),
+            pk=pk
         )
 
         ce = getattr(student, 'current_education', None)
@@ -374,11 +383,11 @@ class StudentLoginActivityView(APIView):
         students = StudentProfile.objects.select_related(
             'user', 'institution', 'current_education', 'current_education__program', 'current_education__branch'
         ).filter(
-            institution=profile.institution,
+            get_institution_filter(profile.institution),
             user__role='student',
             user__is_active=True,
             user__last_login__isnull=False
-        ).order_by('-user__last_login')
+        ).distinct().order_by('-user__last_login')
 
         data = []
         for s in students:
@@ -418,7 +427,7 @@ class PlacementOfficerRecruiterListView(APIView):
 
         data = []
         for r in qs:
-            recruiter_apps = Application.objects.filter(job__recruiter=r, student__institution=profile.institution) if profile and profile.institution else Application.objects.filter(job__recruiter=r)
+            recruiter_apps = Application.objects.filter(get_institution_filter(profile.institution, prefix='student__'), job__recruiter=r).distinct() if profile and profile.institution else Application.objects.filter(job__recruiter=r)
             jobs_cnt = Job.objects.filter(recruiter=r).count()
             apps_cnt = recruiter_apps.count()
             shortlisted_cnt = recruiter_apps.filter(application_status__in=['Shortlisted', 'Interview Scheduled', 'Selected']).count()
@@ -559,7 +568,7 @@ class PlacementOfficerJobListView(APIView):
 
         data = []
         for j in qs:
-            job_apps = Application.objects.filter(job=j, student__institution=profile.institution) if profile and profile.institution else Application.objects.filter(job=j)
+            job_apps = Application.objects.filter(get_institution_filter(profile.institution, prefix='student__'), job=j).distinct() if profile and profile.institution else Application.objects.filter(job=j)
             shortlisted_cnt = job_apps.filter(application_status__in=['Shortlisted', 'Interview Scheduled', 'Selected']).count()
             interviews_cnt = Interview.objects.filter(application__in=job_apps).count()
             selected_cnt = job_apps.filter(application_status='Selected').count()
@@ -625,12 +634,12 @@ class PlacementOfficerRecentActivityView(APIView):
         inst = profile.institution
 
         recent_apps = Application.objects.filter(
-            student__institution=inst
-        ).select_related('student', 'job', 'job__recruiter').order_by('-updated_at')[:10]
+            get_institution_filter(inst, prefix='student__')
+        ).select_related('student', 'job', 'job__recruiter').distinct().order_by('-updated_at')[:10]
 
         recent_interviews = Interview.objects.filter(
-            application__student__institution=inst
-        ).select_related('application', 'application__student', 'application__job', 'application__job__recruiter').order_by('-created_at')[:10]
+            get_institution_filter(inst, prefix='application__student__')
+        ).select_related('application', 'application__student', 'application__job', 'application__job__recruiter').distinct().order_by('-created_at')[:10]
 
         activities = []
         for app in recent_apps:

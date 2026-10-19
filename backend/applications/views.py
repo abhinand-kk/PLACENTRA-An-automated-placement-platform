@@ -57,7 +57,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'my_applications', 'student_dashboard', 'destroy']:
             return [IsStudentUser()]
-        elif self.action in ['job_applications', 'status_update', 'recruiter_dashboard', 'download_resume']:
+        elif self.action in ['job_applications', 'status_update', 'recruiter_dashboard', 'download_resume', 'download_offer_letter', 'resend_offer_email']:
             return [permissions.IsAuthenticated()]
         return [IsApplicationParticipant()]
 
@@ -192,8 +192,40 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             from .email_service import send_shortlisting_notification
             send_shortlisting_notification(application)
 
+        # Trigger Selection Offer Email with attached Offer Letter PDF when status is SELECTED
+        email_sent = None
+        recipient_email = None
+        email_message = None
+
+        if new_status == Application.ApplicationStatus.SELECTED:
+            force_resend = request.data.get('force_resend', False) or request.data.get('resend', False)
+
+            # Idempotency check: don't resend if already sent unless forced
+            if application.offer_letter_sent and not force_resend:
+                email_sent = True
+                email_message = "Candidate is Selected. Offer letter email was already sent previously."
+            else:
+                from .email_service import send_selection_offer_email
+                sent, info = send_selection_offer_email(application)
+                if sent:
+                    from django.utils import timezone
+                    application.offer_letter_sent = True
+                    application.offer_letter_sent_at = timezone.now()
+                    application.save(update_fields=['offer_letter_sent', 'offer_letter_sent_at'])
+                    email_sent = True
+                    recipient_email = info
+                    email_message = f"Offer letter email delivered successfully to {info}."
+                else:
+                    email_sent = False
+                    email_message = f"Candidate status updated to Selected, but email delivery failed: {info}"
+
         serializer = self.get_serializer(application)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        if email_sent is not None:
+            data['email_sent'] = email_sent
+            data['recipient_email'] = recipient_email
+            data['email_message'] = email_message
+        return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='recruiter-dashboard')
     def recruiter_dashboard(self, request):
@@ -279,6 +311,70 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logging.getLogger('django').error(f"Error serving resume PDF: {str(e)}")
             return Response({'error': 'Unable to open candidate resume PDF.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='resend-offer-email')
+    def resend_offer_email(self, request, pk=None):
+        application = self.get_object()
+        recruiter = getattr(request.user, 'recruiter_profile', None)
+
+        if not recruiter or application.job.recruiter != recruiter:
+            return Response({'error': 'Only the job owner recruiter can trigger offer emails.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if application.application_status != Application.ApplicationStatus.SELECTED:
+            return Response({'error': 'Candidate must be in Selected status before sending an offer letter.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .email_service import send_selection_offer_email
+        sent, info = send_selection_offer_email(application)
+        if sent:
+            from django.utils import timezone
+            application.offer_letter_sent = True
+            application.offer_letter_sent_at = timezone.now()
+            application.save(update_fields=['offer_letter_sent', 'offer_letter_sent_at'])
+            return Response({
+                'message': f'Offer letter email sent successfully to {info}.',
+                'email_sent': True,
+                'recipient_email': info
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'error': f'Failed to deliver offer letter email: {info}',
+                'email_sent': False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'], url_path='offer-letter')
+    def download_offer_letter(self, request, pk=None):
+        import re
+        from django.http import HttpResponse
+
+        application = self.get_object()
+        user = request.user
+
+        # Access control: authorized recruiter, candidate student, campus placement officer, or staff
+        is_recruiter = hasattr(user, 'recruiter_profile') and application.job.recruiter == user.recruiter_profile
+        is_student = hasattr(user, 'student_profile') and application.student == user.student_profile
+        is_officer = hasattr(user, 'placement_officer_profile') and application.student.institution == user.placement_officer_profile.institution
+        is_admin = user.is_staff or user.is_superuser
+
+        if not (is_recruiter or is_student or is_officer or is_admin):
+            return Response({'error': 'You do not have permission to view or download this offer letter.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if application.application_status != Application.ApplicationStatus.SELECTED:
+            return Response({'error': 'Offer letter is only available for selected candidates.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .pdf_generator import generate_selection_offer_pdf
+        try:
+            pdf_bytes = generate_selection_offer_pdf(application)
+            student = application.student
+            sanitized_name = re.sub(r'[^a-zA-Z0-9_]', '_', f"{student.first_name}_{student.last_name}")
+            filename = f"{sanitized_name}_Selection_Offer_Letter.pdf"
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            return response
+        except Exception as e:
+            import logging
+            logging.getLogger('django').exception(f"Error generating offer letter PDF for application ID {application.id}: {e}")
+            return Response({'error': 'Unable to generate offer letter PDF document.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class InterviewViewSet(viewsets.ModelViewSet):

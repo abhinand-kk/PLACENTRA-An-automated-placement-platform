@@ -27,6 +27,8 @@ class Application(models.Model):
         choices=ApplicationStatus.choices,
         default=ApplicationStatus.APPLIED
     )
+    offer_letter_sent = models.BooleanField(default=False)
+    offer_letter_sent_at = models.DateTimeField(null=True, blank=True)
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

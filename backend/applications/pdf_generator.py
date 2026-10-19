@@ -682,3 +682,338 @@ def generate_interview_invitation_pdf(interview):
     """
     generator = InterviewInvitationPDFGenerator(interview)
     return generator.generate()
+
+
+class SelectionOfferLetterPDFGenerator:
+    """
+    Generates a formal A4 Candidate Selection & Provisional Offer Letter PDF.
+    Contains candidate details, company, job role, package, location, employment type,
+    terms, next steps, and formal signature block.
+    Strictly consumes real Django Application, Job, and StudentProfile model instances.
+    Optimized for single page ReportLab document.
+    """
+
+    def __init__(self, application):
+        self.application = application
+        self.student = application.student
+        self.job = application.job
+        self.recruiter = getattr(self.job, 'recruiter', None)
+        self.institution = getattr(self.student, 'institution', None)
+        self.current_edu = getattr(self.student, 'current_education', None)
+        self.contact = getattr(self.student, 'contact', None)
+
+    def generate(self):
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            leftMargin=45,
+            rightMargin=45,
+            topMargin=36,
+            bottomMargin=36
+        )
+
+        styles = getSampleStyleSheet()
+
+        PRIMARY_NAVY = colors.HexColor('#1E3A8A')
+        TEXT_DARK = colors.HexColor('#111827')
+        TEXT_MUTED = colors.HexColor('#4B5563')
+        DIVIDER_COLOR = colors.HexColor('#94A3B8')
+
+        styles.add(ParagraphStyle(
+            name='InstHeader',
+            fontName='Helvetica-Bold',
+            fontSize=15,
+            leading=18,
+            textColor=PRIMARY_NAVY,
+            alignment=1
+        ))
+        styles.add(ParagraphStyle(
+            name='InstSubHeader',
+            fontName='Helvetica',
+            fontSize=9,
+            leading=11,
+            textColor=TEXT_MUTED,
+            alignment=1
+        ))
+        styles.add(ParagraphStyle(
+            name='LetterTitle',
+            fontName='Helvetica-Bold',
+            fontSize=12,
+            leading=15,
+            textColor=PRIMARY_NAVY,
+            alignment=1,
+            spaceAfter=1
+        ))
+        styles.add(ParagraphStyle(
+            name='LetterSubTitle',
+            fontName='Helvetica-Bold',
+            fontSize=9,
+            leading=11,
+            textColor=TEXT_MUTED,
+            alignment=1
+        ))
+        styles.add(ParagraphStyle(
+            name='MetaText',
+            fontName='Helvetica',
+            fontSize=9,
+            leading=12,
+            textColor=TEXT_DARK
+        ))
+        styles.add(ParagraphStyle(
+            name='FormalBody',
+            fontName='Helvetica',
+            fontSize=9.5,
+            leading=13.5,
+            textColor=TEXT_DARK,
+            alignment=4
+        ))
+        styles.add(ParagraphStyle(
+            name='FormalBodyBold',
+            fontName='Helvetica-Bold',
+            fontSize=9.5,
+            leading=13.5,
+            textColor=TEXT_DARK
+        ))
+        styles.add(ParagraphStyle(
+            name='SectionHeading',
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            leading=13,
+            textColor=PRIMARY_NAVY,
+            spaceBefore=3,
+            spaceAfter=2
+        ))
+        styles.add(ParagraphStyle(
+            name='DetailLabel',
+            fontName='Helvetica-Bold',
+            fontSize=9,
+            leading=12.5,
+            textColor=TEXT_DARK
+        ))
+        styles.add(ParagraphStyle(
+            name='DetailValue',
+            fontName='Helvetica',
+            fontSize=9,
+            leading=12.5,
+            textColor=TEXT_DARK
+        ))
+        styles.add(ParagraphStyle(
+            name='DisclaimerNotice',
+            fontName='Helvetica-Oblique',
+            fontSize=8.5,
+            leading=11,
+            textColor=TEXT_MUTED
+        ))
+        styles.add(ParagraphStyle(
+            name='SignatureLabel',
+            fontName='Helvetica',
+            fontSize=8.5,
+            leading=11,
+            textColor=TEXT_MUTED
+        ))
+        styles.add(ParagraphStyle(
+            name='FooterText',
+            fontName='Helvetica',
+            fontSize=8,
+            leading=10,
+            textColor=TEXT_MUTED,
+            alignment=1
+        ))
+
+        story = []
+
+        # Letterhead
+        inst_name = self.institution.institution_name if self.institution else "PLACENTRA Education Partner Campus"
+        story.append(Paragraph("PLACENTRA Education", styles['InstHeader']))
+        story.append(Paragraph(f"Campus Placement Office &bull; {inst_name}", styles['InstSubHeader']))
+        story.append(Spacer(1, 4))
+        story.append(HRFlowable(width="100%", thickness=1.0, color=DIVIDER_COLOR, spaceAfter=6))
+
+        # Title
+        story.append(Paragraph("CANDIDATE SELECTION &amp; PROVISIONAL OFFER LETTER", styles['LetterTitle']))
+        story.append(Paragraph("CAMPUS RECRUITMENT OFFER CONFIRMATION", styles['LetterSubTitle']))
+        story.append(Spacer(1, 6))
+
+        # Date & Ref
+        issue_date = datetime.now().strftime('%d %B %Y')
+        ref_no = f"PLC-OFF-{self.application.id:06d}"
+        meta_table = Table([
+            [
+                Paragraph(f"<b>Date:</b> {issue_date}", styles['MetaText']),
+                Paragraph(f"<b>Reference No.:</b> {ref_no}", styles['MetaText'])
+            ]
+        ], colWidths=[250, 255])
+        meta_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        story.append(meta_table)
+        story.append(Spacer(1, 8))
+
+        # Recipient Block
+        full_name = f"{self.student.first_name} {self.student.middle_name} {self.student.last_name}".replace("  ", " ").strip()
+        reg_no = self.student.register_number or "N/A"
+        cand_email = getattr(self.student.user, 'email', None) or (self.contact.primary_email if self.contact else "N/A")
+
+        recipient_text = f"To,<br/><b>{full_name}</b><br/>Register / Roll No: {reg_no}<br/>Institution: {inst_name}"
+        if self.current_edu:
+            prog_name = self.current_edu.program.name if self.current_edu.program else ""
+            branch_name = self.current_edu.branch.name if self.current_edu.branch else ""
+            if prog_name or branch_name:
+                recipient_text += f"<br/>Program: {prog_name} ({branch_name})".strip(" ()")
+        recipient_text += f"<br/>Email: {cand_email}"
+
+        story.append(Paragraph(recipient_text, styles['MetaText']))
+        story.append(Spacer(1, 8))
+
+        # Salutation & Body
+        salutation_name = self.student.first_name or full_name
+        story.append(Paragraph(f"Dear <b>{salutation_name}</b>,", styles['FormalBody']))
+        story.append(Spacer(1, 5))
+
+        comp_name = self.recruiter.company_name if self.recruiter else "Recruiting Organization"
+        job_title = self.job.job_title
+
+        p1_text = (
+            f"We are pleased to inform you that following the successful evaluation and selection process, you have been "
+            f"officially <b>SELECTED</b> for the position of <b>{job_title}</b> at <b>{comp_name}</b> through "
+            f"the campus recruitment program at PLACENTRA Education."
+        )
+        story.append(Paragraph(p1_text, styles['FormalBody']))
+        story.append(Spacer(1, 4))
+
+        p2_text = (
+            f"Congratulations on your selection. Your academic standing, technical competence, and interview performance "
+            f"have met the criteria required by <b>{comp_name}</b>."
+        )
+        story.append(Paragraph(p2_text, styles['FormalBody']))
+        story.append(Spacer(1, 6))
+
+        # Offer Details Table
+        story.append(Paragraph("OFFER &amp; PLACEMENT DETAILS", styles['SectionHeading']))
+        details_data = [
+            [Paragraph("Position Offered:", styles['DetailLabel']), Paragraph(f"<b>{job_title}</b>", styles['DetailValue'])],
+            [Paragraph("Recruiting Organization:", styles['DetailLabel']), Paragraph(f"<b>{comp_name}</b>", styles['DetailValue'])],
+        ]
+
+        if self.job.package_lpa and self.job.package_lpa > 0:
+            details_data.append([
+                Paragraph("Annual CTC / Package:", styles['DetailLabel']),
+                Paragraph(f"<b>{self.job.package_lpa} LPA</b>", styles['DetailValue'])
+            ])
+
+        work_mode_str = getattr(self.job.work_mode, 'name', None) if getattr(self.job, 'work_mode', None) else None
+        if work_mode_str:
+            details_data.append([
+                Paragraph("Work Mode:", styles['DetailLabel']),
+                Paragraph(f"<b>{work_mode_str}</b>", styles['DetailValue'])
+            ])
+
+        if self.job.location:
+            details_data.append([
+                Paragraph("Work Location:", styles['DetailLabel']),
+                Paragraph(f"<b>{self.job.location}</b>", styles['DetailValue'])
+            ])
+
+        emp_type_str = getattr(self.job.employment_type, 'name', None) if getattr(self.job, 'employment_type', None) else None
+        if emp_type_str:
+            details_data.append([
+                Paragraph("Employment Type:", styles['DetailLabel']),
+                Paragraph(f"<b>{emp_type_str}</b>", styles['DetailValue'])
+            ])
+
+        if self.job.expected_hiring_month:
+            details_data.append([
+                Paragraph("Expected Joining Timeline:", styles['DetailLabel']),
+                Paragraph(f"<b>{self.job.expected_hiring_month}</b>", styles['DetailValue'])
+            ])
+
+        details_data.append([
+            Paragraph("Selection Status:", styles['DetailLabel']),
+            Paragraph("<b>SELECTED &amp; CONFIRMED</b>", styles['DetailValue'])
+        ])
+
+        details_table = Table(details_data, colWidths=[140, 365])
+        details_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 1.5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1.5),
+        ]))
+        story.append(details_table)
+        story.append(Spacer(1, 6))
+
+        # Guidelines & Next Steps
+        story.append(Paragraph("NEXT STEPS &amp; CANDIDATE GUIDELINES", styles['SectionHeading']))
+        guidelines = [
+            f"1. Please retain this official Provisional Offer Letter for your records and reference.",
+            f"2. Ensure all your semester grade sheets, final degree documents, and certificates remain current.",
+            f"3. Formal corporate appointment letters, background check procedures, and exact reporting instructions will be communicated directly by {comp_name} HR prior to joining."
+        ]
+        for g in guidelines:
+            story.append(Paragraph(g, styles['FormalBody']))
+            story.append(Spacer(1, 1.5))
+
+        story.append(Spacer(1, 6))
+
+        disclaimer_text = (
+            "<b>NOTICE:</b> This document serves as an official Campus Placement Selection &amp; Provisional Offer Letter issued "
+            "through PLACENTRA Education. Definitive contractual terms, company benefits, and appointment schedules are subject "
+            "to successful degree completion and employer background verification."
+        )
+        story.append(Paragraph(disclaimer_text, styles['DisclaimerNotice']))
+        story.append(Spacer(1, 8))
+
+        # Closing & Signatures
+        story.append(Paragraph("Sincerely,", styles['FormalBody']))
+        story.append(Spacer(1, 2))
+        story.append(Paragraph("<b>PLACENTRA Education</b>", styles['FormalBodyBold']))
+        story.append(Paragraph("Campus Placement Office", styles['MetaText']))
+        story.append(Spacer(1, 8))
+
+        sig_table = Table([
+            [
+                Paragraph("__________________________________________", styles['SignatureLabel']),
+                Paragraph("____________________", styles['SignatureLabel'])
+            ],
+            [
+                Paragraph("Digitally Verified Document", styles['SignatureLabel']),
+                Paragraph("Date", styles['SignatureLabel'])
+            ],
+            [
+                Paragraph("Authorized Placement Office Signature", styles['InstSubHeader']),
+                Paragraph("", styles['InstSubHeader'])
+            ]
+        ], colWidths=[330, 175])
+        sig_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 1),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+        ]))
+        story.append(sig_table)
+        story.append(Spacer(1, 8))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=DIVIDER_COLOR, spaceAfter=4))
+        story.append(Paragraph("PLACENTRA Education &bull; Campus Placement Office &bull; System-Generated Candidate Selection &amp; Offer Letter.", styles['FooterText']))
+
+        doc.build(story)
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        return pdf_bytes
+
+
+def generate_selection_offer_pdf(application):
+    """
+    Helper function to generate PDF bytes for an Application instance upon candidate selection.
+    """
+    generator = SelectionOfferLetterPDFGenerator(application)
+    return generator.generate()
+
