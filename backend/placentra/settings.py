@@ -317,20 +317,38 @@ else:
     }
 
 
-# Email Delivery Configuration (Resend API via Anymail in production, SMTP/Console in development)
+# Email Delivery Configuration (Gmail API / Resend / SMTP / Console)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
 
+# Gmail API Configuration
+GMAIL_CLIENT_ID = os.getenv('GMAIL_CLIENT_ID')
+GMAIL_CLIENT_SECRET = os.getenv('GMAIL_CLIENT_SECRET')
+GMAIL_REFRESH_TOKEN = os.getenv('GMAIL_REFRESH_TOKEN')
+GMAIL_SENDER_EMAIL = os.getenv('GMAIL_SENDER_EMAIL', 'placentraeducation@gmail.com')
+
+# Explicit selector for email transport: 'gmail_api' | 'resend' | 'smtp'
+EMAIL_BACKEND_TYPE = os.getenv('EMAIL_BACKEND_TYPE', '').lower()
+USE_GMAIL_API = (
+    EMAIL_BACKEND_TYPE == 'gmail_api' or
+    os.getenv('USE_GMAIL_API', 'False').lower() in ('true', '1', 't') or
+    (bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN) and EMAIL_BACKEND_TYPE not in ('resend', 'smtp'))
+)
+
 RESEND_API_KEY = os.getenv('RESEND_API_KEY')
-if RESEND_API_KEY:
+
+if USE_GMAIL_API:
+    EMAIL_BACKEND = 'common.gmail_backend.GmailAPIEmailBackend'
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or f'PLACENTRA Education <{GMAIL_SENDER_EMAIL}>'
+elif RESEND_API_KEY and EMAIL_BACKEND_TYPE != 'smtp':
     EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
     ANYMAIL = {
         'RESEND_API_KEY': RESEND_API_KEY,
     }
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'PLACENTRA <onboarding@resend.dev>'
 else:
     EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'PLACENTRA <onboarding@resend.dev>'
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'PLACENTRA <onboarding@resend.dev>'

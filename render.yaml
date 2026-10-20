@@ -31,6 +31,18 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      - key: USE_GMAIL_API
+        sync: false
+      - key: EMAIL_BACKEND_TYPE
+        sync: false
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: GMAIL_SENDER_EMAIL
+        sync: false
       - key: USE_S3_STORAGE
         value: "False"
       - key: AWS_ACCESS_KEY_ID

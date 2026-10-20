@@ -277,15 +277,15 @@ export default function PrivacyPolicy() {
               <div className="current-transport-notice">
                 <AlertCircle size={18} className="transport-notice-icon" />
                 <div className="transport-notice-text">
-                  <strong>Current Live &amp; Planned Delivery Configuration:</strong>
+                  <strong>Current &amp; Planned Email Delivery Configuration:</strong>
                   <p>
-                    In the currently deployed live production environment on Render, outgoing application emails are routed via the
-                    <strong> Resend API</strong>.
+                    In the currently deployed live production environment on Render, outgoing transactional emails are delivered via <strong>Resend</strong>.
+                    A verified direct HTTPS integration with the official <strong>Google Gmail REST API</strong> using our authorized administrative mailbox <code>placentraeducation@gmail.com</code> and
+                    the narrow <code>https://www.googleapis.com/auth/gmail.send</code> scope is planned for activation and takes effect once explicitly enabled in deployment settings.
                   </p>
                   <p>
-                    A direct HTTPS integration with the <strong>Google Gmail REST API</strong> (from our administrative mailbox <code>placentraeducation@gmail.com</code>)
-                    has been fully implemented and locally verified. It is planned for production activation upon completion of Google Cloud OAuth
-                    authorization and environment variable configuration on Render.
+                    PLACENTRA uses the Gmail API scope exclusively for outgoing transmission and does not read, access, scan, or process inbox messages.
+                    Resend remains available only as an explicitly configured provider and does not act as an automatic or silent fallback if the Gmail API is enabled but misconfigured.
                   </p>
                 </div>
               </div>
@@ -423,10 +423,10 @@ export default function PrivacyPolicy() {
                     <Send size={18} className="provider-icon" />
                     <h4>Google Cloud Platform (Gmail API)</h4>
                   </div>
-                  <div className="provider-role">Planned Gmail REST API Email Transmission</div>
+                  <div className="provider-role">Planned Gmail REST API Email Delivery</div>
                   <p>
-                    Provides the HTTPS endpoint through which PLACENTRA's backend is configured to send transactional email notifications
-                    using the authorized account <code>placentraeducation@gmail.com</code>.
+                    Provides the HTTPS endpoint through which PLACENTRA's backend sends transactional email notifications
+                    once Gmail API delivery is explicitly enabled in deployment settings, using the authorized account <code>placentraeducation@gmail.com</code>.
                   </p>
                 </div>
 
@@ -435,10 +435,9 @@ export default function PrivacyPolicy() {
                     <Mail size={18} className="provider-icon" />
                     <h4>Resend Inc. (Transactional Email)</h4>
                   </div>
-                  <div className="provider-role">Current Live Email Delivery &amp; Fallback Transport</div>
+                  <div className="provider-role">Current Live Email Delivery &amp; Explicit Provider</div>
                   <p>
-                    Provides transactional email delivery for the currently active production backend on Render, and remains configured
-                    as an optional secondary fallback transport.
+                    Provides transactional email delivery in the current live Render deployment, and remains available only when explicitly configured in deployment settings without acting as a silent fallback when Gmail API is enabled.
                   </p>
                 </div>
               </div>

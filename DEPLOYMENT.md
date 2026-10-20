@@ -80,25 +80,80 @@ Sign up for the following free-tier or paid accounts before deployment:
 
 ---
 
-### Step 2: Set Up Resend (Transactional Emails)
+---
 
-1. **Create an API Key:**
-   - Log in to [Resend Dashboard](https://resend.com/overview).
-   - Go to **API Keys** → **Create API Key**.
-   - Name: `PLACENTRA Backend`.
-   - Permission: **Full access** (or Sending access).
-   - Copy the key (`re_...`).
+### Step 2: Set Up Outgoing Email Delivery Transport
 
-2. **Sender Domain Setup:**
-   - **During Initial Testing:** You can use Resend's default onboarding address:
+PLACENTRA supports two transactional email delivery transports: **Gmail API** (recommended for your direct `@gmail.com` mailbox) and **Resend API** (optional fallback).
+
+#### Option A: Gmail API via OAuth 2.0 (Recommended for `placentraeducation@gmail.com`)
+
+The Gmail API allows PLACENTRA to send emails over HTTPS directly from `placentraeducation@gmail.com` using the sender name `PLACENTRA Education <placentraeducation@gmail.com>`, preserving all OTPs, shortlist notices, interview schedules, and offer letters with PDF attachments.
+
+##### 1. Google Cloud Console Setup
+1. Log in to [Google Cloud Console](https://console.cloud.google.com) with your `placentraeducation@gmail.com` account.
+2. Create a new project (e.g., `PLACENTRA-Email-Service`).
+3. Enable the Gmail API:
+   - Go to **APIs & Services** → **Library**.
+   - Search for `Gmail API` and click **Enable**.
+4. Configure the OAuth Consent Screen:
+   - Go to **APIs & Services** → **OAuth consent screen**.
+   - Select **User Type**: **External** (or **Internal** if using Google Workspace).
+   - App Name: `PLACENTRA`.
+   - User Support Email: `placentraeducation@gmail.com`.
+   - Developer Contact Email: `placentraeducation@gmail.com`.
+   - Click **Save and Continue**.
+   - In **Scopes**, click **Add or Remove Scopes**, and add the narrow sending scope:
      ```text
-     DEFAULT_FROM_EMAIL=PLACENTRA <onboarding@resend.dev>
+     https://www.googleapis.com/auth/gmail.send
      ```
-     *(Note: `onboarding@resend.dev` will only deliver emails to the email address registered with your Resend account).*
-   - **For Production Delivery to All Students:**
-     - Go to **Domains** → **Add Domain** (e.g., `mail.yourcollege.edu` or `placentra.com`).
-     - Add the generated DNS records (DKIM, SPF, MX) at your DNS registrar.
-     - Once verified, update `DEFAULT_FROM_EMAIL=PLACENTRA <placements@yourdomain.com>`.
+   - In **Test Users**, click **Add Users** and add:
+     ```text
+     placentraeducation@gmail.com
+     ```
+   - Click **Save and Continue**.
+5. Create OAuth 2.0 Client Credentials:
+   - Go to **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**.
+   - Application Type: **Desktop app** (Important: Desktop app allows local terminal authorization without pre-registering dynamic redirect URIs).
+   - Name: `PLACENTRA Desktop Auth`.
+   - Click **Create**.
+   - Download the JSON credential file and save it locally as `client_secret.json` in your repository root (this file is excluded by `.gitignore`).
+
+##### 2. Generate the OAuth 2.0 Refresh Token Locally
+Run the helper script on your local machine (where a web browser is available):
+```bash
+python scripts/get_gmail_oauth_token.py
+```
+1. A browser window will open asking you to sign in with `placentraeducation@gmail.com`.
+2. Review the permissions (`Send email on your behalf`) and click **Continue / Allow**.
+3. The script will securely capture the refresh token and save the environment variables to `backend/.env.gmail` (protected by `.gitignore`).
+4. Sensitive values are masked in the terminal output to prevent accidental exposure.
+
+##### 3. Gmail API & OAuth Limitations to Keep in Mind
+> [!IMPORTANT]
+> **7-Day Refresh Token Expiration in Testing Status:**
+> When a Google Cloud project's OAuth Consent Screen is in **Testing** status with User Type **External**, Google enforces a security limit: **refresh tokens expire after 7 days (168 hours)**.
+>
+> **How to achieve durable production operation:**
+> - **Google Workspace Accounts:** Set User Type to **Internal**. Refresh tokens for internal users never expire.
+> - **Standard `@gmail.com` Accounts:** On the OAuth Consent Screen, click **Publish App** to switch from "Testing" to **"In production"**.
+>   - Because `https://www.googleapis.com/auth/gmail.send` is classified by Google as a **Sensitive Scope**, Google will prompt for app verification (requiring a privacy policy link and an explanation of the app).
+>   - However, for personal and small-scale deployments sending under the 100-user cap, publishing the app eliminates the 7-day refresh token expiration.
+>
+> **Sending Quotas:**
+> - Free personal Gmail accounts (`@gmail.com`): **500 emails per 24 hours**.
+> - Google Workspace accounts: **2,000 emails per 24 hours**.
+
+---
+
+#### Option B: Resend API via django-anymail (Optional Fallback)
+
+If you prefer to keep Resend as a fallback:
+1. Log in to [Resend Dashboard](https://resend.com/overview).
+2. Create an API Key (`re_...`).
+3. For custom domain sending, verify your domain DNS records.
+4. If `USE_GMAIL_API=False` and `RESEND_API_KEY` is present, PLACENTRA routes outgoing emails through Resend automatically.
+
 
 ---
 
@@ -133,14 +188,24 @@ Sign up for the following free-tier or paid accounts before deployment:
    | `ALLOWED_HOSTS` | `localhost,127.0.0.1,placentra-backend.onrender.com` |
    | `CORS_ALLOWED_ORIGINS` | `https://your-frontend-app.vercel.app` *(update after Step 4)* |
    | `CSRF_TRUSTED_ORIGINS` | `https://your-frontend-app.vercel.app,https://placentra-backend.onrender.com` |
+   | **Outgoing Email (Gmail API)** | *(Set these to enable sending via placentraeducation@gmail.com)* |
+   | `USE_GMAIL_API` | `True` |
+   | `EMAIL_BACKEND_TYPE` | `gmail_api` |
+   | `GMAIL_CLIENT_ID` | *OAuth 2.0 Client ID from Google Cloud Console* |
+   | `GMAIL_CLIENT_SECRET` | *OAuth 2.0 Client Secret from Google Cloud Console* |
+   | `GMAIL_REFRESH_TOKEN` | *Refresh token generated via `scripts/get_gmail_oauth_token.py`* |
+   | `GMAIL_SENDER_EMAIL` | `placentraeducation@gmail.com` |
+   | `DEFAULT_FROM_EMAIL` | `PLACENTRA Education <placentraeducation@gmail.com>` |
+   | **Outgoing Email (Resend Fallback)** | *(Leave configured as fallback if desired)* |
    | `RESEND_API_KEY` | *Your Resend API key (`re_...`)* |
-   | `DEFAULT_FROM_EMAIL` | `PLACENTRA <onboarding@resend.dev>` *(or custom domain address)* |
+   | **Object Storage (Supabase S3)** | |
    | `USE_S3_STORAGE` | `True` *(set `False` if delaying storage setup)* |
    | `AWS_ACCESS_KEY_ID` | *Supabase S3 Access Key ID* |
    | `AWS_SECRET_ACCESS_KEY` | *Supabase S3 Secret Access Key* |
    | `AWS_STORAGE_BUCKET_NAME` | `placentra-media` |
    | `AWS_S3_ENDPOINT_URL` | `https://[PROJECT-REF].supabase.co/storage/v1/s3` |
    | `AWS_S3_REGION_NAME` | `us-east-1` |
+
 
 4. **Deploy and Run Initial Migrations:**
    - Click **Create Web Service**.

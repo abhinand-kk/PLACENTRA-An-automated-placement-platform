@@ -41,3 +41,15 @@ venv/
 env/
 scratch/
 *.dump
+
+# Google OAuth Credentials & Tokens
+credentials.json
+token.json
+client_secret*.json
+*.oauth.json
+backend/credentials.json
+backend/token.json
+backend/client_secret*.json
+backend/*.oauth.json
+.env.gmail*
+backend/.env.gmail*
