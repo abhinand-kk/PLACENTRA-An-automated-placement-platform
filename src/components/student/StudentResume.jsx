@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, FileText, CheckCircle2, AlertTriangle, ArrowRight, User, GraduationCap, Briefcase, Award } from 'lucide-react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import './StudentResume.css';
 
 export default function StudentResume({ onNavigateTab }) {
@@ -77,10 +77,7 @@ export default function StudentResume({ onNavigateTab }) {
   const { profile, contact, current_education, previous_educations, experiences, documents, completion_percentage, missing_sections } = resumeData || {};
 
   const getPhotoUrl = (photo) => {
-    if (!photo) return null;
-    if (photo.startsWith('http://') || photo.startsWith('https://')) return photo;
-    if (photo.startsWith('/')) return `http://localhost:8000${photo}`;
-    return `http://localhost:8000/media/${photo}`;
+    return getMediaUrl(photo) || null;
   };
 
   const fullName = [profile?.first_name, profile?.middle_name, profile?.last_name].filter(Boolean).join(' ');

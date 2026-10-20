@@ -33,3 +33,7 @@ PLACENTRA is an AI-powered campus placement platform connecting students, recrui
    ```bash
    npm run build
    ```
+
+## 🚀 Production Deployment
+
+For complete, step-by-step instructions on deploying PLACENTRA to **Vercel** (Frontend), **Render** (Django API), **Supabase** (PostgreSQL & Storage), and **Resend** (Email), see [DEPLOYMENT.md](file:///c:/MCA%20Project/AI-POWERED%20CAMPUS%20PLACEMENT%20AND%20INTELLIGENT%20CANDIDATE/DEPLOYMENT.md).

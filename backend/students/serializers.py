@@ -164,6 +164,4 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request is not None:
             return request.build_absolute_uri(url)
-        if url.startswith('http://') or url.startswith('https://'):
-            return url
-        return f"http://localhost:8000{url}" if url.startswith('/') else f"http://localhost:8000/media/{url}"
+        return url

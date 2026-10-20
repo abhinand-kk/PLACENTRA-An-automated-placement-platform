@@ -13,7 +13,7 @@ import {
   FileText,
   Upload
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import './StudentDashboard.css';
 
 export default function StudentProfileEdit() {
@@ -563,9 +563,9 @@ export default function StudentProfileEdit() {
                 <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 10px 0' }}>JPG, JPEG, or PNG (Max 2 MB)</p>
                 {docState.profilePhoto ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                    <img 
-                      src={docState.profilePhoto.startsWith('http://') || docState.profilePhoto.startsWith('https://') ? docState.profilePhoto : (docState.profilePhoto.startsWith('/') ? `http://localhost:8000${docState.profilePhoto}` : `http://localhost:8000/media/${docState.profilePhoto}`)} 
-                      alt="Preview" 
+                    <img
+                      src={getMediaUrl(docState.profilePhoto)}
+                      alt="Preview"
                       style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} 
                     />
                     <span style={{ fontSize: '12.5px', color: '#10B981', fontWeight: 700 }}>✓ Photo Uploaded</span>

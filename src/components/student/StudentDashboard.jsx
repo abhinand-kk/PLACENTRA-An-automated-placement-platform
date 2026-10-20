@@ -28,6 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
 import StudentResume from './StudentResume';
+import { getMediaUrl } from '../../services/api';
 import './StudentDashboard.css';
 
 export default function StudentDashboard({ initialTab = 'dashboard' }) {
@@ -248,10 +249,7 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
   };
 
   const getPhotoUrl = (photo) => {
-    if (!photo) return null;
-    if (photo.startsWith('http://') || photo.startsWith('https://')) return photo;
-    if (photo.startsWith('/')) return `http://localhost:8000${photo}`;
-    return `http://localhost:8000/media/${photo}`;
+    return getMediaUrl(photo) || null;
   };
 
   return (

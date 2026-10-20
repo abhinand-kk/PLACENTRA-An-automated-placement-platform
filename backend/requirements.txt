@@ -1,0 +1,19 @@
+# PLACENTRA Backend Dependencies
+Django>=5.2,<6.0
+djangorestframework>=3.15.0
+djangorestframework-simplejwt>=5.4.0
+django-cors-headers>=4.7.0
+django-filter>=24.3
+drf-spectacular>=0.28.0
+psycopg2-binary>=2.9.10
+pillow>=10.4.0
+reportlab>=4.2.0
+python-dotenv>=1.0.1
+
+# Production Deployment Dependencies (Render, Supabase, Resend, Storage)
+gunicorn>=23.0.0
+whitenoise>=6.8.0
+dj-database-url>=2.3.0
+django-anymail[resend]>=12.0
+django-storages[boto3]>=1.14.4
+boto3>=1.35.0

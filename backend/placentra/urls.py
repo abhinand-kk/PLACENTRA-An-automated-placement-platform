@@ -9,13 +9,34 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+from django.db import connection
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
 
+def health_check(request):
+    db_status = "healthy"
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+
+    status_code = 200 if db_status == "healthy" else 503
+    return JsonResponse({
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "database": db_status,
+        "service": "placentra-api",
+    }, status=status_code)
+
 urlpatterns = [
+    # System Health Check
+    path('health/', health_check, name='health-check-root'),
+    path('api/v1/health/', health_check, name='health-check'),
+
     path('admin/', admin.site.urls),
 
     # OpenAPI Schema & Interactive API Documentation
