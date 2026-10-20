@@ -20,6 +20,7 @@ import StudentDashboard from './components/student/StudentDashboard';
 import StudentProfileEdit from './components/student/StudentProfileEdit';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function StudentRegisterRoute() {
   const navigate = useNavigate();
@@ -36,10 +37,10 @@ function MainLandingApp() {
 
   return (
     <div className="placentra-app">
-      <Navbar 
-        activeRole={role} 
-        onRoleChange={setRole} 
-        onOpenWizard={() => setViewMode('wizard')} 
+      <Navbar
+        activeRole={role}
+        onRoleChange={setRole}
+        onOpenWizard={() => setViewMode('wizard')}
       />
       <main>
         <Hero role={role} onOpenWizard={() => setViewMode('wizard')} />
@@ -62,6 +63,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<MainLandingApp />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/student/register" element={<StudentRegisterRoute />} />
       <Route path="/recruiter/register" element={<RecruiterRegistrationWizard />} />
       <Route path="/placement-officer/register" element={<PlacementOfficerRegistrationWizard />} />

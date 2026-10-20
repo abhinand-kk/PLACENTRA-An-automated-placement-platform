@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Shield, Mail, Phone } from 'lucide-react';
 import './Footer.css';
 
@@ -74,7 +75,7 @@ export default function Footer() {
               <li><a href="#about">About Us</a></li>
               <li><a href="#careers">Careers</a></li>
               <li><a href="#terms">Terms & Conditions</a></li>
-              <li><a href="#privacy">Privacy Policy</a></li>
+              <li><Link to="/privacy-policy">Privacy Policy</Link></li>
             </ul>
           </div>
 
@@ -112,7 +113,10 @@ export default function Footer() {
 
         {/* Bottom Bar Copyright */}
         <div className="footer-bottom-bar">
-          <p>© 2025 PLACENTRA. All rights reserved.</p>
+          <p>© 2026 PLACENTRA. All rights reserved.</p>
+          <div className="footer-bottom-links">
+            <Link to="/privacy-policy" className="footer-bottom-link">Privacy Policy</Link>
+          </div>
         </div>
       </div>
     </footer>
