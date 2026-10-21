@@ -179,9 +179,9 @@ export default function Step3RecruiterReviewSubmit({ state, onJumpToStep, onBack
               <span className="kv-val">{company.designation || 'Senior Talent Acquisition Lead'}</span>
             </div>
             <div className="kv-row">
-              <span className="kv-key">Official Work Email</span>
+              <span className="kv-key">Email Address</span>
               <span className="kv-sep">:</span>
-              <span className="kv-val">{company.workEmail || 'vikram@company.com'}</span>
+              <span className="kv-val">{company.workEmail || 'vikram@example.com'}</span>
             </div>
             <div className="kv-row">
               <span className="kv-key">Mobile Number</span>

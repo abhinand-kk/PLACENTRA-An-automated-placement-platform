@@ -477,66 +477,42 @@ class RecruiterRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_official_email(self, value):
         if not value or not isinstance(value, str):
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-        if value.strip() != value or ' ' in value:
-            raise serializers.ValidationError("Please enter a valid company work email address.")
+            raise serializers.ValidationError("Please enter a valid email address.")
+
+        value = value.strip().lower()
+        if not value or ' ' in value:
+            raise serializers.ValidationError("Please enter a valid email address.")
+
         import re
-        if re.search(r'[A-Z]', value):
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
         parts = value.split('@')
         if len(parts) != 2:
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
+            raise serializers.ValidationError("Please enter a valid email address.")
+
         username, domain = parts
         if not username or username.startswith('.') or username.endswith('.') or '..' in username:
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
+            raise serializers.ValidationError("Please enter a valid email address.")
+
         username_regex = r'^[a-z0-9]+([._+-][a-z0-9]+)*$'
         if not re.match(username_regex, username):
-            raise serializers.ValidationError("Please enter a valid company work email address.")
+            raise serializers.ValidationError("Please enter a valid email address.")
 
         if not domain or domain.startswith('.') or domain.endswith('.') or '..' in domain:
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
+            raise serializers.ValidationError("Please enter a valid email address.")
+
         domain_regex = r'^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$'
         if not re.match(domain_regex, domain):
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
-        PUBLIC_DOMAINS = {
-            'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
-            'aol.com', 'protonmail.com', 'rediffmail.com', 'yandex.com', 'g.in',
-            'mail.com', 'zoho.com', 'live.com', 'msn.com', 'college.edu'
-        }
-        if domain.lower() in PUBLIC_DOMAINS or domain.endswith('.edu') or domain.endswith('.ac.in'):
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
+            raise serializers.ValidationError("Please enter a valid email address.")
+
         domain_labels = domain.split('.')
         sld = domain_labels[0]
         tld = domain_labels[-1]
-        
+
         if len(sld) < 2 or len(tld) < 2:
-            raise serializers.ValidationError("Please enter a valid company work email address.")
-            
-        if domain.endswith('.co') and not (domain.endswith('.co.in') or domain.endswith('.co.uk')):
-            raise serializers.ValidationError("Please enter a valid company work email address.")
+            raise serializers.ValidationError("Please enter a valid email address.")
 
         return value
 
     def validate(self, attrs):
-        company_name = attrs.get('company_name', '')
-        official_email = attrs.get('official_email', '')
-        if company_name and official_email:
-            stop_words = {'pvt', 'ltd', 'private', 'limited', 'inc', 'llc', 'corp', 'corporation', 'technologies', 'technology', 'software', 'services', 'solutions', 'india'}
-            import re
-            clean_tokens = [t for t in re.sub(r'[^a-z0-9\s]', '', company_name.lower()).split() if len(t) > 1 and t not in stop_words]
-            if clean_tokens:
-                domain_parts = official_email.split('@')
-                if len(domain_parts) == 2:
-                    domain_clean = re.sub(r'[^a-z0-9]', '', domain_parts[1])
-                    sld = domain_parts[1].split('.')[0]
-                    if not any(token in domain_clean or token in sld for token in clean_tokens):
-                        raise serializers.ValidationError({'official_email': "Please enter a valid company work email address."})
         return attrs
 
     @transaction.atomic

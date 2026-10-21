@@ -26,12 +26,12 @@ export default function RecruiterRegistrationWizard() {
   };
 
   const getStepSummary = (stepNum) => {
-    const c = recruiterState.companyDetails;
+    const c = recruiterState.basicCompanyDetails || recruiterState.companyDetails;
     const h = recruiterState.hiringPreferences;
 
     switch (stepNum) {
       case 1:
-        return c?.companyName ? `${c.companyName} • ${c.recruiterName || 'Recruiter'} (${c.officialEmail || ''})` : 'Basic company details saved.';
+        return c?.companyName ? `${c.companyName} • ${c.recruiterFullName || c.recruiterName || 'Recruiter'} (${c.workEmail || c.officialEmail || ''})` : 'Basic company details saved.';
       case 2:
         return h?.packageOffered ? `Package: ${h.packageOffered} LPA • Month: ${h.expectedHiringMonth || 'TBD'}` : 'Hiring preferences & package details saved.';
       default:

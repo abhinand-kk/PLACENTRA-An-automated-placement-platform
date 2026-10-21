@@ -16,19 +16,12 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
   };
 
   // Validation logic
-  const PUBLIC_DOMAINS = new Set([
-    'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 
-    'aol.com', 'protonmail.com', 'rediffmail.com', 'yandex.com', 'g.in',
-    'mail.com', 'zoho.com', 'live.com', 'msn.com', 'college.edu'
-  ]);
-
-  const isValidWorkEmail = (email, companyName) => {
+  const isValidEmail = (email) => {
     if (!email || typeof email !== 'string') return false;
-    if (email.trim() !== email) return false;
-    if (/\s/.test(email)) return false;
-    if (/[A-Z]/.test(email)) return false; // Strictly lowercase only
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || /\s/.test(trimmed)) return false;
     
-    const parts = email.split('@');
+    const parts = trimmed.split('@');
     if (parts.length !== 2) return false;
     
     const [username, domainPart] = parts;
@@ -42,9 +35,6 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
     if (!domainPart || domainPart.startsWith('.') || domainPart.endsWith('.')) return false;
     if (domainPart.includes('..')) return false;
     
-    if (PUBLIC_DOMAINS.has(domainPart.toLowerCase())) return false;
-    if (domainPart.endsWith('.edu') || domainPart.endsWith('.ac.in')) return false;
-    
     const domainRegex = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/;
     if (!domainRegex.test(domainPart)) return false;
     
@@ -54,24 +44,6 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
     
     if (!sld || sld.length < 2) return false;
     if (!tld || tld.length < 2) return false;
-    if (domainPart.endsWith('.co') && !domainPart.endsWith('.co.in') && !domainPart.endsWith('.co.uk')) return false;
-    
-    if (companyName && typeof companyName === 'string' && companyName.trim().length > 0) {
-      const stopWords = new Set(['pvt', 'ltd', 'private', 'limited', 'inc', 'llc', 'corp', 'corporation', 'co', 'technologies', 'technology', 'software', 'services', 'solutions', 'india']);
-      const cleanTokens = companyName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, '')
-        .split(/\s+/)
-        .filter(t => t.length > 1 && !stopWords.has(t));
-        
-      if (cleanTokens.length > 0) {
-        const domainClean = domainPart.replace(/[^a-z0-9]/g, '');
-        const matchesCompany = cleanTokens.some(token => domainClean.includes(token) || token.includes(sld));
-        if (!matchesCompany) {
-          return false;
-        }
-      }
-    }
     
     return true;
   };
@@ -81,7 +53,7 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
   const isCompanyNameValid = Boolean(data.companyName?.trim());
   const isRecruiterNameValid = Boolean(data.recruiterFullName?.trim());
   const isDesignationValid = Boolean(data.designation?.trim());
-  const isEmailValid = isValidWorkEmail(data.workEmail || '', data.companyName || '');
+  const isEmailValid = isValidEmail(data.workEmail || '');
   const isMobileValid = isValidMobile(data.mobileNumber || '');
   const isHiringVolumeValid = Boolean(data.hiringVolume);
 
@@ -190,15 +162,15 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
           </div>
         </div>
 
-        {/* Official Work Email & Mobile Number */}
+        {/* Email Address & Mobile Number */}
         <div className="form-grid-2" style={{ marginBottom: '22px' }}>
           <div className="form-group">
-            <label className="form-label">Official Work Email <span className="req">*</span></label>
+            <label className="form-label">Email Address <span className="req">*</span></label>
             <div className="input-with-icon">
               <input 
                 type="email"
                 className={`form-control ${touched.workEmail && !isEmailValid ? 'invalid' : ''}`}
-                placeholder="vikram@company.com"
+                placeholder="e.g. vikram@gmail.com or vikram@company.com"
                 value={data.workEmail}
                 onChange={(e) => handleChange('workEmail', e.target.value)}
                 onBlur={() => handleBlur('workEmail')}
@@ -208,9 +180,9 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
                 <CheckCircle2 size={18} className="valid-icon" color="#10B981" />
               )}
             </div>
-            <span className="form-hint">Please use your company domain email address.</span>
+            <span className="form-hint">Use an email address you can access for account verification and notifications.</span>
             {touched.workEmail && !isEmailValid && (
-              <span className="error-text">Please enter a valid company work email address.</span>
+              <span className="error-text">Please enter a valid email address.</span>
             )}
           </div>
 
@@ -313,7 +285,7 @@ export default function Step1BasicCompanyDetails({ state, onChange, onNext }) {
                   <span className="sum-val">{data.designation}</span>
                 </div>
                 <div className="summary-row">
-                  <span className="sum-key">Official Work Email</span>
+                  <span className="sum-key">Email Address</span>
                   <span className="sum-sep">:</span>
                   <span className="sum-val">{data.workEmail}</span>
                 </div>
