@@ -178,11 +178,9 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
             
         if end_date and batch_val:
             end_year = str(end_date.year)
-            batch_match = re.search(r'\d{4}', str(batch_val))
-            if batch_match:
-                batch_year = batch_match.group(0)
-                if end_year != batch_year:
-                    raise serializers.ValidationError("Batch year must match the course graduation year.")
+            batch_years = re.findall(r'\d{4}', str(batch_val))
+            if batch_years and end_year not in batch_years:
+                raise serializers.ValidationError("Batch year must match the course graduation year.")
                     
         return value
 
@@ -254,12 +252,12 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         if contact_details and isinstance(contact_details, dict):
             p_email = contact_details.get('primary_email') or validated_data['email']
             per_email = contact_details.get('personal_email') or p_email
-            mobile = contact_details.get('mobile_number') or '9876543210'
-            state = contact_details.get('state') or 'Kerala'
-            district = contact_details.get('district') or 'Kottayam'
-            city = contact_details.get('city') or 'Kanjirappally'
-            pincode = contact_details.get('pincode') or '686507'
-            perm_addr = contact_details.get('permanent_address') or f"{city}, {district}, {state} - {pincode}"
+            mobile = (contact_details.get('mobile_number') or '').strip()
+            state = (contact_details.get('state') or '').strip()
+            district = (contact_details.get('district') or '').strip()
+            city = (contact_details.get('city') or '').strip()
+            pincode = (contact_details.get('pincode') or '').strip()
+            perm_addr = (contact_details.get('permanent_address') or f"{city}, {district}, {state} - {pincode}").strip()
 
             StudentContact.objects.create(
                 student=profile,
@@ -278,13 +276,13 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
                 student=profile,
                 primary_email=validated_data['email'],
                 personal_email=validated_data['email'],
-                mobile_number='9876543210',
+                mobile_number='',
                 country='India',
-                state='Kerala',
-                district='Kottayam',
-                city='Kanjirappally',
-                pincode='686507',
-                permanent_address='Kanjirappally, Kottayam, Kerala - 686507'
+                state='',
+                district='',
+                city='',
+                pincode='',
+                permanent_address=''
             )
 
         # 2. Persist Current Education
@@ -297,20 +295,48 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         cgpa = 8.75
         active_backlogs = 0
 
+        curr_start_date = None
+        curr_end_date = None
+
         if current_education and isinstance(current_education, dict):
             prog_name = current_education.get('program_name') or current_education.get('program') or prog_name
             branch_name = current_education.get('branch_name') or current_education.get('branch') or branch_name
             field_of_study = current_education.get('field_of_study') or current_education.get('degreeCourse') or field_of_study
-            semester = str(current_education.get('semester') or '4')
+            semester = str(current_education.get('semester') or current_education.get('currentSemester') or '4')
             batch = current_education.get('batch') or batch
             try:
-                cgpa = float(current_education.get('cgpa') or 8.75)
+                cgpa_val = current_education.get('cgpa')
+                if cgpa_val is not None:
+                    cgpa = float(cgpa_val)
+                elif current_education.get('percentage'):
+                    cgpa = round(float(current_education.get('percentage')) / 10.0, 2)
             except Exception:
                 cgpa = 8.75
             try:
-                active_backlogs = int(current_education.get('active_backlogs') or 0)
+                active_backlogs = int(current_education.get('active_backlogs') or current_education.get('totalBacklogs') or 0)
             except Exception:
                 active_backlogs = 0
+
+            # Parse submitted start and end dates
+            start_date_raw = current_education.get('startDate') or current_education.get('start_date')
+            if start_date_raw:
+                try:
+                    if isinstance(start_date_raw, datetime.date):
+                        curr_start_date = start_date_raw
+                    else:
+                        curr_start_date = datetime.datetime.strptime(str(start_date_raw)[:10], '%Y-%m-%d').date()
+                except Exception:
+                    pass
+
+            end_date_raw = current_education.get('expectedEndDate') or current_education.get('endDate') or current_education.get('end_date')
+            if end_date_raw:
+                try:
+                    if isinstance(end_date_raw, datetime.date):
+                        curr_end_date = end_date_raw
+                    else:
+                        curr_end_date = datetime.datetime.strptime(str(end_date_raw)[:10], '%Y-%m-%d').date()
+                except Exception:
+                    pass
 
         prog_obj, _ = Program.objects.get_or_create(name=prog_name)
         branch_obj, _ = Branch.objects.get_or_create(program=prog_obj, name=branch_name)
@@ -321,8 +347,8 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
             program=prog_obj,
             branch=branch_obj,
             field_of_study=field_of_study,
-            start_date=datetime.date(2024, 8, 1),
-            end_date=datetime.date(2026, 6, 30),
+            start_date=curr_start_date or datetime.date(2024, 8, 1),
+            end_date=curr_end_date or datetime.date(2026, 6, 30),
             batch=batch,
             semester=semester,
             cgpa=cgpa,
@@ -332,8 +358,6 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         # 3. Persist Previous Education
         from master_data.models import QualificationType
         from students.models import StudentPreviousEducation
-        q_12, _ = QualificationType.objects.get_or_create(name='Class XII')
-        q_10, _ = QualificationType.objects.get_or_create(name='Class X')
 
         c12_data = {}
         c10_data = {}
@@ -341,71 +365,121 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
             c12_data = previous_education.get('class12') or {}
             c10_data = previous_education.get('class10') or {}
 
-        try:
-            yr_12 = int(c12_data.get('passingYear') or 2020)
-        except Exception:
-            yr_12 = 2020
-        try:
-            pct_12 = float(c12_data.get('percentage') or 92.4)
-        except Exception:
-            pct_12 = 92.4
+        if c12_data and (c12_data.get('school') or c12_data.get('schoolName') or c12_data.get('board')):
+            q_12, _ = QualificationType.objects.get_or_create(name='Class XII')
+            try:
+                yr_12 = int(c12_data.get('passingYear') or c12_data.get('yearOfPassing') or 2020)
+            except Exception:
+                yr_12 = 2020
+            try:
+                pct_12 = float(c12_data.get('percentage') or 0.0)
+            except Exception:
+                pct_12 = 0.0
 
-        try:
-            yr_10 = int(c10_data.get('passingYear') or 2018)
-        except Exception:
-            yr_10 = 2018
-        try:
-            pct_10 = float(c10_data.get('percentage') or 94.8)
-        except Exception:
-            pct_10 = 94.8
+            StudentPreviousEducation.objects.create(
+                student=profile,
+                qualification_type=q_12,
+                institution_name=c12_data.get('schoolName') or c12_data.get('school') or '',
+                board_or_university=c12_data.get('board') or '',
+                year_of_passing=yr_12,
+                percentage=pct_12
+            )
 
-        StudentPreviousEducation.objects.create(
-            student=profile,
-            qualification_type=q_12,
-            institution_name=c12_data.get('school') or 'St. Antony Higher Secondary School',
-            board_or_university=c12_data.get('board') or 'CBSE',
-            year_of_passing=yr_12,
-            percentage=pct_12
-        )
+        if c10_data and (c10_data.get('school') or c10_data.get('schoolName') or c10_data.get('board')):
+            q_10, _ = QualificationType.objects.get_or_create(name='Class X')
+            try:
+                yr_10 = int(c10_data.get('passingYear') or c10_data.get('yearOfPassing') or 2018)
+            except Exception:
+                yr_10 = 2018
+            try:
+                pct_10 = float(c10_data.get('percentage') or 0.0)
+            except Exception:
+                pct_10 = 0.0
 
-        StudentPreviousEducation.objects.create(
-            student=profile,
-            qualification_type=q_10,
-            institution_name=c10_data.get('school') or 'St. Antony Public School',
-            board_or_university=c10_data.get('board') or 'CBSE',
-            year_of_passing=yr_10,
-            percentage=pct_10
-        )
+            StudentPreviousEducation.objects.create(
+                student=profile,
+                qualification_type=q_10,
+                institution_name=c10_data.get('schoolName') or c10_data.get('school') or '',
+                board_or_university=c10_data.get('board') or '',
+                year_of_passing=yr_10,
+                percentage=pct_10
+            )
 
-        # 4. Persist Experiences / Internships
+        # 4. Persist Experiences / Internships (only if provided by student; no fabricated defaults)
         from master_data.models import EmploymentType
         from students.models import StudentExperience
-        emp_type, _ = EmploymentType.objects.get_or_create(name='Internship')
 
         if experiences_data and isinstance(experiences_data, list) and len(experiences_data) > 0:
             for exp in experiences_data:
-                if isinstance(exp, dict):
-                    StudentExperience.objects.create(
-                        student=profile,
-                        company_name=exp.get('companyName') or 'TechCorp Solutions',
-                        designation=exp.get('jobTitle') or exp.get('designation') or 'Software Engineer Intern',
-                        employment_type=emp_type,
-                        location=exp.get('location') or 'Kochi, Kerala',
-                        start_date=datetime.date(2024, 1, 15),
-                        end_date=datetime.date(2024, 4, 30),
-                        description=exp.get('description') or 'Developed React components and Django REST endpoints.'
-                    )
-        else:
-            StudentExperience.objects.create(
-                student=profile,
-                company_name='TechCorp Solutions',
-                designation='Software Engineer Intern',
-                employment_type=emp_type,
-                location='Kochi, Kerala',
-                start_date=datetime.date(2024, 1, 15),
-                end_date=datetime.date(2024, 4, 30),
-                description='Developed React web applications & API services.'
-            )
+                if not isinstance(exp, dict):
+                    continue
+
+                company = (exp.get('company') or exp.get('company_name') or exp.get('companyName') or '').strip()
+                designation = (exp.get('jobTitle') or exp.get('designation') or '').strip()
+
+                # Skip completely blank entries rather than inventing data
+                if not company and not designation:
+                    continue
+
+                emp_type_name = exp.get('type') or exp.get('employmentType') or exp.get('employment_type') or 'Internship'
+                if isinstance(emp_type_name, int):
+                    emp_type = EmploymentType.objects.filter(pk=emp_type_name).first() or EmploymentType.objects.get_or_create(name='Internship')[0]
+                else:
+                    emp_type, _ = EmploymentType.objects.get_or_create(name=str(emp_type_name).strip() or 'Internship')
+
+                location = (exp.get('location') or '').strip()
+
+                start_date_raw = exp.get('startDate') or exp.get('start_date')
+                end_date_raw = exp.get('endDate') or exp.get('end_date')
+                is_current = bool(exp.get('isCurrent') or exp.get('is_current'))
+
+                start_date = None
+                if start_date_raw:
+                    try:
+                        if isinstance(start_date_raw, datetime.date):
+                            start_date = start_date_raw
+                        else:
+                            start_date = datetime.datetime.strptime(str(start_date_raw)[:10], '%Y-%m-%d').date()
+                    except Exception:
+                        pass
+                if not start_date:
+                    start_date = datetime.date.today()
+
+                end_date = None
+                if not is_current and end_date_raw:
+                    try:
+                        if isinstance(end_date_raw, datetime.date):
+                            end_date = end_date_raw
+                        else:
+                            end_date = datetime.datetime.strptime(str(end_date_raw)[:10], '%Y-%m-%d').date()
+                    except Exception:
+                        pass
+
+                description = (exp.get('description') or exp.get('summary') or '').strip()
+
+                # Extract and clean skills
+                raw_skills = exp.get('skills') or []
+                cleaned_skills = []
+                seen_skills = set()
+                if isinstance(raw_skills, list):
+                    for sk in raw_skills:
+                        if isinstance(sk, str) and sk.strip():
+                            s_clean = sk.strip()
+                            if s_clean.lower() not in seen_skills:
+                                seen_skills.add(s_clean.lower())
+                                cleaned_skills.append(s_clean)
+
+                StudentExperience.objects.create(
+                    student=profile,
+                    company_name=company,
+                    designation=designation,
+                    employment_type=emp_type,
+                    location=location,
+                    start_date=start_date,
+                    end_date=end_date,
+                    description=description,
+                    skills=cleaned_skills
+                )
 
         # 5. Persist Documents Metadata & Profile Photo
         from students.models import StudentDocument

@@ -107,6 +107,7 @@ class StudentExperience(models.Model):
     start_date = models.DateField()
     end_date = models.DateField(blank=True, null=True)
     description = models.TextField(blank=True)
+    skills = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ['-start_date']

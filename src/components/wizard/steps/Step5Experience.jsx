@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, ArrowRight, ArrowLeft, Plus, Edit2, Trash2, Info, Calendar, MapPin, Code2, CheckCircle2, X, Check } from 'lucide-react';
+import { Briefcase, ArrowRight, ArrowLeft, Plus, Edit2, Trash2, Info, Calendar, MapPin, CheckCircle2, X } from 'lucide-react';
+import ExperienceSkillsSelector from '../../common/ExperienceSkillsSelector';
 
 export default function Step5Experience({ state, onChange, onNext, onBack }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -57,8 +58,6 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
     c.toLowerCase().includes((companySearch || '').toLowerCase())
   );
 
-  const availableSkills = ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js', 'Django', 'Git', 'REST API', 'Python', 'SQL', 'UI/UX'];
-
   const handleOpenAddModal = () => {
     setEditingId(null);
     setCompanySearch('');
@@ -98,22 +97,6 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
     onChange('experiences', list.filter(item => item.id !== id));
   };
 
-  const handleRemoveSkill = (skillToRemove) => {
-    setForm(prev => ({
-      ...prev,
-      skills: prev.skills.filter(s => s !== skillToRemove)
-    }));
-  };
-
-  const handleAddSkill = (skillToAdd) => {
-    if (skillToAdd && !form.skills.includes(skillToAdd)) {
-      setForm(prev => ({
-        ...prev,
-        skills: [...prev.skills, skillToAdd]
-      }));
-    }
-  };
-
   const handleSaveSubmit = (e) => {
     e.preventDefault();
     if (!form.isCurrent && form.startDate && form.endDate && new Date(form.endDate) < new Date(form.startDate)) {
@@ -121,10 +104,24 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
       return;
     }
     
-    const finalCompany = companySearch || form.company || 'Company';
+    const finalCompany = (companySearch || form.company || '').trim();
+    if (!finalCompany) {
+      alert("Company Name is required.");
+      return;
+    }
+    const finalJobTitle = (form.jobTitle || '').trim();
+    if (!finalJobTitle) {
+      alert("Job Title is required.");
+      return;
+    }
+
     const savedItem = {
       ...form,
-      company: finalCompany
+      company: finalCompany,
+      companyName: finalCompany,
+      jobTitle: finalJobTitle,
+      designation: finalJobTitle,
+      skills: form.skills || []
     };
 
     let updatedList;
@@ -411,32 +408,11 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                   </span>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Skills Used</label>
-                  <div className="subject-tags-container">
-                    {form.skills.map((sk, idx) => (
-                      <span key={idx} className="subject-tag-pill">
-                        <span>{sk}</span>
-                        <button 
-                          type="button" 
-                          className="tag-remove-btn"
-                          onClick={() => handleRemoveSkill(sk)}
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
-                    <select 
-                      className="subject-add-select"
-                      value=""
-                      onChange={(e) => handleAddSkill(e.target.value)}
-                    >
-                      <option value="">+ Add Skill</option>
-                      {availableSkills.filter(s => !form.skills.includes(s)).map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <ExperienceSkillsSelector
+                    selectedSkills={form.skills || []}
+                    onChange={(newSkills) => setForm({ ...form, skills: newSkills })}
+                  />
                 </div>
               </div>
 

@@ -10,24 +10,20 @@ import {
   Settings, 
   LogOut, 
   GraduationCap, 
-  CheckCircle2, 
-  Clock, 
-  Building2, 
-  ShieldCheck, 
-  Shield,
   AlertCircle,
-  ChevronRight,
   Sparkles,
-  MapPin,
   X,
   Edit3,
-  Search,
-  Filter
+  Edit2,
+  Trash2,
+  Plus,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
 import StudentResume from './StudentResume';
+import ExperienceSkillsSelector from '../common/ExperienceSkillsSelector';
 import { getMediaUrl } from '../../services/api';
 import './StudentDashboard.css';
 
@@ -39,6 +35,24 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const [selectedDrive, setSelectedDrive] = useState(null);
+
+  // Experience Modal States
+  const [showExpModal, setShowExpModal] = useState(false);
+  const [editingExpId, setEditingExpId] = useState(null);
+  const [savingExp, setSavingExp] = useState(false);
+  const [deletingExpId, setDeletingExpId] = useState(null);
+  const [expError, setExpError] = useState('');
+  const [expFormData, setExpFormData] = useState({
+    company_name: '',
+    designation: '',
+    employment_type: 'Internship',
+    location: '',
+    start_date: '',
+    end_date: '',
+    is_current: false,
+    description: '',
+    skills: []
+  });
 
   // Filter States for Jobs Page
   const [jobSearch, setJobSearch] = useState('');
@@ -53,7 +67,7 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
   // Backend Data States
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
-  const [education, setEducation] = useState(null);
+  const [_education, setEducation] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -108,6 +122,119 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
     fetchStudentDashboardData();
   }, []);
 
+  const handleOpenAddExpModal = () => {
+    setExpError('');
+    setEditingExpId(null);
+    setExpFormData({
+      company_name: '',
+      designation: '',
+      employment_type: 'Internship',
+      location: '',
+      start_date: '',
+      end_date: '',
+      is_current: false,
+      description: '',
+      skills: []
+    });
+    setShowExpModal(true);
+  };
+
+  const handleOpenEditExpModal = (exp) => {
+    setExpError('');
+    setEditingExpId(exp.id);
+    const empType = exp.employment_type_detail?.name || (typeof exp.employment_type === 'string' ? exp.employment_type : 'Internship');
+    setExpFormData({
+      company_name: exp.company_name || '',
+      designation: exp.designation || '',
+      employment_type: empType,
+      location: exp.location || '',
+      start_date: exp.start_date || '',
+      end_date: exp.end_date || '',
+      is_current: !exp.end_date,
+      description: exp.description || '',
+      skills: Array.isArray(exp.skills) ? [...exp.skills] : []
+    });
+    setShowExpModal(true);
+  };
+
+  const handleCloseExpModal = () => {
+    setShowExpModal(false);
+    setEditingExpId(null);
+    setExpError('');
+  };
+
+  const handleSaveExp = async (e) => {
+    e.preventDefault();
+    setExpError('');
+
+    if (!expFormData.company_name.trim()) {
+      setExpError('Company Name is required.');
+      return;
+    }
+    if (!expFormData.designation.trim()) {
+      setExpError('Job Title / Role is required.');
+      return;
+    }
+    if (!expFormData.start_date) {
+      setExpError('Start Date is required.');
+      return;
+    }
+    if (!expFormData.is_current && expFormData.end_date) {
+      if (new Date(expFormData.end_date) < new Date(expFormData.start_date)) {
+        setExpError('End Date cannot be before Start Date.');
+        return;
+      }
+    }
+
+    setSavingExp(true);
+    try {
+      const payload = {
+        company_name: expFormData.company_name.trim(),
+        designation: expFormData.designation.trim(),
+        employment_type: expFormData.employment_type,
+        location: expFormData.location.trim(),
+        start_date: expFormData.start_date,
+        end_date: expFormData.is_current ? null : (expFormData.end_date || null),
+        description: expFormData.description.trim(),
+        skills: expFormData.skills
+      };
+
+      if (editingExpId) {
+        await api.put(`/api/v1/students/experience/${editingExpId}/`, payload);
+      } else {
+        await api.post('/api/v1/students/experience/', payload);
+      }
+
+      // Refresh profile data
+      const profRes = await api.get('/api/v1/students/profile/');
+      setProfile(profRes.data);
+      setShowExpModal(false);
+    } catch (err) {
+      console.error("Save experience error:", err);
+      const errMsg = err?.response?.data?.error || err?.response?.data?.detail ||
+        (typeof err?.response?.data === 'object' ? Object.values(err.response.data).flat().join(' ') : 'Failed to save experience.');
+      setExpError(errMsg);
+    } finally {
+      setSavingExp(false);
+    }
+  };
+
+  const handleDeleteExp = async (expId, companyName) => {
+    if (!window.confirm(`Are you sure you want to remove your experience at ${companyName || 'this company'}?`)) {
+      return;
+    }
+    setDeletingExpId(expId);
+    try {
+      await api.delete(`/api/v1/students/experience/${expId}/`);
+      const profRes = await api.get('/api/v1/students/profile/');
+      setProfile(profRes.data);
+    } catch (err) {
+      console.error("Delete experience error:", err);
+      alert(err?.response?.data?.error || 'Failed to delete experience.');
+    } finally {
+      setDeletingExpId(null);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -158,16 +285,6 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
       alert("Offer letter could not be retrieved at this time.");
     }
   };
-
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'jobs', label: 'Jobs', icon: Briefcase },
-    { id: 'applications', label: 'Applications', icon: FileText },
-    { id: 'drives', label: 'Placement Drives', icon: Calendar },
-    { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadCount },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
 
   if (loading) {
     return (
@@ -703,18 +820,58 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
 
               {/* SECTION 3: Experience & Internships */}
               <div className="review-summary-card">
-                <div className="review-card-header">
+                <div className="review-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="review-title-group">
                     <Briefcase size={18} color="#4F46E5" />
                     <span className="review-card-title">Experience & Internships</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddExpModal}
+                    style={{
+                      background: '#EEF2FF',
+                      color: '#4F46E5',
+                      border: '1px solid #C7D2FE',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Plus size={14} /> Add Experience
+                  </button>
                 </div>
                 <div className="review-kv-table">
                   {profile?.experiences && profile.experiences.length > 0 ? (
                     profile.experiences.map((exp, idx) => (
-                      <div key={idx} style={{ marginBottom: idx === profile.experiences.length - 1 ? 0 : '14px', borderBottom: idx === profile.experiences.length - 1 ? 'none' : '1px dashed #E2E8F0', paddingBottom: '10px' }}>
-                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#0A192F' }}>
-                          {exp.designation} <span style={{ fontSize: '13px', fontWeight: 600, color: '#4F46E5' }}>({exp.employment_type_detail?.name || 'Internship'})</span>
+                      <div key={idx} style={{ marginBottom: idx === profile.experiences.length - 1 ? 0 : '16px', borderBottom: idx === profile.experiences.length - 1 ? 'none' : '1px dashed #E2E8F0', paddingBottom: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ fontWeight: 700, fontSize: '15px', color: '#0A192F' }}>
+                            {exp.designation} <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#4F46E5', background: '#EEF2FF', padding: '2px 8px', borderRadius: '4px', marginLeft: '6px' }}>{exp.employment_type_detail?.name || (typeof exp.employment_type === 'string' ? exp.employment_type : 'Internship')}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditExpModal(exp)}
+                              title="Edit Experience"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#4F46E5', borderRadius: '4px' }}
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteExp(exp.id, exp.company_name)}
+                              disabled={deletingExpId === exp.id}
+                              title="Delete Experience"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#EF4444', borderRadius: '4px', opacity: deletingExpId === exp.id ? 0.5 : 1 }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                         <div className="kv-row"><span className="kv-key">Company</span><span className="kv-sep">:</span><span className="kv-val">{exp.company_name}</span></div>
                         <div className="kv-row"><span className="kv-key">Location</span><span className="kv-sep">:</span><span className="kv-val">{exp.location || 'N/A'}</span></div>
@@ -722,30 +879,55 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
                         {exp.description && (
                           <div className="kv-row"><span className="kv-key">Description</span><span className="kv-sep">:</span><span className="kv-val">{exp.description}</span></div>
                         )}
+                        {Array.isArray(exp.skills) && exp.skills.length > 0 && (
+                          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginRight: '4px' }}>Skills Used:</span>
+                            {exp.skills.map((skill, sIdx) => (
+                              <span key={sIdx} className="badge-tag badge-open" style={{ fontSize: '11.5px', padding: '3px 8px' }}>
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
-                    <span style={{ color: '#94A3B8', fontSize: '13px' }}>No internship or work experience recorded.</span>
+                    <div style={{ padding: '12px 0', color: '#94A3B8', fontSize: '13px' }}>
+                      No internship or work experience recorded. Click <strong>+ Add Experience</strong> above to record your internships and skills.
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* SECTION 4: Skills & Technical Competencies */}
-              <div className="review-summary-card">
-                <div className="review-card-header">
-                  <div className="review-title-group">
-                    <Sparkles size={18} color="#10B981" />
-                    <span className="review-card-title">Skills & Technical Competencies</span>
+              {(() => {
+                const allStudentSkills = Array.from(new Set(
+                  (profile?.experiences || []).flatMap(exp => Array.isArray(exp.skills) ? exp.skills : [])
+                ));
+                return (
+                  <div className="review-summary-card">
+                    <div className="review-card-header">
+                      <div className="review-title-group">
+                        <Sparkles size={18} color="#10B981" />
+                        <span className="review-card-title">Skills & Technical Competencies</span>
+                      </div>
+                    </div>
+                    {allStudentSkills.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                        {allStudentSkills.map((skill, idx) => (
+                          <span key={idx} className="badge-tag badge-open" style={{ padding: '6px 12px', fontSize: '13px' }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '12px', color: '#94A3B8', fontSize: '13px' }}>
+                        No skills added yet. Add an experience record above with your skills to build your competencies list.
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
-                  {['Python', 'Django REST Framework', 'React.js', 'PostgreSQL / SQL', 'Data Structures', 'Git & DevOps', 'JavaScript (ES6+)', profile?.current_education?.field_of_study].filter(Boolean).map((skill, idx) => (
-                    <span key={idx} className="badge-tag badge-open" style={{ padding: '6px 12px', fontSize: '13px' }}>
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                );
+              })()}
 
               {/* SECTION 5: Uploaded Documents */}
               <div className="review-summary-card">
@@ -1237,6 +1419,183 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
                 Close Details
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Experience Add/Edit Modal Dialog */}
+      {showExpModal && (
+        <div className="modal-backdrop-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px'
+        }}>
+          <div className="review-summary-card" style={{ maxWidth: '640px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#FFFFFF', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div className="review-card-header" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
+              <div className="review-title-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Briefcase size={20} color="#4F46E5" />
+                <span className="review-card-title" style={{ fontSize: '18px', fontWeight: 800 }}>
+                  {editingExpId ? 'Edit Work / Internship Experience' : 'Add Work / Internship Experience'}
+                </span>
+              </div>
+              <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }} onClick={handleCloseExpModal}>
+                <X size={20} color="#64748B" />
+              </button>
+            </div>
+
+            {expError && (
+              <div className="wizard-alert alert-amber" style={{ marginBottom: '16px', backgroundColor: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', padding: '10px 14px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                <AlertCircle size={16} className="flex-shrink-0" color="#EF4444" />
+                <span>{expError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveExp} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                    Job Title / Role <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Software Engineer Intern"
+                    value={expFormData.designation}
+                    onChange={(e) => setExpFormData({ ...expFormData, designation: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                    Company Name <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Acme Corp"
+                    value={expFormData.company_name}
+                    onChange={(e) => setExpFormData({ ...expFormData, company_name: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                    Experience Type
+                  </label>
+                  <select
+                    value={expFormData.employment_type}
+                    onChange={(e) => setExpFormData({ ...expFormData, employment_type: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px', background: '#FFFFFF' }}
+                  >
+                    <option value="Internship">Internship</option>
+                    <option value="Full-Time">Full-Time</option>
+                    <option value="Part-Time">Part-Time</option>
+                    <option value="Freelance">Freelance</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Bangalore, India / Remote"
+                    value={expFormData.location}
+                    onChange={(e) => setExpFormData({ ...expFormData, location: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                    Start Date <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={expFormData.start_date}
+                    onChange={(e) => setExpFormData({ ...expFormData, start_date: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                    End Date {!expFormData.is_current && <span style={{ color: '#64748B', fontWeight: 400 }}>(or select Present)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    disabled={expFormData.is_current}
+                    value={expFormData.end_date}
+                    onChange={(e) => setExpFormData({ ...expFormData, end_date: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px', background: expFormData.is_current ? '#F1F5F9' : '#FFFFFF' }}
+                  />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12.5px', color: '#475569', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={expFormData.is_current}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setExpFormData({
+                          ...expFormData,
+                          is_current: checked,
+                          end_date: checked ? '' : expFormData.end_date
+                        });
+                      }}
+                    />
+                    Currently working here (Present)
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                  Description / Responsibilities
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Summarize your key responsibilities, contributions, or achievements..."
+                  value={expFormData.description}
+                  onChange={(e) => setExpFormData({ ...expFormData, description: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px', resize: 'vertical' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '6px' }}>
+                  Skills Used in this Role
+                </label>
+                <ExperienceSkillsSelector
+                  selectedSkills={expFormData.skills}
+                  onChange={(newSkills) => setExpFormData({ ...expFormData, skills: newSkills })}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', borderTop: '1px solid #E2E8F0', paddingTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={handleCloseExpModal}
+                  style={{ padding: '8px 18px', borderRadius: '8px', background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#475569', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingExp}
+                  className="btn-wizard-primary"
+                  style={{ padding: '8px 22px', borderRadius: '8px', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', opacity: savingExp ? 0.7 : 1 }}
+                >
+                  {savingExp ? 'Saving...' : (editingExpId ? 'Update Experience' : 'Save Experience')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -105,14 +105,72 @@ class StudentPreviousEducationSerializer(serializers.ModelSerializer):
 
 class StudentExperienceSerializer(serializers.ModelSerializer):
     employment_type_detail = EmploymentTypeSerializer(source='employment_type', read_only=True)
+    skills = serializers.ListField(
+        child=serializers.CharField(max_length=100),
+        required=False,
+        default=list
+    )
 
     class Meta:
         model = StudentExperience
         fields = (
             'id', 'student', 'company_name', 'designation', 'employment_type',
-            'employment_type_detail', 'location', 'start_date', 'end_date', 'description'
+            'employment_type_detail', 'location', 'start_date', 'end_date',
+            'description', 'skills'
         )
         read_only_fields = ('id', 'student')
+
+    def to_internal_value(self, data):
+        if hasattr(data, 'copy'):
+            data = data.copy()
+        elif isinstance(data, dict):
+            data = dict(data)
+        else:
+            return super().to_internal_value(data)
+
+        # Map camelCase and alias field names
+        if 'company' in data and 'company_name' not in data:
+            data['company_name'] = data['company']
+        if 'companyName' in data and 'company_name' not in data:
+            data['company_name'] = data['companyName']
+        if 'jobTitle' in data and 'designation' not in data:
+            data['designation'] = data['jobTitle']
+        if 'startDate' in data and 'start_date' not in data:
+            data['start_date'] = data['startDate']
+        if 'endDate' in data and 'end_date' not in data:
+            data['end_date'] = data['endDate']
+        if data.get('isCurrent') or data.get('is_current'):
+            data['end_date'] = None
+        if 'type' in data and 'employment_type' not in data:
+            data['employment_type'] = data['type']
+        if 'employmentType' in data and 'employment_type' not in data:
+            data['employment_type'] = data['employmentType']
+
+        # Allow employment_type as string name (e.g. 'Internship', 'Full-Time')
+        emp_type_val = data.get('employment_type')
+        if emp_type_val and isinstance(emp_type_val, str) and not emp_type_val.isdigit():
+            from master_data.models import EmploymentType
+            emp_obj, _ = EmploymentType.objects.get_or_create(name=emp_type_val.strip())
+            data['employment_type'] = emp_obj.id
+
+        return super().to_internal_value(data)
+
+    def validate_skills(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Skills must be a list of strings.")
+        cleaned = []
+        seen = set()
+        for item in value:
+            if not isinstance(item, str):
+                continue
+            trimmed = item.strip()
+            if not trimmed:
+                continue
+            lower = trimmed.lower()
+            if lower not in seen:
+                seen.add(lower)
+                cleaned.append(trimmed)
+        return cleaned
 
     def validate(self, attrs):
         start_date = attrs.get('start_date')

@@ -302,6 +302,7 @@ class StudentExperienceListCreateView(APIView):
         serializer = StudentExperienceSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(student=profile)
+            calculate_student_completion(profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -326,6 +327,7 @@ class StudentExperienceDetailView(APIView):
             return Response({'error': 'Student profile not found.'}, status=status.HTTP_404_NOT_FOUND)
         instance = get_object_or_404(StudentExperience, pk=pk, student=profile)
         instance.delete()
+        calculate_student_completion(profile)
         return Response({'message': 'Experience deleted.'}, status=status.HTTP_200_OK)
 
 

@@ -280,6 +280,10 @@ class StudentResumePDFGenerator:
                 if exp.description:
                     story.append(Spacer(1, 2))
                     story.append(Paragraph(exp.description, styles['TableCell']))
+                if hasattr(exp, 'skills') and exp.skills:
+                    story.append(Spacer(1, 2))
+                    skills_str = ", ".join(exp.skills)
+                    story.append(Paragraph(f"<b>Key Skills:</b> {skills_str}", styles['TableCell']))
                 story.append(Spacer(1, 6))
         else:
             story.append(Paragraph("No internship or work experience recorded.", styles['SubHeaderInfo']))

@@ -289,6 +289,15 @@ export default function StudentResume({ onNavigateTab }) {
                       <span>🗓️ {exp.start_date} to {exp.end_date || 'Present'}</span>
                     </div>
                     {exp.description && <p className="exp-desc">{exp.description}</p>}
+                    {Array.isArray(exp.skills) && exp.skills.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '6px' }}>
+                        {exp.skills.map((skill, sIdx) => (
+                          <span key={sIdx} style={{ fontSize: '11px', background: '#EEF2FF', color: '#4F46E5', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

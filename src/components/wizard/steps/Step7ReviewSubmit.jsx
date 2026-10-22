@@ -93,9 +93,11 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
           branch_name: currEdu.branch || (basic.branch === 'Others' ? basic.customBranch : basic.branch) || 'Computer Science & Engineering',
           field_of_study: currEdu.fieldOfStudy || 'Software Development',
           batch: currEdu.batch || '2024 - 2026',
-          semester: currEdu.semester || '4',
-          cgpa: currEdu.cgpa || '8.75',
-          active_backlogs: currEdu.activeBacklogs || '0'
+          semester: currEdu.semester || currEdu.currentSemester || '4',
+          cgpa: currEdu.cgpa || (currEdu.percentage ? (parseFloat(currEdu.percentage) / 10).toFixed(2) : '8.75'),
+          active_backlogs: currEdu.activeBacklogs || currEdu.totalBacklogs || '0',
+          start_date: currEdu.startDate || null,
+          end_date: currEdu.expectedEndDate || currEdu.endDate || null
         },
 
         previous_education: {
@@ -363,34 +365,53 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
           <div className="review-kv-table">
             {expList.length > 0 ? (
               expList.map((item, idx) => (
-                <div key={idx} style={{ marginBottom: idx === expList.length - 1 ? 0 : '10px' }}>
-                  <div className="qual-subtitle-item">{item.companyName}</div>
+                <div key={idx} style={{ marginBottom: idx === expList.length - 1 ? 0 : '14px', borderBottom: idx === expList.length - 1 ? 'none' : '1px dashed #E2E8F0', paddingBottom: '10px' }}>
+                  <div className="qual-subtitle-item" style={{ fontWeight: 700, fontSize: '14px', color: '#0A192F' }}>
+                    {item.company || item.companyName}
+                  </div>
                   <div className="kv-row">
                     <span className="kv-key">Role & Type</span>
                     <span className="kv-sep">:</span>
-                    <span className="kv-val">{`${item.jobTitle || item.designation} (${item.employmentType || 'Internship'})`}</span>
+                    <span className="kv-val">{`${item.jobTitle || item.designation || 'Role'} (${item.type || item.employmentType || 'Internship'})`}</span>
                   </div>
+                  {item.location && (
+                    <div className="kv-row">
+                      <span className="kv-key">Location</span>
+                      <span className="kv-sep">:</span>
+                      <span className="kv-val">{item.location}</span>
+                    </div>
+                  )}
                   <div className="kv-row">
                     <span className="kv-key">Duration</span>
                     <span className="kv-sep">:</span>
-                    <span className="kv-val">{`${item.startDate} - ${item.endDate || 'Present'}`}</span>
+                    <span className="kv-val">{`${item.startDate || item.start_date || ''} - ${item.isCurrent ? 'Present' : (item.endDate || item.end_date || 'Present')}`}</span>
                   </div>
+                  {item.description && (
+                    <div className="kv-row">
+                      <span className="kv-key">Description</span>
+                      <span className="kv-sep">:</span>
+                      <span className="kv-val">{item.description}</span>
+                    </div>
+                  )}
+                  {item.skills && item.skills.length > 0 && (
+                    <div className="kv-row" style={{ marginTop: '4px' }}>
+                      <span className="kv-key">Skills</span>
+                      <span className="kv-sep">:</span>
+                      <div className="kv-val" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {item.skills.map((sk, sIdx) => (
+                          <span key={sIdx} className="skill-pill-tag" style={{ background: '#EEF2FF', color: '#4F46E5', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
-              <div>
-                <div className="qual-subtitle-item">Software Engineer Intern</div>
-                <div className="kv-row">
-                  <span className="kv-key">Company</span>
-                  <span className="kv-sep">:</span>
-                  <span className="kv-val">TechCorp Solutions</span>
-                </div>
-                <div className="kv-row">
-                  <span className="kv-key">Duration</span>
-                  <span className="kv-sep">:</span>
-                  <span className="kv-val">Jan 2024 - Apr 2024 (4 mos)</span>
-                </div>
-              </div>
+              <span style={{ color: '#94A3B8', fontSize: '13px' }}>
+                No internship or work experience recorded.
+              </span>
             )}
           </div>
         </div>

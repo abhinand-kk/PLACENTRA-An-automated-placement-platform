@@ -672,6 +672,26 @@ export default function StudentProfileEdit() {
             </div>
           </div>
 
+          {/* Work Experiences, Internships & Skills Callout */}
+          <div className="dashboard-card-panel" style={{ borderLeft: '4px solid #4F46E5' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0A192F', margin: 0 }}>Work & Internship Experiences</h3>
+                <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
+                  Manage individual internships, company names, verified dates, and role-specific skills directly on your interactive profile dashboard.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-wizard-secondary"
+                onClick={() => navigate('/student/dashboard')}
+                style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                Go to Experience Manager
+              </button>
+            </div>
+          </div>
+
           {/* Form Submit Footer */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
             <button 
