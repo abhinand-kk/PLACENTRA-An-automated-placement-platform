@@ -719,3 +719,13 @@ export default function StudentProfileEdit() {
     </div>
   );
 }
+import { validateMobileNumber } from '../../constants/academicData';
+    if (formData.mobileNumber) {
+      const mobRes = validateMobileNumber(formData.mobileNumber, 'India');
+      if (!mobRes.isValid) {
+        setErrorMsg(mobRes.message || 'Enter a valid 10-digit Indian mobile number.');
+        setSaving(false);
+        return;
+      }
+    }
+

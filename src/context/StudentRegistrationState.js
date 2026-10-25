@@ -7,6 +7,7 @@ export const initialStudentRegistrationState = {
     gender: '',
     bloodGroup: '',
     college: '',
+    customCollege: '',
     course: '',
     branch: '',
     customBranch: '',

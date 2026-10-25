@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, User, CheckCircle2, ArrowRight, ArrowLeft, AlertCircle, X } from 'lucide-react';
 import api from '../../../services/api';
 import { INDIAN_STATES, getDistrictsForState } from '../../../constants/locationData';
+import { validateMobileNumber } from '../../../constants/academicData';
 
 export default function Step2ContactVerification({ state, onChange, onNext, onBack }) {
   // Target type: 'primary_email' | 'personal_email' | 'mobile'
@@ -268,9 +269,9 @@ export default function Step2ContactVerification({ state, onChange, onNext, onBa
         return;
       }
     } else if (showChangeModal === 'mobile') {
-      const mobileRegex = /^[6-9]\d{9}$/;
-      if (!mobileRegex.test(value.replace(/\D/g, ''))) {
-        setChangeError('Please enter a valid 10-digit Indian mobile number.');
+      const res = validateMobileNumber(value, 'India');
+      if (!res.isValid) {
+        setChangeError(res.message || 'Enter a valid 10-digit Indian mobile number.');
         return;
       }
     }

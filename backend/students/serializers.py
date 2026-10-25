@@ -19,6 +19,15 @@ class StudentContactSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('id', 'student')
 
+    def validate_mobile_number(self, value):
+        from common.validators import validate_mobile_number
+        country = 'India'
+        if hasattr(self, 'initial_data') and isinstance(self.initial_data, dict):
+            country = self.initial_data.get('country') or 'India'
+        elif self.instance and hasattr(self.instance, 'country') and self.instance.country:
+            country = self.instance.country
+        return validate_mobile_number(value, country)
+
     def validate(self, attrs):
         state = attrs.get('state') or (self.instance.state if self.instance else None)
         district = attrs.get('district') or (self.instance.district if self.instance else None)

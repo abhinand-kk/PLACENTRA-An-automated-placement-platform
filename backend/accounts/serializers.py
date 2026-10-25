@@ -91,13 +91,14 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         err_msg = "Please enter a valid lowercase email address."
         if not value or not isinstance(value, str):
             raise serializers.ValidationError(err_msg)
-        if value.strip() != value or ' ' in value:
+        val = value.strip()
+        if not val or ' ' in val:
             raise serializers.ValidationError(err_msg)
         import re
-        if re.search(r'[A-Z]', value):
+        if re.search(r'[A-Z]', val):
             raise serializers.ValidationError(err_msg)
         
-        parts = value.split('@')
+        parts = val.split('@')
         if len(parts) != 2:
             raise serializers.ValidationError(err_msg)
         
@@ -122,8 +123,18 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         if not re.match(domain_regex, domain):
             raise serializers.ValidationError(err_msg)
 
-        if User.objects.filter(email__iexact=value).exists():
+        if User.objects.filter(email__iexact=val).exists():
             raise serializers.ValidationError("A user with this email address already exists.")
+        return val
+
+    def validate_contact_details(self, value):
+        if not value or not isinstance(value, dict):
+            return value
+        from common.validators import validate_mobile_number
+        mobile = value.get('mobile_number')
+        country = value.get('country') or 'India'
+        if mobile:
+            value['mobile_number'] = validate_mobile_number(mobile, country)
         return value
 
     def validate_date_of_birth(self, value):
@@ -586,6 +597,10 @@ class RecruiterRegistrationSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_mobile_number(self, value):
+        from common.validators import validate_mobile_number
+        return validate_mobile_number(value, 'India')
+
     def validate(self, attrs):
         return attrs
 
@@ -638,6 +653,10 @@ class PlacementOfficerRegistrationSerializer(serializers.ModelSerializer):
         if User.objects.filter(email__iexact=value.strip()).exists():
             raise serializers.ValidationError("A user with this email address already exists.")
         return value.strip().lower()
+
+    def validate_mobile_number(self, value):
+        from common.validators import validate_mobile_number
+        return validate_mobile_number(value, 'India')
 
     @transaction.atomic
     def create(self, validated_data):

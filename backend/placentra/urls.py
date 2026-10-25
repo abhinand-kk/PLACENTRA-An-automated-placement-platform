@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/v1/applications/', include('applications.urls')),
     path('api/v1/interviews/', include('applications.interview_urls')),
     path('api/v1/placement-drives/', include('placement_drives.urls')),
+    path('api/v1/institutions/', include('institutions.urls')),
 
     path('api/v1/notifications/', include('notifications.urls')),
 ]

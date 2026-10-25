@@ -64,6 +64,9 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
       const registerNumber = (basic.rollNumber || `REG${Math.floor(100000 + Math.random() * 900000)}`).trim();
       const username = (email.split('@')[0] || registerNumber).toLowerCase();
 
+      const collegeName = (basic.college === 'Other institution / Not listed' ? basic.customCollege : basic.college) || currEdu.institutionName || 'Amal Jyothi College of Engineering';
+      const branchName = currEdu.branch || (basic.branch === 'Others' ? basic.customBranch : basic.branch) || 'Computer Applications';
+
       const payload = {
         username: username,
         email: email,
@@ -88,9 +91,9 @@ export default function Step7ReviewSubmit({ state, onJumpToStep, onBack, onCompl
         },
 
         current_education: {
-          institutionName: currEdu.institutionName || 'Amal Jyothi College of Engineering',
+          institutionName: collegeName,
           program_name: currEdu.program || basic.course || 'Integrated MCA',
-          branch_name: currEdu.branch || (basic.branch === 'Others' ? basic.customBranch : basic.branch) || 'Computer Science & Engineering',
+          branch_name: branchName,
           field_of_study: currEdu.fieldOfStudy || 'Software Development',
           batch: currEdu.batch || '2024 - 2026',
           semester: currEdu.semester || currEdu.currentSemester || '4',

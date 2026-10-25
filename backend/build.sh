@@ -10,3 +10,7 @@ python manage.py collectstatic --no-input
 
 # Apply database migrations
 python manage.py migrate --no-input
+
+# Seed verified institutions (idempotent, safe to rerun)
+python manage.py seed_verified_institutions
+

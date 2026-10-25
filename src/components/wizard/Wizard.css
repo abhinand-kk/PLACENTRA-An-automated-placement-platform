@@ -1801,3 +1801,44 @@ input[type="date"].form-control::-webkit-calendar-picker-indicator:hover,
     flex-direction: column;
   }
 }
+.dropdown-item.empty {
+  color: var(--wizard-text-muted);
+  cursor: default;
+  font-style: italic;
+}
+
+.dropdown-item.loading {
+  color: var(--wizard-text-muted);
+  cursor: default;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown-item.error {
+  color: #DC2626;
+  cursor: default;
+  background: #FEF2F2;
+}
+
+.dropdown-item.not-listed {
+  color: var(--wizard-purple-primary);
+  font-weight: 600;
+  border-top: 1px dashed var(--wizard-border);
+  background: #F8FAFC;
+}
+
+.dropdown-item.not-listed:hover {
+  background: var(--wizard-purple-light);
+  color: var(--wizard-purple-primary);
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+

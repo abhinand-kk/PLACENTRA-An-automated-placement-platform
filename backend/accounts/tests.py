@@ -158,3 +158,120 @@ class RecruiterEmailValidationTests(TestCase):
         self.assertIn('access', response.data['tokens'])
         self.assertEqual(response.data['user']['email'], 'priya.recruiter@gmail.com')
         self.assertEqual(response.data['user']['role'], 'recruiter')
+
+
+class MobileNumberAndRegistrationValidationTests(TestCase):
+    """
+    Tests mobile number validation and registration constraints across
+    validators, student registration serializer, and accounts views.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_mobile_validator_accepts_valid_indian_numbers(self):
+        """Accepts properly formatted 10-digit Indian numbers starting with 6, 7, 8, or 9."""
+        from common.validators import validate_mobile_number
+        valid_numbers = [
+            '9876543210',
+            '8123456789',
+            '7012345678',
+            '6235407730',
+            '+91 9876543210',
+            '91-8123456789',
+            '09876543210'
+        ]
+        for num in valid_numbers:
+            cleaned = validate_mobile_number(num, 'India')
+            self.assertEqual(len(cleaned), 10)
+            self.assertIn(cleaned[0], ['6', '7', '8', '9'])
+
+    def test_mobile_validator_rejects_zeros_and_repeated_digits(self):
+        """Rejects '0000000000' and obvious placeholder numbers consisting entirely of repeated digits."""
+        from common.validators import validate_mobile_number
+        from rest_framework.exceptions import ValidationError
+
+        repeated_numbers = [
+            '0000000000',
+            '1111111111',
+            '2222222222',
+            '9999999999',
+            '8888888888',
+            '7777777777',
+            '6666666666'
+        ]
+        for bad_num in repeated_numbers:
+            with self.assertRaises(ValidationError, msg=f"Expected rejection for {bad_num}"):
+                validate_mobile_number(bad_num, 'India')
+
+    def test_mobile_validator_rejects_invalid_starting_digits(self):
+        """Indian mobile numbers starting with 0-5 must be rejected."""
+        from common.validators import validate_mobile_number
+        from rest_framework.exceptions import ValidationError
+
+        invalid_prefixes = ['1234567890', '2345678901', '3456789012', '4567890123', '5678901234']
+        for bad_num in invalid_prefixes:
+            with self.assertRaises(ValidationError):
+                validate_mobile_number(bad_num, 'India')
+
+    def test_mobile_validator_rejects_letters_and_length_mismatch(self):
+        """Rejects numbers with alphabetical characters or incorrect digit counts."""
+        from common.validators import validate_mobile_number
+        from rest_framework.exceptions import ValidationError
+
+        bad_inputs = ['98765abcde', '987654321', '98765432101', '98765@4321', '']
+        for bad_input in bad_inputs:
+            with self.assertRaises(ValidationError):
+                validate_mobile_number(bad_input, 'India')
+
+    def test_student_registration_accepts_subdomain_email(self):
+        """Student registration must accept valid lowercase institutional emails with subdomains."""
+        from accounts.serializers import StudentRegistrationSerializer
+        data = {
+            'email': 'abhinandkk2027@mca.ajce.in',
+            'password': 'SecurePassword123!',
+            'register_number': 'AJC25MCA2002',
+            'first_name': 'Abhinand',
+            'last_name': 'K K',
+            'contact_details': {
+                'mobile_number': '9876543210'
+            }
+        }
+        serializer = StudentRegistrationSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+
+    def test_student_registration_rejects_zero_mobile(self):
+        """Student registration must reject 0000000000 as mobile number."""
+        from accounts.serializers import StudentRegistrationSerializer
+        data = {
+            'email': 'teststudent@mca.ajce.in',
+            'password': 'SecurePassword123!',
+            'register_number': 'REG001',
+            'first_name': 'Test',
+            'last_name': 'Student',
+            'contact_details': {
+                'mobile_number': '0000000000'
+            }
+        }
+        serializer = StudentRegistrationSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('contact_details', serializer.errors)
+
+    def test_student_registration_rejects_repeated_digit_mobile(self):
+        """Student registration must reject 1111111111 or 9999999999 as mobile number."""
+        from accounts.serializers import StudentRegistrationSerializer
+        for bad_phone in ['1111111111', '9999999999']:
+            data = {
+                'email': f'test_{bad_phone[:4]}@mca.ajce.in',
+                'password': 'SecurePassword123!',
+                'register_number': f'REG_{bad_phone[:4]}',
+                'first_name': 'Test',
+                'last_name': 'Student',
+                'contact_details': {
+                    'mobile_number': bad_phone
+                }
+            }
+            serializer = StudentRegistrationSerializer(data=data)
+            self.assertFalse(serializer.is_valid(), f"Expected invalid for phone {bad_phone}")
+            self.assertIn('contact_details', serializer.errors)
+

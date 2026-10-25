@@ -129,6 +129,14 @@ class SendOTPView(APIView):
 
         contact_value = str(contact_value).strip().lower() if 'email' in target_type else str(contact_value).strip()
 
+        if target_type == 'mobile':
+            from common.validators import validate_mobile_number
+            try:
+                contact_value = validate_mobile_number(contact_value, 'India')
+            except Exception as e:
+                err_detail = e.detail[0] if hasattr(e, 'detail') else str(e)
+                return Response({'error': err_detail}, status=status.HTTP_400_BAD_REQUEST)
+
         # Check resend cooldown (60 seconds)
         latest_otp = OTPVerification.objects.filter(
             target_type=target_type,
@@ -210,6 +218,14 @@ class VerifyOTPView(APIView):
         contact_value = str(contact_value).strip().lower() if 'email' in target_type else str(contact_value).strip()
         submitted_otp = str(submitted_otp).strip()
 
+        if target_type == 'mobile':
+            from common.validators import validate_mobile_number
+            try:
+                contact_value = validate_mobile_number(contact_value, 'India')
+            except Exception as e:
+                err_detail = e.detail[0] if hasattr(e, 'detail') else str(e)
+                return Response({'error': err_detail}, status=status.HTTP_400_BAD_REQUEST)
+
         otp_record = OTPVerification.objects.filter(
             target_type=target_type,
             contact_value=contact_value
@@ -258,6 +274,14 @@ class CheckContactView(APIView):
             return Response({'error': 'Contact value is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         contact_value = str(contact_value).strip()
+
+        if target_type == 'mobile':
+            from common.validators import validate_mobile_number
+            try:
+                contact_value = validate_mobile_number(contact_value, 'India')
+            except Exception as e:
+                err_detail = e.detail[0] if hasattr(e, 'detail') else str(e)
+                return Response({'error': err_detail}, status=status.HTTP_400_BAD_REQUEST)
 
         if 'email' in target_type:
             if User.objects.filter(email__iexact=contact_value).exists():
