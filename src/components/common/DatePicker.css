@@ -1,0 +1,304 @@
+/* =========================================================
+   PLACENTRA - MODERN REUSABLE DATE PICKER STYLES
+   Matches design reference: clean white panel, rounded corners,
+   subtle shadow, PLACENTRA purple focus/selection, spacious grid.
+   ========================================================= */
+
+.modern-datepicker-container {
+  position: relative;
+  width: 100%;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.modern-datepicker-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0F172A;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.modern-datepicker-input:hover:not(.disabled) {
+  border-color: #94A3B8;
+  background-color: #FAFAFA;
+}
+
+.modern-datepicker-input:focus,
+.modern-datepicker-input.focused {
+  outline: none;
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  background-color: #FFFFFF;
+}
+
+.modern-datepicker-input.invalid {
+  border-color: #EF4444 !important;
+  background-color: #FEF2F2 !important;
+}
+
+.modern-datepicker-input.disabled {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+  color: #94A3B8 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.mdp-input-value {
+  font-weight: 500;
+  color: #0F172A;
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mdp-input-value.placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.mdp-calendar-icon {
+  color: #64748B;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.mdp-calendar-icon.active {
+  color: #4F46E5;
+}
+
+/* =========================================================
+   CALENDAR POPOVER (PORTAL TO BODY)
+   ========================================================= */
+
+.modern-datepicker-popover {
+  position: absolute;
+  width: 310px;
+  max-width: 94vw;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  box-shadow: 0 14px 35px -5px rgba(15, 23, 42, 0.16), 0 8px 12px -6px rgba(15, 23, 42, 0.08);
+  padding: 14px;
+  box-sizing: border-box;
+  animation: mdpFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  user-select: none;
+}
+
+@keyframes mdpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.mdp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.mdp-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.mdp-nav-btn:hover {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border-color: #C7D2FE;
+}
+
+.mdp-selectors-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mdp-select {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.mdp-select:hover {
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+}
+
+.mdp-select:focus {
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+/* Weekday Grid */
+.mdp-weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.mdp-weekday-cell {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 0;
+}
+
+/* Days Grid */
+.mdp-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.mdp-day-btn {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0F172A;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.mdp-day-btn:hover:not(:disabled) {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
+
+.mdp-day-btn.muted {
+  color: #94A3B8;
+  opacity: 0.6;
+}
+
+.mdp-day-btn.today {
+  border-color: #4F46E5;
+  font-weight: 700;
+  color: #4F46E5;
+}
+
+.mdp-day-btn.selected {
+  background: #4F46E5 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.35);
+  border-color: #4F46E5 !important;
+}
+
+.mdp-day-btn.disabled {
+  color: #CBD5E1 !important;
+  background: transparent !important;
+  cursor: not-allowed !important;
+  opacity: 0.35;
+  text-decoration: line-through;
+  text-decoration-color: rgba(203, 213, 225, 0.5);
+}
+
+/* Footer Action Bar */
+.mdp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.mdp-footer-btn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mdp-btn-clear {
+  color: #64748B;
+}
+
+.mdp-btn-clear:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.mdp-btn-today {
+  color: #4F46E5;
+}
+
+.mdp-btn-today:hover:not(:disabled) {
+  background: #EEF2FF;
+}
+
+.mdp-btn-today.disabled {
+  color: #94A3B8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .modern-datepicker-popover {
+    width: 285px;
+    padding: 10px;
+    max-width: calc(100vw - 24px);
+  }
+  .mdp-select {
+    padding: 3px 5px;
+    font-size: 12px;
+  }
+  .mdp-day-btn {
+    font-size: 12px;
+  }
+}

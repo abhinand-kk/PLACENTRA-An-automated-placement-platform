@@ -29,6 +29,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
+import DatePicker from '../common/DatePicker';
 import './OfficerDashboard.css';
 
 export default function OfficerDashboard() {
@@ -2161,11 +2162,13 @@ export default function OfficerDashboard() {
               <div className="form-row-2">
                 <div className="form-group">
                   <label>Drive Date *</label>
-                  <input 
-                    type="date"
+                  <DatePicker
+                    minDate="today"
                     required
-                    value={driveFormData.drive_date}
-                    onChange={(e) => setDriveFormData({ ...driveFormData, drive_date: e.target.value })}
+                    value={driveFormData.drive_date || ''}
+                    onChange={(val) => setDriveFormData({ ...driveFormData, drive_date: val })}
+                    placeholder="dd-mm-yyyy"
+                    ariaLabel="Drive Date"
                   />
                 </div>
 

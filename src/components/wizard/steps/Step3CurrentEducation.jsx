@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GraduationCap, ArrowRight, ArrowLeft, AlertCircle, Search, X, Check, Info } from 'lucide-react';
+import DatePicker from '../../common/DatePicker';
 
 export default function Step3CurrentEducation({ state, onChange, onNext, onBack }) {
   const data = state.currentEducation || {};
@@ -407,17 +408,15 @@ export default function Step3CurrentEducation({ state, onChange, onNext, onBack 
           {/* Start Date */}
           <div className="form-group">
             <label className="form-label">Course Start Date <span className="req">*</span></label>
-            <div className="input-with-icon">
-              <input 
-                type="date" 
-                className={`form-control ${touched.startDate && startDateError ? 'invalid' : ''}`}
-                value={startDate}
-                max={todayStr}
-                onChange={(e) => handleChange('startDate', e.target.value)}
-                onBlur={() => handleBlur('startDate')}
-                required
-              />
-            </div>
+            <DatePicker
+              value={startDate}
+              maxDate={todayStr}
+              onChange={(val) => handleChange('startDate', val)}
+              onBlur={() => handleBlur('startDate')}
+              invalid={touched.startDate && Boolean(startDateError)}
+              required
+              ariaLabel="Course Start Date"
+            />
             {touched.startDate && startDateError && (
               <span className="error-text">{startDateError}</span>
             )}
@@ -426,17 +425,15 @@ export default function Step3CurrentEducation({ state, onChange, onNext, onBack 
           {/* End Date */}
           <div className="form-group">
             <label className="form-label">Course End Date <span className="req">*</span></label>
-            <div className="input-with-icon">
-              <input 
-                type="date" 
-                className={`form-control ${touched.expectedEndDate && endDateError ? 'invalid' : ''}`}
-                value={expectedEndDate}
-                min={startDate || ''}
-                onChange={(e) => handleChange('expectedEndDate', e.target.value)}
-                onBlur={() => handleBlur('expectedEndDate')}
-                required
-              />
-            </div>
+            <DatePicker
+              value={expectedEndDate}
+              minDate={startDate || undefined}
+              onChange={(val) => handleChange('expectedEndDate', val)}
+              onBlur={() => handleBlur('expectedEndDate')}
+              invalid={touched.expectedEndDate && Boolean(endDateError)}
+              required
+              ariaLabel="Course End Date"
+            />
             <span className="sub-caption">Expected course graduation date</span>
             {touched.expectedEndDate && endDateError && (
               <span className="error-text">{endDateError}</span>

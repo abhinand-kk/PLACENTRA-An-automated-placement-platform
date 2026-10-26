@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, ArrowRight, ArrowLeft, Plus, Edit2, Trash2, Info, Calendar, MapPin, CheckCircle2, X } from 'lucide-react';
+import { Briefcase, ArrowRight, ArrowLeft, Plus, Edit2, Trash2, Info, CheckCircle2, X } from 'lucide-react';
 import ExperienceSkillsSelector from '../../common/ExperienceSkillsSelector';
+import DatePicker from '../../common/DatePicker';
 
 export default function Step5Experience({ state, onChange, onNext, onBack }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -360,24 +361,26 @@ export default function Step5Experience({ state, onChange, onNext, onBack }) {
                 <div className="form-grid-2" style={{ marginBottom: '14px' }}>
                   <div className="form-group">
                     <label className="form-label">Start Date <span className="req">*</span></label>
-                    <input 
-                      type="date" 
-                      className="form-control"
+                    <DatePicker
                       value={form.startDate}
-                      onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                      maxDate={form.endDate && !form.isCurrent ? form.endDate : undefined}
+                      onChange={(val) => setForm({ ...form, startDate: val })}
                       required
+                      placeholder="dd-mm-yyyy"
+                      ariaLabel="Experience Start Date"
                     />
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">End Date <span className="req">*</span></label>
-                    <input 
-                      type="date" 
-                      className="form-control"
-                      value={form.endDate}
-                      onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                    <DatePicker
+                      value={form.isCurrent ? '' : form.endDate}
+                      minDate={form.startDate || undefined}
+                      onChange={(val) => setForm({ ...form, endDate: val })}
                       disabled={form.isCurrent}
                       required={!form.isCurrent}
+                      placeholder={form.isCurrent ? 'Present' : 'dd-mm-yyyy'}
+                      ariaLabel="Experience End Date"
                     />
                   </div>
                 </div>

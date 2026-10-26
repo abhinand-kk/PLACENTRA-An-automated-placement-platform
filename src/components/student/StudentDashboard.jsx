@@ -24,6 +24,7 @@ import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
 import StudentResume from './StudentResume';
 import ExperienceSkillsSelector from '../common/ExperienceSkillsSelector';
+import DatePicker from '../common/DatePicker';
 import { getMediaUrl } from '../../services/api';
 import './StudentDashboard.css';
 
@@ -1517,12 +1518,13 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
                     Start Date <span style={{ color: '#EF4444' }}>*</span>
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     required
-                    value={expFormData.start_date}
-                    onChange={(e) => setExpFormData({ ...expFormData, start_date: e.target.value })}
-                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px' }}
+                    value={expFormData.start_date || ''}
+                    maxDate={expFormData.end_date && !expFormData.is_current ? expFormData.end_date : undefined}
+                    onChange={(val) => setExpFormData({ ...expFormData, start_date: val })}
+                    placeholder="dd-mm-yyyy"
+                    ariaLabel="Experience Start Date"
                   />
                 </div>
 
@@ -1530,12 +1532,13 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
                     End Date {!expFormData.is_current && <span style={{ color: '#64748B', fontWeight: 400 }}>(or select Present)</span>}
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     disabled={expFormData.is_current}
-                    value={expFormData.end_date}
-                    onChange={(e) => setExpFormData({ ...expFormData, end_date: e.target.value })}
-                    style={{ width: '100%', padding: '9px 12px', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '13.5px', background: expFormData.is_current ? '#F1F5F9' : '#FFFFFF' }}
+                    value={expFormData.is_current ? '' : (expFormData.end_date || '')}
+                    minDate={expFormData.start_date || undefined}
+                    onChange={(val) => setExpFormData({ ...expFormData, end_date: val })}
+                    placeholder={expFormData.is_current ? 'Present' : 'dd-mm-yyyy'}
+                    ariaLabel="Experience End Date"
                   />
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12.5px', color: '#475569', cursor: 'pointer' }}>
                     <input

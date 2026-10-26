@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api, { getMediaUrl } from '../../services/api';
 import { validateMobileNumber } from '../../constants/academicData';
+import DatePicker from '../common/DatePicker';
 import './StudentDashboard.css';
 
 export default function StudentProfileEdit() {
@@ -361,11 +362,13 @@ export default function StudentProfileEdit() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>Date of Birth</label>
-                <input 
-                  type="date"
-                  value={formData.dob} 
-                  onChange={(e) => handleChange('dob', e.target.value)} 
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13.5px', outline: 'none' }}
+                <DatePicker
+                  value={formData.dob || ''}
+                  onChange={(val) => handleChange('dob', val)}
+                  isDob={true}
+                  minAge={18}
+                  placeholder="dd-mm-yyyy"
+                  ariaLabel="Date of Birth"
                 />
               </div>
 

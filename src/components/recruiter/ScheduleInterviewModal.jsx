@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar, Clock, Video, MapPin, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
+import DatePicker from '../common/DatePicker';
 
 export default function ScheduleInterviewModal({ application, onClose, onSuccess, onDuplicate }) {
   const candidateName = application?.student_name || `${application?.student_detail?.first_name || ''} ${application?.student_detail?.last_name || ''}`.trim() || 'Candidate';
@@ -224,12 +225,13 @@ export default function ScheduleInterviewModal({ application, onClose, onSuccess
           <div className="form-row-2">
             <div className="form-group">
               <label>Date *</label>
-              <input
-                type="date"
-                min={todayStr}
+              <DatePicker
+                minDate={todayStr}
                 required
-                value={formData.interview_date}
-                onChange={(e) => setFormData({ ...formData, interview_date: e.target.value })}
+                value={formData.interview_date || ''}
+                onChange={(val) => setFormData({ ...formData, interview_date: val })}
+                placeholder="dd-mm-yyyy"
+                ariaLabel="Interview Date"
               />
             </div>
 

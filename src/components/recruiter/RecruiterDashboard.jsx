@@ -32,6 +32,7 @@ import api from '../../services/api';
 import ChangePasswordCard from '../common/ChangePasswordCard';
 import ScheduleInterviewModal from './ScheduleInterviewModal';
 import RecruiterInterviewCalendar from './RecruiterInterviewCalendar';
+import DatePicker from '../common/DatePicker';
 import './RecruiterDashboard.css';
 
 export default function RecruiterDashboard() {
@@ -1226,10 +1227,12 @@ export default function RecruiterDashboard() {
 
               <div className="form-group">
                 <label>Application Deadline</label>
-                <input 
-                  type="date"
-                  value={jobFormData.application_deadline}
-                  onChange={(e) => setJobFormData({ ...jobFormData, application_deadline: e.target.value })}
+                <DatePicker
+                  minDate="today"
+                  value={jobFormData.application_deadline || ''}
+                  onChange={(val) => setJobFormData({ ...jobFormData, application_deadline: val })}
+                  placeholder="dd-mm-yyyy"
+                  ariaLabel="Application Deadline"
                 />
               </div>
 
