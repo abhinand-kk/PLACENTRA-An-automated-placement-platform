@@ -14,3 +14,6 @@ python manage.py migrate --no-input
 # Seed verified institutions (idempotent, safe to rerun)
 python manage.py seed_verified_institutions
 
+# Seed required master data (HiringType, EmploymentType, WorkMode, etc. idempotent, safe to rerun)
+python manage.py seed_master_data
+

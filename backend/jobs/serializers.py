@@ -45,3 +45,48 @@ class JobSerializer(serializers.ModelSerializer):
         if value < 0 or value > 10.0:
             raise serializers.ValidationError("Minimum CGPA must be between 0.0 and 10.0.")
         return value
+
+    def validate(self, attrs):
+        # 1. Deterministic resolution of hiring_type fallback
+        if attrs.get('hiring_type') is None:
+            default_hiring_type = (
+                HiringType.objects.filter(name='Direct').first()
+                or HiringType.objects.filter(name='Campus Placement').first()
+                or HiringType.objects.first()
+            )
+            if not default_hiring_type:
+                raise serializers.ValidationError({
+                    'hiring_type': 'Required hiring type master data is not configured in the system. Please contact an administrator.'
+                })
+            attrs['hiring_type'] = default_hiring_type
+
+        # 2. Deterministic resolution of employment_type fallback
+        if attrs.get('employment_type') is None:
+            default_emp_type = (
+                EmploymentType.objects.filter(name='Full Time').first()
+                or EmploymentType.objects.first()
+            )
+            if not default_emp_type:
+                raise serializers.ValidationError({
+                    'employment_type': 'Required employment type master data is not configured in the system. Please contact an administrator.'
+                })
+            attrs['employment_type'] = default_emp_type
+
+        # 3. Deterministic resolution of work_mode fallback
+        if attrs.get('work_mode') is None:
+            default_work_mode = (
+                WorkMode.objects.filter(name__iexact='Hybrid').first()
+                or WorkMode.objects.filter(name__iexact='On-Site').first()
+                or WorkMode.objects.first()
+            )
+            if not default_work_mode:
+                raise serializers.ValidationError({
+                    'work_mode': 'Required work mode master data is not configured in the system. Please contact an administrator.'
+                })
+            attrs['work_mode'] = default_work_mode
+
+        # 4. Default expected_hiring_month if omitted or blank
+        if not attrs.get('expected_hiring_month'):
+            attrs['expected_hiring_month'] = 'Immediate'
+
+        return attrs

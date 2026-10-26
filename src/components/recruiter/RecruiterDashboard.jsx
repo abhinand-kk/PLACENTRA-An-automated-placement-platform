@@ -303,7 +303,52 @@ export default function RecruiterDashboard() {
       }, 1500);
     } catch (err) {
       console.error("Job creation error:", err);
-      setJobFormError(err.response?.data?.error || 'Failed to post new job. Please check all fields.');
+
+      const status = err.response?.status;
+      const data = err.response?.data;
+      let userFriendlyMessage = 'Failed to post new job. Please check all fields.';
+
+      if (status === 401) {
+        userFriendlyMessage = 'Your session has expired. Please log in again to post jobs.';
+      } else if (status === 403) {
+        userFriendlyMessage = data?.error || data?.message || data?.detail ||
+          'Your recruiter account does not have permission to post jobs, or your profile is pending approval by the Placement Officer.';
+      } else if (status === 400) {
+        const errorsObj = data?.errors || data;
+        if (typeof errorsObj === 'string') {
+          userFriendlyMessage = errorsObj;
+        } else if (errorsObj && typeof errorsObj === 'object') {
+          if (typeof errorsObj.error === 'string') {
+            userFriendlyMessage = errorsObj.error;
+          } else if (typeof errorsObj.detail === 'string') {
+            userFriendlyMessage = errorsObj.detail;
+          } else {
+            const fieldErrorMessages = [];
+            for (const [field, messages] of Object.entries(errorsObj)) {
+              if (field === 'status' || field === 'code') continue;
+              const fieldLabel = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              if (Array.isArray(messages)) {
+                fieldErrorMessages.push(`${fieldLabel}: ${messages.join(', ')}`);
+              } else if (typeof messages === 'string') {
+                fieldErrorMessages.push(`${fieldLabel}: ${messages}`);
+              }
+            }
+            if (fieldErrorMessages.length > 0) {
+              userFriendlyMessage = fieldErrorMessages.join(' | ');
+            } else if (data?.message && typeof data.message === 'string') {
+              userFriendlyMessage = data.message;
+            } else {
+              userFriendlyMessage = 'Please verify all required job details and try again.';
+            }
+          }
+        }
+      } else if (status && status >= 500) {
+        userFriendlyMessage = 'A server error occurred while processing your job posting. Please try again later or contact support.';
+      } else if (!err.response) {
+        userFriendlyMessage = 'Unable to connect to the server. Please check your network connection and try again.';
+      }
+
+      setJobFormError(userFriendlyMessage);
     } finally {
       setSubmittingJob(false);
     }

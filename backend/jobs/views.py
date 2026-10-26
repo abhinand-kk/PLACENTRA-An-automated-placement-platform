@@ -51,21 +51,27 @@ class JobViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        from master_data.models import EmploymentType, HiringType, TargetJobRole, Program, Branch, WorkMode
+        from master_data.models import TargetJobRole, Program, Branch
+        from rest_framework.exceptions import ValidationError
+
         recruiter = self.request.user.recruiter_profile
-        emp_type = serializer.validated_data.get('employment_type') or EmploymentType.objects.first()
-        hir_type = serializer.validated_data.get('hiring_type') or HiringType.objects.first()
-        wm_mode = serializer.validated_data.get('work_mode') or WorkMode.objects.first()
-        exp_month = serializer.validated_data.get('expected_hiring_month') or 'Immediate'
-        
+
+        # Defensive master-data integrity check to prevent uncaught db IntegrityError
+        hir_type = serializer.validated_data.get('hiring_type')
+        emp_type = serializer.validated_data.get('employment_type')
+        wm_mode = serializer.validated_data.get('work_mode')
+
+        if not hir_type:
+            raise ValidationError({'hiring_type': 'Required hiring type master data is not configured in the system.'})
+        if not emp_type:
+            raise ValidationError({'employment_type': 'Required employment type master data is not configured in the system.'})
+        if not wm_mode:
+            raise ValidationError({'work_mode': 'Required work mode master data is not configured in the system.'})
+
         job_status = serializer.validated_data.get('status') or Job.Status.PENDING_APPROVAL
 
         job = serializer.save(
             recruiter=recruiter,
-            employment_type=emp_type,
-            hiring_type=hir_type,
-            work_mode=wm_mode,
-            expected_hiring_month=exp_month,
             status=job_status
         )
         
