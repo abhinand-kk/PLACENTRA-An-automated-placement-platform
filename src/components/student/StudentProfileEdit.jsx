@@ -14,6 +14,7 @@ import {
   Upload
 } from 'lucide-react';
 import api, { getMediaUrl } from '../../services/api';
+import { validateMobileNumber } from '../../constants/academicData';
 import './StudentDashboard.css';
 
 export default function StudentProfileEdit() {
@@ -180,6 +181,15 @@ export default function StudentProfileEdit() {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (formData.mobileNumber) {
+      const mobRes = validateMobileNumber(formData.mobileNumber, 'India');
+      if (!mobRes.isValid) {
+        setErrorMsg(mobRes.message || 'Enter a valid 10-digit Indian mobile number.');
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -719,13 +729,3 @@ export default function StudentProfileEdit() {
     </div>
   );
 }
-import { validateMobileNumber } from '../../constants/academicData';
-    if (formData.mobileNumber) {
-      const mobRes = validateMobileNumber(formData.mobileNumber, 'India');
-      if (!mobRes.isValid) {
-        setErrorMsg(mobRes.message || 'Enter a valid 10-digit Indian mobile number.');
-        setSaving(false);
-        return;
-      }
-    }
-
