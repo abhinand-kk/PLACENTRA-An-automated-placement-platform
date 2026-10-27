@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Job
+from .models import Job, PublicReferenceJob
 from recruiters.serializers import RecruiterProfileSerializer
 from master_data.serializers import (
     EmploymentTypeSerializer,
@@ -90,3 +90,17 @@ class JobSerializer(serializers.ModelSerializer):
             attrs['expected_hiring_month'] = 'Immediate'
 
         return attrs
+
+
+class PublicReferenceJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PublicReferenceJob
+        fields = (
+            'id', 'company_name', 'company_website', 'industry',
+            'job_title', 'job_description', 'location', 'work_mode',
+            'eligibility_criteria', 'package_details', 'application_deadline',
+            'application_url', 'source_url', 'verified_at', 'is_active',
+            'is_reference_only', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at')
+

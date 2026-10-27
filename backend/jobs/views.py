@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Job
-from .serializers import JobSerializer
+from .models import Job, PublicReferenceJob
+from .serializers import JobSerializer, PublicReferenceJobSerializer
 from .filters import JobFilter
 from .permissions import IsRecruiterUser, IsJobOwner
 
@@ -119,3 +119,19 @@ class JobViewSet(viewsets.ModelViewSet):
         job.save(update_fields=['status'])
         serializer = self.get_serializer(job)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PublicReferenceJobViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Publicly sourced enterprise reference opportunities.
+    Provides verifiable market vacancy data for student career reference and recruiter benchmarks.
+    ReadOnly: does not permit direct in-app application submission.
+    """
+    queryset = PublicReferenceJob.objects.filter(is_active=True)
+    serializer_class = PublicReferenceJobSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['job_title', 'company_name', 'location', 'industry']
+    ordering_fields = ['created_at', 'company_name']
+    ordering = ['company_name']
+

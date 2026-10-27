@@ -17,7 +17,9 @@ import {
   Edit2,
   Trash2,
   Plus,
-  Search
+  Search,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -76,6 +78,8 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [scheduledInterviews, setScheduledInterviews] = useState([]);
+  const [publicJobs, setPublicJobs] = useState([]);
+  const [jobTabMode, setJobTabMode] = useState('campus'); // 'campus' | 'reference'
 
   // Fetch all student data on mount
   useEffect(() => {
@@ -91,7 +95,8 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
           drivesRes,
           notifsRes,
           unreadRes,
-          interviewsRes
+          interviewsRes,
+          publicJobsRes
         ] = await Promise.allSettled([
           api.get('/api/v1/students/profile/'),
           api.get('/api/v1/students/current-education/'),
@@ -101,7 +106,8 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
           api.get('/api/v1/placement-drives/student/'),
           api.get('/api/v1/notifications/'),
           api.get('/api/v1/notifications/unread-count/'),
-          api.get('/api/v1/interviews/my-interviews/')
+          api.get('/api/v1/interviews/my-interviews/'),
+          api.get('/api/v1/jobs/public-reference/')
         ]);
 
         if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
@@ -113,6 +119,7 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
         if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
         if (unreadRes.status === 'fulfilled') setUnreadCount(unreadRes.value.data.unread_count || 0);
         if (interviewsRes.status === 'fulfilled') setScheduledInterviews(interviewsRes.value.data.results || interviewsRes.value.data || []);
+        if (publicJobsRes && publicJobsRes.status === 'fulfilled') setPublicJobs(publicJobsRes.value.data.results || publicJobsRes.value.data || []);
       } catch (err) {
         console.warn("Student data fetch error:", err);
       } finally {
@@ -341,6 +348,19 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
     if (jobWorkModeFilter !== 'All') {
       const modeName = j.work_mode_detail?.name || j.location || '';
       if (!modeName.toLowerCase().includes(jobWorkModeFilter.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  // Filtered Public Reference Opportunities for Reference Tab
+  const filteredPublicJobs = publicJobs.filter(j => {
+    if (jobSearch.trim()) {
+      const q = jobSearch.toLowerCase();
+      const titleMatch = j.job_title?.toLowerCase().includes(q);
+      const compMatch = j.company_name?.toLowerCase().includes(q);
+      const locMatch = j.location?.toLowerCase().includes(q);
+      const indMatch = j.industry?.toLowerCase().includes(q);
+      if (!titleMatch && !compMatch && !locMatch && !indMatch) return false;
     }
     return true;
   });
@@ -1002,113 +1022,255 @@ export default function StudentDashboard({ initialTab = 'dashboard' }) {
           {/* Jobs Tab */}
           {activeTab === 'jobs' && (
             <div className="dashboard-card-panel" style={{ gap: '20px' }}>
-              <div className="panel-header" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '14px' }}>
+              <div className="panel-header" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Available Placement Jobs</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>Search and apply for open recruitment postings</p>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>Available Opportunities</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                    {jobTabMode === 'campus'
+                      ? 'Official campus recruitment drives posted by registered enterprise recruiters'
+                      : 'Verified technical opportunities sourced from official enterprise career portals for reference'}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className={`notif-filter-btn ${jobTabMode === 'campus' ? 'active' : ''}`}
+                    onClick={() => setJobTabMode('campus')}
+                    style={{ fontSize: '13px', padding: '6px 14px' }}
+                  >
+                    Campus Placement ({jobs.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`notif-filter-btn ${jobTabMode === 'reference' ? 'active' : ''}`}
+                    onClick={() => setJobTabMode('reference')}
+                    style={{ fontSize: '13px', padding: '6px 14px' }}
+                  >
+                    Verified Reference ({publicJobs.length})
+                  </button>
                 </div>
               </div>
 
-              {/* Jobs Search & Filter Toolbar */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '12px', background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                {/* Search */}
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                  <input 
-                    type="text" 
-                    placeholder="Search job title, company..." 
-                    value={jobSearch} 
-                    onChange={(e) => setJobSearch(e.target.value)} 
-                    style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none' }} 
-                  />
-                </div>
+              {jobTabMode === 'campus' ? (
+                <>
+                  {/* Jobs Search & Filter Toolbar */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '12px', background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    {/* Search */}
+                    <div style={{ position: 'relative' }}>
+                      <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                      <input 
+                        type="text" 
+                        placeholder="Search job title, company..." 
+                        value={jobSearch} 
+                        onChange={(e) => setJobSearch(e.target.value)} 
+                        style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none' }} 
+                      />
+                    </div>
 
-                {/* Company Filter */}
-                <select 
-                  value={jobCompanyFilter} 
-                  onChange={(e) => setJobCompanyFilter(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
-                >
-                  <option value="All">All Companies</option>
-                  {Array.from(new Set(jobs.map(j => j.recruiter_detail?.company_name || j.recruiter?.company_name).filter(Boolean))).map((comp, idx) => (
-                    <option key={idx} value={comp}>{comp}</option>
-                  ))}
-                </select>
+                    {/* Company Filter */}
+                    <select 
+                      value={jobCompanyFilter} 
+                      onChange={(e) => setJobCompanyFilter(e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
+                    >
+                      <option value="All">All Companies</option>
+                      {Array.from(new Set(jobs.map(j => j.recruiter_detail?.company_name || j.recruiter?.company_name).filter(Boolean))).map((comp, idx) => (
+                        <option key={idx} value={comp}>{comp}</option>
+                      ))}
+                    </select>
 
-                {/* Location Filter */}
-                <select 
-                  value={jobLocationFilter} 
-                  onChange={(e) => setJobLocationFilter(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
-                >
-                  <option value="All">All Locations</option>
-                  <option value="Kochi">Kochi</option>
-                  <option value="Trivandrum">Trivandrum</option>
-                  <option value="Bangalore">Bangalore</option>
-                  <option value="Remote">Remote</option>
-                </select>
+                    {/* Location Filter */}
+                    <select 
+                      value={jobLocationFilter} 
+                      onChange={(e) => setJobLocationFilter(e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
+                    >
+                      <option value="All">All Locations</option>
+                      <option value="Kochi">Kochi</option>
+                      <option value="Trivandrum">Trivandrum</option>
+                      <option value="Bangalore">Bangalore</option>
+                      <option value="Remote">Remote</option>
+                    </select>
 
-                {/* Min Salary Filter */}
-                <select 
-                  value={jobMinSalaryFilter} 
-                  onChange={(e) => setJobMinSalaryFilter(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
-                >
-                  <option value="0">All Salaries</option>
-                  <option value="8">≥ 8.0 LPA</option>
-                  <option value="10">≥ 10.0 LPA</option>
-                  <option value="12">≥ 12.0 LPA</option>
-                </select>
+                    {/* Min Salary Filter */}
+                    <select 
+                      value={jobMinSalaryFilter} 
+                      onChange={(e) => setJobMinSalaryFilter(e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
+                    >
+                      <option value="0">All Salaries</option>
+                      <option value="8">≥ 8.0 LPA</option>
+                      <option value="10">≥ 10.0 LPA</option>
+                      <option value="12">≥ 12.0 LPA</option>
+                    </select>
 
-                {/* Work Mode Filter */}
-                <select 
-                  value={jobWorkModeFilter} 
-                  onChange={(e) => setJobWorkModeFilter(e.target.value)}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
-                >
-                  <option value="All">All Modes</option>
-                  <option value="On-Site">On-Site</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Remote">Remote</option>
-                </select>
-              </div>
+                    {/* Work Mode Filter */}
+                    <select 
+                      value={jobWorkModeFilter} 
+                      onChange={(e) => setJobWorkModeFilter(e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', background: '#FFFFFF' }}
+                    >
+                      <option value="All">All Modes</option>
+                      <option value="On-Site">On-Site</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                  </div>
 
-              {filteredJobs.length === 0 ? (
-                <div className="empty-state-box">
-                  <Briefcase size={32} color="#64748B" />
-                  <p>No job postings match your selected filters.</p>
-                </div>
+                  {filteredJobs.length === 0 ? (
+                    <div className="empty-state-box">
+                      <Briefcase size={32} color="#64748B" />
+                      <p>No job postings match your selected filters.</p>
+                    </div>
+                  ) : (
+                    <div className="list-stack">
+                      {filteredJobs.map((job) => {
+                        const applied = isJobApplied(job.id);
+                        return (
+                          <div key={job.id} className="list-item-card" style={{ padding: '18px', gap: '16px' }}>
+                            <div className="item-main-info" style={{ flex: 1 }}>
+                              <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#0A192F', marginBottom: '4px' }}>{job.job_title}</h4>
+                              <p className="item-sub-info" style={{ fontSize: '13.5px', color: '#475569' }}>
+                                <strong>{job.recruiter_detail?.company_name || 'Partner Company'}</strong> • 📍 {job.location || 'Location'} • 💰 {job.package_lpa ? `${job.package_lpa} LPA` : 'Salary Not Disclosed'}
+                              </p>
+                              <p className="item-sub-info" style={{ marginTop: '4px', fontSize: '12.5px', color: '#64748B' }}>
+                                Min CGPA: {job.minimum_cgpa || '7.0'} • Deadline: {job.application_deadline || '2026-12-31'}
+                              </p>
+                            </div>
+                            {applied ? (
+                              <span className="badge-tag badge-applied" style={{ padding: '8px 16px', fontSize: '13px' }}>✓ Applied</span>
+                            ) : (
+                              <button 
+                                type="button" 
+                                className="btn-wizard-primary" 
+                                style={{ padding: '8px 20px', fontSize: '13.5px', borderRadius: '8px' }} 
+                                onClick={() => handleApplyJob(job.id)}
+                              >
+                                Apply Now
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="list-stack">
-                  {filteredJobs.map((job) => {
-                    const applied = isJobApplied(job.id);
-                    return (
-                      <div key={job.id} className="list-item-card" style={{ padding: '18px', gap: '16px' }}>
-                        <div className="item-main-info" style={{ flex: 1 }}>
-                          <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#0A192F', marginBottom: '4px' }}>{job.job_title}</h4>
-                          <p className="item-sub-info" style={{ fontSize: '13.5px', color: '#475569' }}>
-                            <strong>{job.recruiter_detail?.company_name || 'Partner Company'}</strong> • 📍 {job.location || 'Location'} • 💰 {job.package_lpa ? `${job.package_lpa} LPA` : 'Salary Not Disclosed'}
-                          </p>
-                          <p className="item-sub-info" style={{ marginTop: '4px', fontSize: '12.5px', color: '#64748B' }}>
-                            Min CGPA: {job.minimum_cgpa || '7.0'} • Deadline: {job.application_deadline || '2026-12-31'}
-                          </p>
-                        </div>
-                        {applied ? (
-                          <span className="badge-tag badge-applied" style={{ padding: '8px 16px', fontSize: '13px' }}>✓ Applied</span>
-                        ) : (
-                          <button 
-                            type="button" 
-                            className="btn-wizard-primary" 
-                            style={{ padding: '8px 20px', fontSize: '13.5px', borderRadius: '8px' }} 
-                            onClick={() => handleApplyJob(job.id)}
-                          >
-                            Apply Now
-                          </button>
-                        )}
+                <>
+                  {/* Verified Public Reference Opportunities Banner */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '14px',
+                    background: '#F0FDF4',
+                    border: '1px solid #BBF7D0',
+                    borderRadius: '12px',
+                    padding: '16px 18px',
+                    color: '#166534',
+                    fontSize: '13.5px',
+                    lineHeight: '1.55'
+                  }}>
+                    <ShieldCheck size={22} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>
+                        Verified Public Reference Opportunities (Industry Benchmark)
                       </div>
-                    );
-                  })}
-                </div>
+                      <div>
+                        These graduate openings are sourced directly from authoritative enterprise career pages for MCA and Computing students. 
+                        Applying through PLACENTRA does not submit to employer applicant tracking systems; please submit directly on the employer's official portal.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search Toolbar for Reference Opportunities */}
+                  <div style={{ position: 'relative', maxWidth: '420px' }}>
+                    <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search company, job role, or location..." 
+                      value={jobSearch} 
+                      onChange={(e) => setJobSearch(e.target.value)} 
+                      style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none' }} 
+                    />
+                  </div>
+
+                  {filteredPublicJobs.length === 0 ? (
+                    <div className="empty-state-box">
+                      <Briefcase size={32} color="#64748B" />
+                      <p>No verified reference opportunities match your search.</p>
+                    </div>
+                  ) : (
+                    <div className="list-stack">
+                      {filteredPublicJobs.map((refJob) => (
+                        <div key={refJob.id} className="list-item-card" style={{ padding: '20px', gap: '16px', flexDirection: 'column', alignItems: 'stretch' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '16px', fontWeight: 800, color: '#0A192F' }}>
+                                  {refJob.job_title}
+                                </span>
+                                <span className="badge-tag" style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', fontSize: '11px', fontWeight: 700 }}>
+                                  ✓ Verified Opportunity
+                                </span>
+                              </div>
+                              <p style={{ margin: '2px 0 0 0', fontSize: '13.5px', color: '#334155' }}>
+                                <strong>
+                                  <a href={refJob.company_website} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', textDecoration: 'none' }}>
+                                    {refJob.company_name} ↗
+                                  </a>
+                                </strong>
+                                {' '}• 🏢 {refJob.industry} • 📍 {refJob.location} • 💼 {refJob.work_mode}
+                              </p>
+                            </div>
+                            <a
+                              href={refJob.application_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-wizard-primary"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                textDecoration: 'none',
+                                padding: '8px 18px',
+                                fontSize: '13px',
+                                borderRadius: '8px',
+                                fontWeight: 600
+                              }}
+                            >
+                              <span>Apply on Official Portal</span>
+                              <ExternalLink size={14} />
+                            </a>
+                          </div>
+
+                          <div style={{ background: '#F8FAFC', padding: '12px 14px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div>
+                              <strong style={{ color: '#0F172A' }}>Package / Remuneration:</strong> {refJob.package_details}
+                            </div>
+                            <div>
+                              <strong style={{ color: '#0F172A' }}>Eligibility Criteria:</strong> {refJob.eligibility_criteria}
+                            </div>
+                            <div>
+                              <strong style={{ color: '#0F172A' }}>Description:</strong> {refJob.job_description}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '12px', color: '#64748B' }}>
+                            <span>
+                              Verified on {refJob.verified_at} from{' '}
+                              <a href={refJob.source_url} target="_blank" rel="noopener noreferrer" style={{ color: '#64748B', textDecoration: 'underline' }}>
+                                Official Careers Page ↗
+                              </a>
+                            </span>
+                            <span style={{ fontStyle: 'italic' }}>
+                              Reference only • Official submission takes place on employer ATS
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

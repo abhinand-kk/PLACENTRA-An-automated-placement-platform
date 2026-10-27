@@ -17,3 +17,6 @@ python manage.py seed_verified_institutions
 # Seed required master data (HiringType, EmploymentType, WorkMode, etc. idempotent, safe to rerun)
 python manage.py seed_master_data
 
+# Seed verified real-world demo data (idempotent, safe to rerun)
+python manage.py seed_verified_demo_data
+

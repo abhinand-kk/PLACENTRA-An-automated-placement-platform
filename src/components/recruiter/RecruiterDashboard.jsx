@@ -25,7 +25,8 @@ import {
   ChevronRight,
   Eye,
   Edit,
-  UserX
+  UserX,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -80,6 +81,8 @@ export default function RecruiterDashboard() {
   const [recruiterStats, setRecruiterStats] = useState(null);
   const [appStats, setAppStats] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [publicJobs, setPublicJobs] = useState([]);
+  const [jobsTabMode, setJobsTabMode] = useState('mine'); // 'mine' | 'reference'
   const [applications, setApplications] = useState([]);
   const [drives, setDrives] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -97,7 +100,8 @@ export default function RecruiterDashboard() {
         jobsRes,
         appsRes,
         drivesRes,
-        notifsRes
+        notifsRes,
+        publicJobsRes
       ] = await Promise.allSettled([
         api.get('/api/v1/recruiters/profile/'),
         api.get('/api/v1/recruiters/hiring-preferences/'),
@@ -106,7 +110,8 @@ export default function RecruiterDashboard() {
         api.get('/api/v1/jobs/my-jobs/'),
         api.get('/api/v1/applications/'),
         api.get('/api/v1/placement-drives/recruiter/'),
-        api.get('/api/v1/notifications/')
+        api.get('/api/v1/notifications/'),
+        api.get('/api/v1/jobs/public-reference/')
       ]);
 
       if (profRes.status === 'fulfilled') setProfile(profRes.value.data);
@@ -117,6 +122,7 @@ export default function RecruiterDashboard() {
       if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data.results || appsRes.value.data || []);
       if (drivesRes.status === 'fulfilled') setDrives(drivesRes.value.data.results || drivesRes.value.data || []);
       if (notifsRes.status === 'fulfilled') setNotifications(notifsRes.value.data.results || notifsRes.value.data || []);
+      if (publicJobsRes && publicJobsRes.status === 'fulfilled') setPublicJobs(publicJobsRes.value.data.results || publicJobsRes.value.data || []);
     } catch (err) {
       console.warn("Recruiter data fetch error:", err);
     } finally {
@@ -884,52 +890,146 @@ export default function RecruiterDashboard() {
           {/* Job Postings Tab */}
           {activeTab === 'jobs' && (
             <div className="dashboard-card-panel">
-              <div className="panel-header">
-                <h3>All Posted Jobs</h3>
-                <button className="btn-post-job-header" onClick={() => setShowJobModal(true)}>
-                  <PlusCircle size={16} />
-                  <span>Post New Job</span>
-                </button>
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Job Postings & Market Reference</h3>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      className={`notif-filter-btn ${jobsTabMode === 'mine' ? 'active' : ''}`}
+                      onClick={() => setJobsTabMode('mine')}
+                      style={{ fontSize: '13px', padding: '6px 14px' }}
+                    >
+                      My Posted Vacancies ({jobs.length})
+                    </button>
+                    <button
+                      type="button"
+                      className={`notif-filter-btn ${jobsTabMode === 'reference' ? 'active' : ''}`}
+                      onClick={() => setJobsTabMode('reference')}
+                      style={{ fontSize: '13px', padding: '6px 14px' }}
+                    >
+                      Industry Benchmark Reference ({publicJobs.length})
+                    </button>
+                  </div>
+                </div>
+                {jobsTabMode === 'mine' && (
+                  <button className="btn-post-job-header" onClick={() => setShowJobModal(true)}>
+                    <PlusCircle size={16} />
+                    <span>Post New Job</span>
+                  </button>
+                )}
               </div>
 
-              {jobs.length === 0 ? (
-                <div className="empty-state-box">
-                  <Briefcase size={36} color="#64748B" />
-                  <p className="empty-state-text">No active job postings yet.</p>
-                  <button className="btn-post-first-job" onClick={() => setShowJobModal(true)}>
-                    <PlusCircle size={16} />
-                    <span>Post Your First Job</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="rec-jobs-table">
-                    <thead>
-                      <tr>
-                        <th>Job Title</th>
-                        <th>Location</th>
-                        <th>Package (LPA)</th>
-                        <th>Status</th>
-                        <th>Application Deadline</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jobs.map((job) => (
-                        <tr key={job.id}>
-                          <td className="job-title-text">{job.job_title}</td>
-                          <td>{job.location || 'Remote'}</td>
-                          <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
-                          <td>
-                            <span className={`status-pill pill-${(job.status || 'Open').toLowerCase().replace(/\s+/g, '-')}`}>
-                              {job.status}
-                            </span>
-                          </td>
-                          <td>{job.application_deadline || 'Open'}</td>
+              {jobsTabMode === 'mine' ? (
+                jobs.length === 0 ? (
+                  <div className="empty-state-box">
+                    <Briefcase size={36} color="#64748B" />
+                    <p className="empty-state-text">No active job postings yet.</p>
+                    <button className="btn-post-first-job" onClick={() => setShowJobModal(true)}>
+                      <PlusCircle size={16} />
+                      <span>Post Your First Job</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="rec-jobs-table">
+                      <thead>
+                        <tr>
+                          <th>Job Title</th>
+                          <th>Location</th>
+                          <th>Package (LPA)</th>
+                          <th>Status</th>
+                          <th>Application Deadline</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {jobs.map((job) => (
+                          <tr key={job.id}>
+                            <td className="job-title-text">{job.job_title}</td>
+                            <td>{job.location || 'Remote'}</td>
+                            <td>{job.package_lpa ? `${job.package_lpa} LPA` : 'Competitive'}</td>
+                            <td>
+                              <span className={`status-pill pill-${(job.status || 'Open').toLowerCase().replace(/\s+/g, '-')}`}>
+                                {job.status}
+                              </span>
+                            </td>
+                            <td>{job.application_deadline || 'Open'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '10px',
+                    padding: '14px 16px',
+                    color: '#334155',
+                    fontSize: '13px',
+                    lineHeight: '1.5'
+                  }}>
+                    <ShieldCheck size={20} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong>Industry Benchmark Vacancies:</strong> Verified corporate graduate technical positions from leading employers.
+                      These records provide campus recruitment benchmarks regarding packages, work modes, and qualifications. 
+                      They are reference records and are strictly not associated with your recruiter profile.
+                    </div>
+                  </div>
+
+                  <div className="table-responsive">
+                    <table className="rec-jobs-table">
+                      <thead>
+                        <tr>
+                          <th>Employer</th>
+                          <th>Role Title</th>
+                          <th>Location</th>
+                          <th>Package Range</th>
+                          <th>Source Verification</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {publicJobs.map((refJob) => (
+                          <tr key={refJob.id}>
+                            <td className="job-title-text">
+                              <a href={refJob.company_website} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', textDecoration: 'none' }}>
+                                {refJob.company_name} ↗
+                              </a>
+                              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                                {refJob.industry}
+                              </div>
+                            </td>
+                            <td>
+                              <strong>{refJob.job_title}</strong>
+                              <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '2px' }}>
+                                Mode: {refJob.work_mode}
+                              </div>
+                            </td>
+                            <td>{refJob.location}</td>
+                            <td>
+                              <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                                {refJob.package_details}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ fontSize: '12px', color: '#64748B' }}>
+                                Verified {refJob.verified_at}
+                              </div>
+                              <a href={refJob.source_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#2563EB', textDecoration: 'underline' }}>
+                                Official Source ↗
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           )}

@@ -46,3 +46,30 @@ class Job(models.Model):
 
     def __str__(self):
         return f"{self.job_title} - {self.recruiter.company_name}"
+
+
+class PublicReferenceJob(models.Model):
+    company_name = models.CharField(max_length=255)
+    company_website = models.URLField(max_length=500)
+    industry = models.CharField(max_length=150, default='Information Technology')
+    job_title = models.CharField(max_length=255)
+    job_description = models.TextField()
+    location = models.CharField(max_length=255)
+    work_mode = models.CharField(max_length=100, default='Hybrid')
+    eligibility_criteria = models.TextField()
+    package_details = models.CharField(max_length=255)
+    application_deadline = models.CharField(max_length=100, blank=True, default='Active / Rolling Intake')
+    application_url = models.URLField(max_length=500, help_text="Official direct application portal URL")
+    source_url = models.URLField(max_length=500, help_text="Official careers page / authoritative source URL")
+    verified_at = models.DateField(help_text="Date when information was verified from official source")
+    is_active = models.BooleanField(default=True)
+    is_reference_only = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['company_name', '-created_at']
+
+    def __str__(self):
+        return f"[Public Reference] {self.job_title} - {self.company_name}"
+

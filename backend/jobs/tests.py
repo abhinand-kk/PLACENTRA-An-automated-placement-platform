@@ -210,3 +210,50 @@ class JobCreationMasterDataRobustnessTests(TestCase):
         self.client.force_authenticate(user=student_user)
         response = self.client.post('/api/v1/jobs/', self.valid_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class VerifiedPublicReferenceOpportunityTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.student_user = User.objects.create_user(
+            email='student_demo@mca.ajce.in',
+            password='Password123!',
+            role=User.Role.STUDENT
+        )
+
+    def test_seed_verified_demo_data_command_and_api(self):
+        """Management command populates 5 genuine opportunities idempotently, and API serves them read-only."""
+        from io import StringIO
+        from jobs.models import PublicReferenceJob
+
+        out = StringIO()
+        call_command('seed_verified_demo_data', stdout=out)
+        self.assertEqual(PublicReferenceJob.objects.count(), 5)
+
+        # Re-run for idempotency verification
+        call_command('seed_verified_demo_data', stdout=out)
+        self.assertEqual(PublicReferenceJob.objects.count(), 5)
+
+        # Authenticated student requests the public-reference endpoint
+        self.client.force_authenticate(user=self.student_user)
+        response = self.client.get('/api/v1/jobs/public-reference/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data.get('results', response.data) if isinstance(response.data, dict) else response.data
+        self.assertEqual(len(results), 5)
+
+        # Verify source URLs and verification dates exist on all records
+        for item in results:
+            self.assertTrue(item['source_url'].startswith('https://'))
+            self.assertTrue(item['application_url'].startswith('https://'))
+            self.assertTrue(item['is_reference_only'])
+            self.assertIsNotNone(item['verified_at'])
+
+        # Verify read-only enforcement
+        post_res = self.client.post('/api/v1/jobs/public-reference/', {'company_name': 'Unauthorized Post'}, format='json')
+        self.assertEqual(post_res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_unauthenticated_request_denied(self):
+        """Unauthenticated user cannot access public reference jobs endpoint."""
+        response = self.client.get('/api/v1/jobs/public-reference/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
